@@ -68,6 +68,9 @@ namespace AmberScreen.Dev
         [Min(0f)] public float windowMargin = 24f;
         public bool rememberState = true;
 
+        [Tooltip("Extra multiplier for portrait / phone UI scale (dpi-based ConstantPixelSize).")]
+        [Range(0.75f, 2f)] public float portraitUiScale = 1f;
+
         [Header("Font")]
         [Tooltip("Optional TMP override. If set, used instead of bundled Inter.")]
         public TMP_FontAsset fontOverride;
@@ -139,6 +142,7 @@ namespace AmberScreen.Dev
             railEdgeMargin = 6f;
             windowMargin = 24f;
             rememberState = true;
+            portraitUiScale = 1f;
         }
 
         internal static void ResetRuntimeDefault()

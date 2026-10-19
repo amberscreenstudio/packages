@@ -119,7 +119,7 @@ namespace AmberScreen.Dev.Tests
         [Test]
         public void OpenSection_Portrait_WindowCoversCanvasWithinSafeArea()
         {
-            DevConsoleView.SetLayoutScreenOverride(1080, 1920);
+            DevConsoleView.SetLayoutScreenOverride(1080, 1920, 160f);
             DevConsole.Register("PortSec", "One", () => { });
 
             DevConsoleHost.EnsureExists();
@@ -136,6 +136,43 @@ namespace AmberScreen.Dev.Tests
 
             Assert.That(window.rect.width, Is.EqualTo(canvas.rect.width).Within(1f));
             Assert.That(window.rect.height, Is.EqualTo(canvas.rect.height).Within(1f));
+        }
+
+        [TestCase(160f)]
+        [TestCase(320f)]
+        [TestCase(480f)]
+        public void Portrait_DpiScale_SheetFillsAndButtonsMeet44Dp(float dpi)
+        {
+            DevConsoleView.SetLayoutScreenOverride(1080, 1920, dpi);
+            for (int i = 0; i < 4; i++)
+                DevConsole.Register("DpiSec", "Btn" + i, () => { });
+
+            DevConsoleHost.EnsureExists();
+            DevConsole.Open();
+            DevConsole.OpenSection("DpiSec");
+
+            var canvasRt = FindNamedRect("DevConsoleCanvas");
+            var window = FindNamedRect("SectionWindow");
+            Assert.IsNotNull(canvasRt);
+            Assert.IsNotNull(window);
+
+            var canvas = canvasRt.GetComponent<Canvas>();
+            Assert.IsNotNull(canvas);
+            ForceLayout(window);
+
+            Assert.That(window.rect.width, Is.EqualTo(canvasRt.rect.width).Within(1f));
+            Assert.That(window.rect.height, Is.EqualTo(canvasRt.rect.height).Within(1f));
+
+            float expectedScale = DevConsoleUiUtil.PortraitScaleFactor(m_Settings);
+            Assert.That(canvas.scaleFactor, Is.EqualTo(expectedScale).Within(0.01f));
+
+            float cellH = DevConsoleUiUtil.MinTouch(m_Settings, canvas);
+            float heightPx = cellH * canvas.scaleFactor;
+            float density = dpi / 160f;
+            float minPx = 44f * density;
+            // ScaleFactor clamps at 4; MinTouch compensates so 44dp is still met in pixels.
+            Assert.GreaterOrEqual(heightPx, minPx - 0.5f,
+                $"button height {heightPx}px < 44dp ({minPx}px) at dpi {dpi}");
         }
 
         static void ForceLayout(RectTransform rt)

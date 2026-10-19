@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **devconsole 0.3.2: missing test .meta, README, dpi-based portrait scaling + portraitUiScale**
+- Save: n/a
+
 - **devconsole 0.3.1: rail content width, section window sized on open, layout containment tests**
 - Save: n/a
 

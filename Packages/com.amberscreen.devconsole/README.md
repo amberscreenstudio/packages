@@ -2,17 +2,15 @@
 
 Runtime debug console. Namespace: `AmberScreen.Dev`. No render-pipeline code — works on URP, URP 2D, and HDRP.
 
-**Version:** 0.3.0  
+**Version:** 0.3.2  
 **Unity:** 6000.6+  
 **Package / asmdef name:** `com.amberscreen.devconsole` / `AmberScreen.DevConsole`
 
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.3.0
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.3.2
 ```
-
-(Use `main` or a local `file:` path until the tag exists.)
 
 ## Rail layout (default for new settings)
 
@@ -93,10 +91,18 @@ DevConsole.RegisterReadout("Perf", "FPS", () => fps, 0.5f);
 DevConsole.Note("Warped");
 
 bool open = DevConsole.IsOpen;
-bool blocks = DevConsole.BlocksGame; // open and not collapsed
+bool blocks = DevConsole.BlocksGame; // true while a section/log window is open, or the portrait sheet
 DevConsole.OpenChanged += isOpen => { };
 DevConsole.BlocksGameChanged += blocksGame => { };
 ```
 
 `OpenChanged` fires only when open/closed changes (not on DockRight collapse).  
 `BlocksGameChanged` fires whenever `BlocksGame` changes (open, close, collapse, expand).
+
+## Portrait / phone scaling
+
+In **portrait Rail** (`Screen.height > Screen.width`) and **MobilePortrait**, the canvas uses `ConstantPixelSize` with a dpi-based scale factor:
+
+`max(dpi/160, height/960 fallback, 1.5) × ResolvedScaleFactor × portraitUiScale`, clamped to **1.5…4**.
+
+That keeps text and touch targets readable on high-density phones (Device Simulator / device). Landscape scaling is unchanged. Tune with settings field `portraitUiScale` (default `1`, range `0.75…2`). Minimum touch height follows the same factor (at least **44 dp**).

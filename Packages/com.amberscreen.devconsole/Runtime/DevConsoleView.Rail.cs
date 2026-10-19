@@ -37,28 +37,37 @@ namespace AmberScreen.Dev
         /// <summary>Edit-mode tests set these so layout does not depend on the Game view size.</summary>
         internal static int s_LayoutScreenWidth;
         internal static int s_LayoutScreenHeight;
+        /// <summary>Edit-mode dpi override; 0 means use <see cref="Screen.dpi"/>.</summary>
+        internal static float s_LayoutDpi;
 
-        static int LayoutScreenWidth =>
+        internal static int LayoutScreenWidth =>
             s_LayoutScreenWidth > 0 ? s_LayoutScreenWidth : Screen.width;
 
-        static int LayoutScreenHeight =>
+        internal static int LayoutScreenHeight =>
             s_LayoutScreenHeight > 0 ? s_LayoutScreenHeight : Screen.height;
+
+        internal static float LayoutDpi =>
+            s_LayoutDpi > 0f ? s_LayoutDpi : Screen.dpi;
 
         static Rect LayoutSafeArea =>
             s_LayoutScreenWidth > 0
                 ? new Rect(0f, 0f, s_LayoutScreenWidth, s_LayoutScreenHeight)
                 : Screen.safeArea;
 
-        internal static void SetLayoutScreenOverride(int width, int height)
+        internal static void SetLayoutScreenOverride(int width, int height, float dpi = 0f)
         {
             s_LayoutScreenWidth = width;
             s_LayoutScreenHeight = height;
+            s_LayoutDpi = dpi;
         }
+
+        internal static void SetLayoutDpiOverride(float dpi) => s_LayoutDpi = dpi;
 
         internal static void ClearLayoutScreenOverride()
         {
             s_LayoutScreenWidth = 0;
             s_LayoutScreenHeight = 0;
+            s_LayoutDpi = 0f;
         }
 
         void BuildRailUi(DevConsoleSettings settings)
@@ -657,8 +666,6 @@ namespace AmberScreen.Dev
             ApplyLayoutScreenCanvasSize();
             var settings = DevConsoleHost.Settings;
             float scale = Mathf.Max(m_Canvas != null ? m_Canvas.scaleFactor : 1f, 0.01f);
-            if (s_LayoutScreenWidth > 0)
-                scale = 1f;
             Rect safe = LayoutSafeArea;
             m_LastSafeArea = safe;
             bool portrait = LayoutScreenHeight > LayoutScreenWidth;
@@ -712,8 +719,6 @@ namespace AmberScreen.Dev
 
             var settings = DevConsoleHost.Settings;
             float scale = Mathf.Max(m_Canvas != null ? m_Canvas.scaleFactor : 1f, 0.01f);
-            if (s_LayoutScreenWidth > 0)
-                scale = 1f;
             Rect safe = LayoutSafeArea;
             bool portrait = LayoutScreenHeight > LayoutScreenWidth;
             float margin = settings.railEdgeMargin;

@@ -2,6 +2,14 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.3.2] - 2026-10-19
+
+### Fixed
+
+- Added missing `DevConsoleRailLayoutTests.cs.meta`.
+- README version / install tag / `BlocksGame` comment.
+- Portrait and MobilePortrait use dpi-based `ConstantPixelSize` scaling (with `portraitUiScale`) so phone UI stays readable.
+
 ## [0.3.1] - 2026-10-19
 
 ### Fixed

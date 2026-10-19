@@ -561,29 +561,17 @@ namespace AmberScreen.Dev
 
             var settings = DevConsoleHost.Settings;
             m_Canvas.sortingOrder = settings.sortingOrder;
+            bool portrait = DevConsoleUiUtil.IsPortraitScaledLayout(settings);
 
-            if (s_LayoutScreenWidth > 0)
-            {
-                m_Scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            m_Scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            if (portrait)
+                m_Scaler.scaleFactor = DevConsoleUiUtil.PortraitScaleFactor(settings);
+            else if (s_LayoutScreenWidth > 0)
                 m_Scaler.scaleFactor = 1f;
-                ApplyLayoutScreenCanvasSize();
-                return;
-            }
-
-            if (settings.layout == DevConsoleLayout.MobilePortrait ||
-                (settings.layout == DevConsoleLayout.Rail && Screen.height > Screen.width))
-            {
-                m_Scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                m_Scaler.referenceResolution = settings.layout == DevConsoleLayout.MobilePortrait
-                    ? settings.ReferenceResolution
-                    : new Vector2(1080f, 1920f);
-                m_Scaler.matchWidthOrHeight = 1f;
-            }
             else
-            {
-                m_Scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
                 m_Scaler.scaleFactor = DevConsoleUiUtil.LandscapeScaleFactor(settings);
-            }
+
+            ApplyLayoutScreenCanvasSize();
         }
 
         void ApplyLayoutScreenCanvasSize()
@@ -592,14 +580,15 @@ namespace AmberScreen.Dev
                 return;
 
             // Overlay canvases always match Screen; use World Space so edit-mode
-            // layout tests can pin an exact logical resolution.
+            // layout tests can pin an exact logical resolution (pixels / scaleFactor).
+            float sf = m_Scaler != null ? Mathf.Max(m_Scaler.scaleFactor, 0.01f) : 1f;
             m_Canvas.renderMode = RenderMode.WorldSpace;
             m_Root.anchorMin = new Vector2(0.5f, 0.5f);
             m_Root.anchorMax = new Vector2(0.5f, 0.5f);
             m_Root.pivot = new Vector2(0.5f, 0.5f);
             m_Root.anchoredPosition3D = Vector3.zero;
             m_Root.localScale = Vector3.one;
-            m_Root.sizeDelta = new Vector2(s_LayoutScreenWidth, s_LayoutScreenHeight);
+            m_Root.sizeDelta = new Vector2(s_LayoutScreenWidth / sf, s_LayoutScreenHeight / sf);
         }
 
         void SyncDevScaler()
@@ -611,17 +600,11 @@ namespace AmberScreen.Dev
             if (m_DevCanvas != null)
                 m_DevCanvas.sortingOrder = settings.sortingOrder + 1;
 
-            if (settings.layout == DevConsoleLayout.MobilePortrait)
-            {
-                m_DevScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                m_DevScaler.referenceResolution = settings.ReferenceResolution;
-                m_DevScaler.matchWidthOrHeight = 1f;
-            }
+            m_DevScaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            if (DevConsoleUiUtil.IsPortraitScaledLayout(settings))
+                m_DevScaler.scaleFactor = DevConsoleUiUtil.PortraitScaleFactor(settings);
             else
-            {
-                m_DevScaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
                 m_DevScaler.scaleFactor = DevConsoleUiUtil.LandscapeScaleFactor(settings);
-            }
         }
 
         void PlaceDevButtonInSafeArea()

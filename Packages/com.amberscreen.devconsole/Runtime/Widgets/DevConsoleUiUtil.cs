@@ -162,24 +162,61 @@ namespace AmberScreen.Dev
 
         public static float DpToCanvas(Canvas canvas)
         {
-            float dpi = Screen.dpi > 0f ? Screen.dpi : 160f;
+            float dpi = ResolvedDpi();
+            if (dpi <= 0f)
+                dpi = 160f;
             float scale = canvas != null && canvas.scaleFactor > 0f ? canvas.scaleFactor : 1f;
             return (dpi / 160f) / scale;
         }
 
         public static float SafeAreaWidthDp()
         {
-            float dpi = Screen.dpi > 0f ? Screen.dpi : 160f;
-            return Screen.safeArea.width * (160f / dpi);
+            float dpi = ResolvedDpi();
+            if (dpi <= 0f)
+                dpi = 160f;
+            float width = DevConsoleView.s_LayoutScreenWidth > 0
+                ? DevConsoleView.s_LayoutScreenWidth
+                : Screen.safeArea.width;
+            return width * (160f / dpi);
+        }
+
+        public static float ResolvedDpi()
+        {
+            float dpi = DevConsoleView.LayoutDpi;
+            return dpi > 0f ? dpi : Screen.dpi;
+        }
+
+        public static bool IsPortraitScaledLayout(DevConsoleSettings settings)
+        {
+            if (settings == null)
+                return false;
+            if (settings.layout == DevConsoleLayout.MobilePortrait)
+                return true;
+            if (settings.layout == DevConsoleLayout.Rail)
+                return DevConsoleView.LayoutScreenHeight > DevConsoleView.LayoutScreenWidth;
+            return false;
         }
 
         public static float LandscapeScaleFactor(DevConsoleSettings settings)
         {
-            float height = DevConsoleView.s_LayoutScreenHeight > 0
-                ? DevConsoleView.s_LayoutScreenHeight
-                : Screen.height;
+            float height = DevConsoleView.LayoutScreenHeight;
             float baseScale = Mathf.Clamp(height / 1080f, 0.9f, 2f);
             return baseScale * settings.ResolvedScaleFactor;
+        }
+
+        /// <summary>
+        /// Dpi-based ConstantPixelSize scale for portrait Rail and MobilePortrait.
+        /// Clamped to 1.5..4 after applying <see cref="DevConsoleSettings.portraitUiScale"/>.
+        /// </summary>
+        public static float PortraitScaleFactor(DevConsoleSettings settings)
+        {
+            float dpi = ResolvedDpi();
+            float height = DevConsoleView.LayoutScreenHeight;
+            float density = dpi > 0f ? dpi / 160f : height / 960f;
+            float ui = settings != null ? Mathf.Clamp(settings.portraitUiScale, 0.75f, 2f) : 1f;
+            float resolved = settings != null ? settings.ResolvedScaleFactor : 1f;
+            float factor = Mathf.Max(density, 1.5f) * resolved * ui;
+            return Mathf.Clamp(factor, 1.5f, 4f);
         }
 
         public static RectTransform CreateRect(string name, Transform parent)
@@ -306,30 +343,34 @@ namespace AmberScreen.Dev
         public static float MinTouch(DevConsoleSettings settings, Canvas canvas = null)
         {
             float h = settings.buttonHeight * settings.ResolvedScaleFactor;
-            if (settings.layout == DevConsoleLayout.MobilePortrait)
-            {
-                float dp = DpToCanvas(canvas);
-                return Mathf.Max(h, 44f * dp);
-            }
+            if (!IsPortraitScaledLayout(settings))
+                return h;
 
-            return h;
+            float scale = canvas != null && canvas.scaleFactor > 0f
+                ? canvas.scaleFactor
+                : PortraitScaleFactor(settings);
+            float dpi = ResolvedDpi();
+            float density = dpi > 0f
+                ? dpi / 160f
+                : DevConsoleView.LayoutScreenHeight / 960f;
+            // 44dp in canvas units so height * scaleFactor >= 44 * density pixels.
+            float minCanvas = 44f * density / Mathf.Max(scale, 0.01f);
+            return Mathf.Max(h, minCanvas);
         }
 
         public static float FontSize(DevConsoleSettings settings, Canvas canvas = null)
         {
             float size = settings.fontSize * settings.ResolvedScaleFactor;
-            if (settings.layout == DevConsoleLayout.MobilePortrait)
-            {
-                float dp = DpToCanvas(canvas);
-                return Mathf.Max(size, 15f * dp);
-            }
+            if (!IsPortraitScaledLayout(settings))
+                return size;
 
-            return size;
+            float dp = DpToCanvas(canvas);
+            return Mathf.Max(size, 15f * dp);
         }
 
         public static float TitleBarHeight(DevConsoleSettings settings, Canvas canvas)
         {
-            if (settings.layout == DevConsoleLayout.MobilePortrait)
+            if (IsPortraitScaledLayout(settings))
                 return Mathf.Max(32f, MinTouch(settings, canvas) * 0.9f);
             return 32f;
         }
