@@ -2,6 +2,12 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.1.2] - 2026-10-19
+
+### Fixed
+
+- Fix duplicate TestRunner references in the test asmdef.
+
 ## [0.1.1] - 2026-10-19
 
 ### Fixed

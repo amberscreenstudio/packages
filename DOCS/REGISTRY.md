@@ -6,8 +6,8 @@ RULE: claim before building (approved by Fabio 2026-10-19). Before writing a Cur
 | --- | --- | --- | --- | --- | --- |
 | Dev console | Packages (shared) | in library 0.1.x | all five | com.amberscreen.devconsole | no game builds a new one; Watchmaker, S&I, S&S and LWN consoles fold in |
 | Versioning (0.MAJOR.MINOR, label, save-version check) | Sand & Ink | settled | all five | com.amberscreen.versioning | extract after S&I week 2 check; Watchmaker's version check folds in |
-| Save scaffolding (slots, safe write, version stamp) | Sand & Ink (+ Watchmaker JSON slots) | settled scheme | Snorkel & Sail, LWN | to be decided (Fabio) | game save data classes stay in games |
-| Time-of-day interface (current time, day count, change event, saveable) | to be decided | planned | Sand & Ink, Snorkel & Sail | to be decided | S&I connects TimeOfDay, S&S connects Enviro 3 |
+| Save scaffolding (slots, safe write, version stamp) | Sand & Ink (+ Watchmaker JSON slots) | settled scheme | Snorkel & Sail, LWN, Twin Ticks | com.amberscreen.save (approved by Fabio; lead to be picked) | game save data classes stay in games |
+| Time-of-day interface (current time, day count, change event, saveable) | to be decided | planned | Sand & Ink, Snorkel & Sail, LWN, Twin Ticks | to be decided | S&I connects TimeOfDay, S&S connects Enviro 3, LWN shift clock, Twin Ticks phone clock |
 | Day/night cycle (TimeOfDay + DayCycleSettings) | Sand & Ink | in progress (0.1.7) | Sand & Ink | to be decided | S&S uses Enviro 3 instead |
 | Fuel | Sand & Ink | settled | Sand & Ink, LWN? | com.amberscreen.vehicle | |
 | Engine heat | Sand & Ink | settled (0.1.6) | Sand & Ink | com.amberscreen.vehicle | package-ready in Assets/Scripts/Shared |

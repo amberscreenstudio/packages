@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **devconsole 0.1.2: test asmdef duplicate refs fix + registry rows**
+- Save: n/a
+
 - **devconsole 0.1.1: review fixes (F1 key, TMP fallback, readouts, DEV button, selection, mobile dp, release strip) + Sandbox manifest + REGISTRY.md**
 - Save: n/a
 

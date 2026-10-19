@@ -1,6 +1,6 @@
 {
   "name": "com.amberscreen.devconsole",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "displayName": "Amber Screen Dev Console",
   "description": "Runtime debug console for Amber Screen games. Buttons, toggles, dropdowns, confirm actions, and readouts. No render-pipeline dependency.",
   "unity": "6000.6",
