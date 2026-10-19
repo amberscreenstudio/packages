@@ -12,5 +12,5 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.devconsole
 
-- **0.3.4** pushed (not tagged). TMP Essentials missing guard; Fabio playtests Sandbox F1, then tags `devconsole/0.3.4`.
+- **0.3.4** pushed (not tagged). TMP Essentials missing guard + CS0104 `Object` fix; Fabio playtests Sandbox F1, then tags `devconsole/0.3.4`.
 - Namespace is `AmberScreen.Dev` (package/asmdef names unchanged). Gate gameplay on `BlocksGame` / `IsPointerOverConsole`.

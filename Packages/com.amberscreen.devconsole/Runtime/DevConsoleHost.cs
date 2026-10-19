@@ -206,7 +206,7 @@ namespace AmberScreen.Dev
         public static void EnsureExists()
         {
             if (s_Instance == null)
-                s_Instance = Object.FindAnyObjectByType<DevConsoleHost>();
+                s_Instance = UnityEngine.Object.FindAnyObjectByType<DevConsoleHost>();
             if (s_Instance != null)
                 return;
 
@@ -604,7 +604,7 @@ namespace AmberScreen.Dev
 
         bool TryConfigureForeignEventSystem()
         {
-            var systems = Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
+            var systems = UnityEngine.Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
             EventSystem foreign = null;
             for (int i = 0; i < systems.Length; i++)
             {
@@ -668,7 +668,7 @@ namespace AmberScreen.Dev
 
         bool HasForeignEventSystem()
         {
-            var systems = Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
+            var systems = UnityEngine.Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
             for (int i = 0; i < systems.Length; i++)
             {
                 if (systems[i] == null)

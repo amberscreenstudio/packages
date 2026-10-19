@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **devconsole 0.3.4: CS0104 fix — qualify UnityEngine.Object after using System**
+- Save: n/a
+
 - **devconsole 0.3.4: TMP Essentials missing guard (no silent F1 failure)**
 - Save: n/a
 

@@ -7,6 +7,7 @@ All notable changes to `com.amberscreen.devconsole` are documented here.
 ### Fixed
 
 - When TextMeshPro Essential Resources are missing, log a clear error and keep the host alive instead of failing silently on F1 (NRE in `CreateFontAsset`).
+- Qualify `UnityEngine.Object` after adding `using System;` (CS0104 ambiguous `Object`).
 
 ## [0.3.3] - 2026-10-19
 

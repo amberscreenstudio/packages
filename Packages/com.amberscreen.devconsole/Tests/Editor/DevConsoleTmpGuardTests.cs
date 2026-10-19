@@ -17,7 +17,7 @@ namespace AmberScreen.Dev.Tests
         public void TearDown()
         {
             if (DevConsoleHost.Instance != null)
-                Object.DestroyImmediate(DevConsoleHost.Instance.gameObject);
+                UnityEngine.Object.DestroyImmediate(DevConsoleHost.Instance.gameObject);
             DevConsole.ResetForTests();
         }
 
