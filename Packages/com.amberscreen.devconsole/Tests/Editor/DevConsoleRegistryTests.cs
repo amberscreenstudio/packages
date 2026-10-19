@@ -1,7 +1,7 @@
 #if AMBERSCREEN_DEVCONSOLE
 using NUnit.Framework;
 
-namespace AmberScreen.DevConsole.Tests
+namespace AmberScreen.Dev.Tests
 {
     public class DevConsoleRegistryTests
     {

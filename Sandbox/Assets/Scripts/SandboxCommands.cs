@@ -1,4 +1,4 @@
-using AmberScreen.DevConsole;
+﻿using AmberScreen.Dev;
 using UnityEngine;
 
 namespace AmberScreen.Sandbox
@@ -54,7 +54,7 @@ namespace AmberScreen.Sandbox
                 () =>
                 {
                     float dt = Time.unscaledDeltaTime;
-                    return dt > 0f ? (1f / dt).ToString("0") : "—";
+                    return dt > 0f ? (1f / dt).ToString("0") : "â€”";
                 },
                 0.25f);
 
@@ -67,7 +67,7 @@ namespace AmberScreen.Sandbox
 
             DevConsole.RegisterConfirm("Danger", "Reset Cube", ResetCube);
 
-            DevConsole.Note("Sandbox ready — press F1");
+            DevConsole.Note("Sandbox ready â€” press F1");
         }
 
         void Update()
@@ -89,7 +89,7 @@ namespace AmberScreen.Sandbox
             if (cubeRenderer != null)
                 cubeRenderer.material.color = m_Color;
 
-            DevConsole.Note($"Cube colour → index {index}");
+            DevConsole.Note($"Cube colour â†’ index {index}");
         }
 
         void ResetCube()

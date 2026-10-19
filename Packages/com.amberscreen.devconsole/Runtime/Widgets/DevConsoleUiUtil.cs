@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace AmberScreen.DevConsole
+namespace AmberScreen.Dev
 {
     static class DevConsoleUiUtil
     {
@@ -46,7 +46,7 @@ namespace AmberScreen.DevConsole
                 s_WarnedMissingFont = true;
                 Debug.LogWarning(
                     "[AmberScreen DevConsole] No TMP font found. Import TMP Essential Resources " +
-                    "(Window → TextMeshPro → Import TMP Essential Resources).");
+                    "(Window â†’ TextMeshPro â†’ Import TMP Essential Resources).");
             }
 
             return s_Font;

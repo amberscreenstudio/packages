@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 
-namespace AmberScreen.DevConsole
+namespace AmberScreen.Dev
 {
     [DefaultExecutionOrder(-1000)]
     sealed class DevConsoleHost : MonoBehaviour
@@ -17,15 +17,14 @@ namespace AmberScreen.DevConsole
         static DevConsoleHost s_Instance;
         static bool s_RegistryDirty;
         static bool s_NotesDirty;
+        static DevConsoleSettings s_CachedSettings;
 
         DevConsoleView m_View;
-        DevConsoleSettings m_Settings;
         GameObject m_OwnedEventSystem;
 
         float m_CornerHoldTime;
         bool m_GamepadChordLatched;
 
-        // 3-finger tap: begin within 0.25s, all up within 0.5s, move <= 30 dp.
         bool m_TapActive;
         float m_TapFirstBegin;
         float m_TapMaxTravelPx;
@@ -38,17 +37,28 @@ namespace AmberScreen.DevConsole
 
         internal static bool IsRegistryDirty => s_RegistryDirty;
 
+        internal static DevConsoleSettings Settings =>
+            s_CachedSettings != null ? s_CachedSettings : (s_CachedSettings = DevConsoleSettings.LoadOrDefault());
+
         public static void ResetStatics()
         {
             s_Instance = null;
             s_RegistryDirty = false;
             s_NotesDirty = false;
+            s_CachedSettings = null;
+        }
+
+        public static void ReloadCachedSettings(DevConsoleSettings settings = null)
+        {
+            s_CachedSettings = settings != null ? settings : DevConsoleSettings.LoadOrDefault();
+            if (s_Instance != null)
+                s_Instance.m_View?.OnSettingsReloaded();
         }
 
         public static void EnsureExists()
         {
             if (s_Instance == null)
-                s_Instance = Object.FindFirstObjectByType<DevConsoleHost>();
+                s_Instance = Object.FindAnyObjectByType<DevConsoleHost>();
             if (s_Instance != null)
                 return;
 
@@ -76,7 +86,7 @@ namespace AmberScreen.DevConsole
         public static void OnOpened()
         {
             EnsureExists();
-            s_Instance.EnsureEventSystemForOpen();
+            s_Instance.EnsureEventSystem();
             s_Instance.m_View?.SetVisible(true);
             s_Instance.m_View?.Rebuild();
         }
@@ -87,32 +97,47 @@ namespace AmberScreen.DevConsole
                 return;
             s_Instance.m_View?.SetVisible(false);
             s_Instance.m_View?.SetCollapsed(false);
+            s_Instance.CleanupEventSystemIfUnused();
+        }
+
+        internal static void NotifyDevButtonShown(bool shown)
+        {
+            EnsureExists();
+            if (shown)
+                s_Instance.EnsureEventSystem();
+            else
+                s_Instance.CleanupEventSystemIfUnused();
         }
 
         void Bootstrap()
         {
-            m_Settings = DevConsoleSettings.LoadOrDefault();
+            s_CachedSettings = DevConsoleSettings.LoadOrDefault();
             m_View = new DevConsoleView(transform);
             m_View.SetVisible(false);
+            SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.activeSceneChanged += OnSceneChanged;
         }
 
         void OnDestroy()
         {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
             SceneManager.activeSceneChanged -= OnSceneChanged;
             m_View?.Dispose();
             m_View = null;
-            if (m_OwnedEventSystem != null)
-            {
-                Destroy(m_OwnedEventSystem);
-                m_OwnedEventSystem = null;
-            }
+            DestroyOwnedEventSystem();
 
             if (s_Instance == this)
             {
                 s_Instance = null;
                 DevConsole.NotifyHostDestroyed();
             }
+        }
+
+        void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            ReconcileOwnedEventSystem();
+            if (DevConsole.IsOpen)
+                m_View?.RefreshTitle();
         }
 
         void OnSceneChanged(Scene a, Scene b)
@@ -125,15 +150,12 @@ namespace AmberScreen.DevConsole
         {
             DevConsole.ConsumedCloseThisFrame = false;
 
-            if (m_Settings == null)
-                m_Settings = DevConsoleSettings.LoadOrDefault();
-
+            // Closed path: input only (+ cheap DEV-button safe-area compare, no allocations).
             PollOpenCloseInput();
-            SyncOwnedEventSystem();
 
             if (!DevConsole.IsOpen)
             {
-                m_View?.TickClosed();
+                m_View?.MaybeRepositionDevButton();
                 return;
             }
 
@@ -155,21 +177,22 @@ namespace AmberScreen.DevConsole
             if (!DevConsole.CanActivate())
                 return;
 
+            var settings = Settings;
             var keyboard = Keyboard.current;
-            if (keyboard != null && keyboard[m_Settings.openKey].wasPressedThisFrame)
+            if (keyboard != null && keyboard[settings.openKey].wasPressedThisFrame)
             {
                 DevConsole.Toggle();
                 return;
             }
 
-            if (m_Settings.enableGamepadChord)
+            if (settings.enableGamepadChord)
                 PollGamepadChord();
 
-            if (m_Settings.enableThreeFingerTap)
+            if (settings.enableThreeFingerTap)
                 PollThreeFingerTap();
 
-            if (m_Settings.enableCornerHold)
-                PollCornerHold();
+            if (settings.enableCornerHold)
+                PollCornerHold(settings);
         }
 
         void PollCloseWhileOpen()
@@ -298,7 +321,6 @@ namespace AmberScreen.DevConsole
                 return;
             }
 
-            // Fire on release: all fingers up, at least 3 began in the begin window.
             if (pressed == 0)
             {
                 if (m_TapBeganCount >= 3 &&
@@ -319,7 +341,7 @@ namespace AmberScreen.DevConsole
             m_TapMaxTravelPx = 0f;
         }
 
-        void PollCornerHold()
+        void PollCornerHold(DevConsoleSettings settings)
         {
             bool inCorner = false;
             Vector2 pos = default;
@@ -338,7 +360,7 @@ namespace AmberScreen.DevConsole
                 }
             }
 #if UNITY_EDITOR
-            else if (m_Settings.cornerHoldWithMouseInEditor &&
+            else if (settings.cornerHoldWithMouseInEditor &&
                      Mouse.current != null &&
                      Mouse.current.leftButton.isPressed)
             {
@@ -375,18 +397,12 @@ namespace AmberScreen.DevConsole
             }
         }
 
-        void EnsureEventSystemForOpen()
+        internal void EnsureEventSystem()
         {
-            if (EventSystem.current != null)
-            {
-                if (m_OwnedEventSystem != null &&
-                    EventSystem.current.gameObject != m_OwnedEventSystem)
-                {
-                    Destroy(m_OwnedEventSystem);
-                    m_OwnedEventSystem = null;
-                }
+            ReconcileOwnedEventSystem();
+
+            if (HasForeignEventSystem())
                 return;
-            }
 
             if (m_OwnedEventSystem != null)
                 return;
@@ -398,23 +414,46 @@ namespace AmberScreen.DevConsole
             m_OwnedEventSystem = go;
         }
 
-        void SyncOwnedEventSystem()
+        void CleanupEventSystemIfUnused()
         {
-            if (!DevConsole.IsOpen)
+            ReconcileOwnedEventSystem();
+
+            bool needEs = DevConsole.IsOpen ||
+                          (Settings.showOnScreenDevButton && !DevConsole.IsOpen &&
+                           m_View != null && m_View.IsDevButtonVisible);
+            if (!needEs)
+                DestroyOwnedEventSystem();
+        }
+
+        void ReconcileOwnedEventSystem()
+        {
+            if (m_OwnedEventSystem == null)
                 return;
 
-            if (EventSystem.current == null)
-            {
-                EnsureEventSystemForOpen();
-                return;
-            }
+            if (HasForeignEventSystem())
+                DestroyOwnedEventSystem();
+        }
 
-            if (m_OwnedEventSystem != null &&
-                EventSystem.current.gameObject != m_OwnedEventSystem)
+        bool HasForeignEventSystem()
+        {
+            var systems = Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
+            for (int i = 0; i < systems.Length; i++)
             {
-                Destroy(m_OwnedEventSystem);
-                m_OwnedEventSystem = null;
+                if (systems[i] == null)
+                    continue;
+                if (m_OwnedEventSystem != null && systems[i].gameObject == m_OwnedEventSystem)
+                    continue;
+                return true;
             }
+            return false;
+        }
+
+        void DestroyOwnedEventSystem()
+        {
+            if (m_OwnedEventSystem == null)
+                return;
+            Destroy(m_OwnedEventSystem);
+            m_OwnedEventSystem = null;
         }
     }
 }

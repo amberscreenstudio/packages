@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace AmberScreen.DevConsole
+namespace AmberScreen.Dev
 {
     sealed class DevConsoleButtonWidget
     {
@@ -57,9 +57,11 @@ namespace AmberScreen.DevConsole
             RefreshInteractable();
         }
 
+        public bool WillBeInteractable() => DevConsoleRegistry.IsAvailable(m_Entry);
+
         public void RefreshInteractable()
         {
-            m_Button.interactable = DevConsoleRegistry.IsAvailable(m_Entry);
+            m_Button.interactable = WillBeInteractable();
         }
     }
 }

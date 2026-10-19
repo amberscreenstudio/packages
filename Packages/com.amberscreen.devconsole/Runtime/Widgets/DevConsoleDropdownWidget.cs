@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace AmberScreen.DevConsole
+namespace AmberScreen.Dev
 {
     sealed class DevConsoleDropdownWidget
     {

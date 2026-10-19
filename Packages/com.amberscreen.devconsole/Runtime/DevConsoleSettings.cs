@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace AmberScreen.DevConsole
+namespace AmberScreen.Dev
 {
     public enum DevConsoleLayout
     {
@@ -112,5 +112,15 @@ namespace AmberScreen.DevConsole
 
             s_RuntimeDefault = null;
         }
+
+#if UNITY_EDITOR
+        void OnValidate()
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            if (Application.isPlaying)
+                DevConsoleHost.ReloadCachedSettings(this);
+#endif
+        }
+#endif
     }
 }

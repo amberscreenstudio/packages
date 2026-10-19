@@ -1,6 +1,6 @@
-{
+﻿{
   "name": "AmberScreen.DevConsole.Tests.Editor",
-  "rootNamespace": "AmberScreen.DevConsole.Tests",
+  "rootNamespace": "AmberScreen.Dev.Tests",
   "references": [
     "AmberScreen.DevConsole",
     "UnityEngine.TestRunner",

@@ -1,8 +1,9 @@
-{
+﻿{
   "name": "AmberScreen.DevConsole.Editor",
-  "rootNamespace": "AmberScreen.DevConsole.Editor",
+  "rootNamespace": "AmberScreen.Dev.Editor",
   "references": [
-    "AmberScreen.DevConsole"
+    "AmberScreen.DevConsole",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [
     "Editor"

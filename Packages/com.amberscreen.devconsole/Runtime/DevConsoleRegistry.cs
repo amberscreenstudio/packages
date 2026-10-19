@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace AmberScreen.DevConsole
+namespace AmberScreen.Dev
 {
     enum DevConsoleEntryKind
     {

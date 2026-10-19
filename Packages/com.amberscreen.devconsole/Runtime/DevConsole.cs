@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace AmberScreen.DevConsole
+namespace AmberScreen.Dev
 {
     /// <summary>
     /// Public static API for the Amber Screen Dev Console.

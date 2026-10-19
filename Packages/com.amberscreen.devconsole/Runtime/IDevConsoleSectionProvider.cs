@@ -1,4 +1,4 @@
-namespace AmberScreen.DevConsole
+namespace AmberScreen.Dev
 {
     /// <summary>
     /// Discovered once and invoked to register console entries.

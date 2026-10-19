@@ -3,7 +3,7 @@ using System;
 using System.Reflection;
 using UnityEngine;
 
-namespace AmberScreen.DevConsole
+namespace AmberScreen.Dev
 {
     static class DevConsoleDiscovery
     {

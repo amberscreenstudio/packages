@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **devconsole 0.2.0: namespace renamed to AmberScreen.Dev (compile fix), EventSystem for the DEV button, DEV button scaling, no per-frame work while closed, selection nits**
+- Save: n/a
+
 - **devconsole 0.1.2: test asmdef duplicate refs fix + registry rows**
 - Save: n/a
 

@@ -1,6 +1,6 @@
-{
+﻿{
   "name": "AmberScreen.DevConsole",
-  "rootNamespace": "AmberScreen.DevConsole",
+  "rootNamespace": "AmberScreen.Dev",
   "references": [
     "Unity.InputSystem",
     "Unity.TextMeshPro",

@@ -4,7 +4,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
-namespace AmberScreen.DevConsole.Editor
+namespace AmberScreen.Dev.Editor
 {
     [InitializeOnLoad]
     sealed class DevConsoleDefineSymbols : IActiveBuildTargetChanged
@@ -101,7 +101,7 @@ namespace AmberScreen.DevConsole.Editor
 
             s_Removed = DevConsoleDefineSymbols.RemoveDefine(s_Target, out s_PreviousDefines);
             if (s_Removed)
-                Debug.Log($"[{DevConsoleDefineSymbols.Define}] stripped for non-development player build.");
+                Debug.Log("[DevConsole] AMBERSCREEN_DEVCONSOLE stripped for release build");
         }
 
         public void OnPostprocessBuild(BuildReport report)
@@ -111,7 +111,7 @@ namespace AmberScreen.DevConsole.Editor
 
             PlayerSettings.SetScriptingDefineSymbols(s_Target, s_PreviousDefines);
             s_Removed = false;
-            Debug.Log($"[{DevConsoleDefineSymbols.Define}] restored after player build.");
+            Debug.Log("[DevConsole] define restored");
         }
     }
 }

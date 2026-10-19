@@ -1,7 +1,7 @@
 using System;
 using UnityEngine.Scripting;
 
-namespace AmberScreen.DevConsole
+namespace AmberScreen.Dev
 {
     /// <summary>
     /// Marks a static parameterless method for discovery the first time the console opens.

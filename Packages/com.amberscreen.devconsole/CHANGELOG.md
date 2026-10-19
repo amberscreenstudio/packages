@@ -2,6 +2,25 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.2.0] - 2026-10-19
+
+### Changed
+
+- Namespace renamed from `AmberScreen.DevConsole` to `AmberScreen.Dev` (MAJOR: compile fix for `AmberScreen.*` consumers; package/asmdef names unchanged).
+- Replaced obsolete `FindFirstObjectByType` with `FindAnyObjectByType`.
+
+### Fixed
+
+- EventSystem ensured when the console or on-screen DEV button is shown; owned EventSystem cleaned up when neither needs it; reconcile via `FindObjectsByType`, not per frame.
+- DEV button canvas uses matching CanvasScaler and dp sizing (min 48 dp) inside safe area.
+- No per-frame UI work while closed; settings cached on the host.
+- Selection: move off buttons about to become non-interactable; restore Close/Collapse after rebuild; scroll velocity cleared after follow-scroll.
+- Header / padding / status sizes applied on first open after CanvasScaler updates.
+
+### Docs
+
+- Release-build define strip notes (Build Profiles, `Debug.isDebugBuild`, strip/restore log lines).
+
 ## [0.1.2] - 2026-10-19
 
 ### Fixed
