@@ -3,6 +3,7 @@
   "rootNamespace": "AmberScreen.Dev.Tests",
   "references": [
     "AmberScreen.DevConsole",
+    "Unity.InputSystem",
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner"
   ],

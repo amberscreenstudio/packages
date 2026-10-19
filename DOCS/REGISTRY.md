@@ -18,6 +18,7 @@ RULE: claim before building (approved by Fabio 2026-10-19). Before writing a Cur
 | KCC on-foot walker | LWN | planned (phase 5) | LWN | to be decided | |
 | Boat buoyancy (KWS) | Snorkel & Sail | planned | Snorkel & Sail | to be decided | generic behind an interface |
 | LLM text classifier (LLMUnity + LoRA) | Twin Ticks | in progress | Twin Ticks | maybe later | Twin Ticks only for now |
+| In-game smartphone UI (frame, status bar, home screen, messaging, notifications) | Twin Ticks | planned | Twin Ticks | com.amberscreen.phoneui | built package-ready, chat content through interfaces |
 
 ## Game-specific (no check needed)
 

@@ -21,6 +21,7 @@ namespace AmberScreen.Dev
 
         DevConsoleView m_View;
         GameObject m_OwnedEventSystem;
+        static bool s_WarnedWrongSceneModule;
 
         float m_CornerHoldTime;
         bool m_GamepadChordLatched;
@@ -46,6 +47,7 @@ namespace AmberScreen.Dev
             s_RegistryDirty = false;
             s_NotesDirty = false;
             s_CachedSettings = null;
+            s_WarnedWrongSceneModule = false;
         }
 
         public static void ReloadCachedSettings(DevConsoleSettings settings = null)
@@ -401,17 +403,65 @@ namespace AmberScreen.Dev
         {
             ReconcileOwnedEventSystem();
 
-            if (HasForeignEventSystem())
+            if (TryConfigureForeignEventSystem())
                 return;
 
             if (m_OwnedEventSystem != null)
+            {
+                EnsureModuleActions(m_OwnedEventSystem.GetComponent<InputSystemUIInputModule>());
                 return;
+            }
 
             var go = new GameObject("DevConsoleEventSystem");
             go.transform.SetParent(transform, false);
             go.AddComponent<EventSystem>();
-            go.AddComponent<InputSystemUIInputModule>();
+            var module = go.AddComponent<InputSystemUIInputModule>();
+            module.AssignDefaultActions();
             m_OwnedEventSystem = go;
+        }
+
+        bool TryConfigureForeignEventSystem()
+        {
+            var systems = Object.FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
+            EventSystem foreign = null;
+            for (int i = 0; i < systems.Length; i++)
+            {
+                if (systems[i] == null)
+                    continue;
+                if (m_OwnedEventSystem != null && systems[i].gameObject == m_OwnedEventSystem)
+                    continue;
+                foreign = systems[i];
+                break;
+            }
+
+            if (foreign == null)
+                return false;
+
+            var module = foreign.GetComponent<InputSystemUIInputModule>();
+            if (module == null)
+            {
+                if (!s_WarnedWrongSceneModule)
+                {
+                    s_WarnedWrongSceneModule = true;
+                    var other = foreign.GetComponent<BaseInputModule>();
+                    string typeName = other != null ? other.GetType().Name : "none";
+                    Debug.LogWarning(
+                        $"[DevConsole] Scene EventSystem uses {typeName}; console UI needs InputSystemUIInputModule");
+                }
+
+                return true;
+            }
+
+            EnsureModuleActions(module);
+            return true;
+        }
+
+        static void EnsureModuleActions(InputSystemUIInputModule module)
+        {
+            if (module == null)
+                return;
+            if (module.actionsAsset == null)
+                module.AssignDefaultActions();
         }
 
         void CleanupEventSystemIfUnused()

@@ -2,6 +2,12 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.2.1] - 2026-10-19
+
+### Fixed
+
+- AssignDefaultActions on runtime-created InputSystemUIInputModule; warn on non-Input-System scene modules.
+
 ## [0.2.0] - 2026-10-19
 
 ### Changed
