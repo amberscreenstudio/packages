@@ -47,7 +47,6 @@ namespace AmberScreen.Sandbox.Editor
             }
 
             settings.ApplyCompactDefaults();
-            settings.AssignBundledFonts();
             EditorUtility.SetDirty(settings);
             AssetDatabase.SaveAssets();
             Debug.Log("[Sandbox] DevConsole settings reset to compact defaults.");

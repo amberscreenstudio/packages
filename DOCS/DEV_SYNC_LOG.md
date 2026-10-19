@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **devconsole 0.2.4: fixed-height title bar, history toggle removed, Inter from package Resources + font log**
+- Save: n/a
+
 - **devconsole 0.2.3: compact layout, bundled Inter font, screen-fraction panel, auto columns, Close in title bar**
 - Save: n/a
 

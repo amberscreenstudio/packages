@@ -2,6 +2,15 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.2.4] - 2026-10-19
+
+### Fixed
+
+- Title bar fixed height; chrome buttons are square and subtle (not tall blue action buttons).
+- History toggle removed; history strip shows only when there are notes (max 4 lines).
+- Inter loaded from package `Runtime/Resources/AmberScreenDevConsole/` via `Resources.Load` (no settings-asset refs).
+- Logs `[DevConsole] Font: …` once when the console first opens.
+
 ## [0.2.3] - 2026-10-19
 
 ### Changed

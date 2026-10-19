@@ -2,28 +2,28 @@
 
 Runtime debug console. Namespace: `AmberScreen.Dev`. No render-pipeline code — works on URP, URP 2D, and HDRP.
 
-**Version:** 0.2.3  
+**Version:** 0.2.4  
 **Unity:** 6000.6+  
 **Package / asmdef name:** `com.amberscreen.devconsole` / `AmberScreen.DevConsole`
 
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.2.3
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.2.4
 ```
 
 (Use `main` or a local `file:` path until the tag exists.)
 
 ## Font
 
-UI text uses **Inter** (Regular + SemiBold), bundled under `Runtime/Fonts/`, licensed under the [SIL Open Font License 1.1](Runtime/Fonts/OFL.txt). TMP font assets are created at runtime from those TrueType files (or from `fontOverride` / the TMP default if Inter is missing).
+UI text uses **Inter** (Regular + SemiBold), loaded from `Runtime/Resources/AmberScreenDevConsole/`, licensed under the [SIL Open Font License 1.1](Runtime/Resources/AmberScreenDevConsole/OFL.txt). TMP font assets are created at runtime from those TrueType files (or from `fontOverride` / the TMP default if Inter is missing). The Resources fonts add about **0.8 MB** to player builds.
 
 ## Setup
 
 1. Add the package (Git URL or local `file:` path).
 2. An editor script adds the scripting define `AMBERSCREEN_DEVCONSOLE` to the active build target if missing. Opt out via Dev Console settings → **Auto Add Define**.
 3. Optional: create **Assets → Create → Amber Screen → Dev Console Settings** at `Resources/AmberScreenDevConsoleSettings`. Existing assets should run Reset (or update `buttonHeight` / `fontSize` / `spacing` by hand) after upgrading.
-4. TMP Essential Resources remain a fallback if bundled Inter is not assigned on the settings asset.
+4. TMP Essential Resources remain a fallback if Inter fails to load from the package Resources folder.
 5. Register commands from gameplay code. The console is inactive unless `Debug.isDebugBuild` is true **and** the define is present.
 
 When the define is stripped, Register calls are no-ops and `IsOpen` is always false.

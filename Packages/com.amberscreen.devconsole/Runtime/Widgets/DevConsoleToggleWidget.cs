@@ -63,15 +63,12 @@ namespace AmberScreen.Dev
             var labelLe = labelRt.gameObject.AddComponent<LayoutElement>();
             labelLe.flexibleWidth = 1f;
             m_Label = labelRt.gameObject.AddComponent<TextMeshProUGUI>();
-            var fontAsset = DevConsoleUiUtil.Font;
-            if (fontAsset != null)
-                m_Label.font = fontAsset;
+            DevConsoleUiUtil.StyleLabel(m_Label, false);
             m_Label.text = entry.Label;
             m_Label.fontSize = font;
             m_Label.color = DevConsoleUiUtil.TextColor;
             m_Label.alignment = TextAlignmentOptions.MidlineLeft;
             m_Label.raycastTarget = false;
-            DevConsoleUiUtil.ApplyCrisp(m_Label);
 
             RefreshValueOnly();
         }

@@ -50,15 +50,12 @@ namespace AmberScreen.Dev
             labelLe.preferredWidth = 100f;
             labelLe.flexibleWidth = 0.3f;
             var label = labelRt.gameObject.AddComponent<TextMeshProUGUI>();
-            var fontAsset = DevConsoleUiUtil.Font;
-            if (fontAsset != null)
-                label.font = fontAsset;
+            DevConsoleUiUtil.StyleLabel(label, false);
             label.text = entry.Label;
             label.fontSize = font * 0.9f;
             label.color = DevConsoleUiUtil.TextColor;
             label.alignment = TextAlignmentOptions.MidlineLeft;
             label.raycastTarget = false;
-            DevConsoleUiUtil.ApplyCrisp(label);
 
             var dropRt = DevConsoleUiUtil.CreateRect("Dropdown", root);
             var dropLe = dropRt.gameObject.AddComponent<LayoutElement>();
@@ -71,13 +68,11 @@ namespace AmberScreen.Dev
             captionRt.offsetMin = new Vector2(8, 2);
             captionRt.offsetMax = new Vector2(-24, -2);
             var caption = captionRt.gameObject.AddComponent<TextMeshProUGUI>();
-            if (fontAsset != null)
-                caption.font = fontAsset;
+            DevConsoleUiUtil.StyleLabel(caption, false);
             caption.fontSize = font * 0.85f;
             caption.color = DevConsoleUiUtil.TextColor;
             caption.alignment = TextAlignmentOptions.MidlineLeft;
             caption.raycastTarget = false;
-            DevConsoleUiUtil.ApplyCrisp(caption);
 
             var template = CreateDropdownTemplate(dropRt, font, itemH);
             m_Dropdown = dropRt.gameObject.AddComponent<TMP_Dropdown>();
@@ -146,13 +141,10 @@ namespace AmberScreen.Dev
             itemLabelRt.offsetMin = new Vector2(8, 0);
             itemLabelRt.offsetMax = new Vector2(-8, 0);
             var itemLabel = itemLabelRt.gameObject.AddComponent<TextMeshProUGUI>();
-            var fontAsset = DevConsoleUiUtil.Font;
-            if (fontAsset != null)
-                itemLabel.font = fontAsset;
+            DevConsoleUiUtil.StyleLabel(itemLabel, false);
             itemLabel.fontSize = font * 0.8f;
             itemLabel.color = DevConsoleUiUtil.TextColor;
             itemLabel.alignment = TextAlignmentOptions.MidlineLeft;
-            DevConsoleUiUtil.ApplyCrisp(itemLabel);
 
             scroll.content = content;
             scroll.viewport = viewport;

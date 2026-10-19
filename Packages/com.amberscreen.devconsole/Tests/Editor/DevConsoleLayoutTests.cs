@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 
 namespace AmberScreen.Dev.Tests
 {
@@ -17,6 +18,8 @@ namespace AmberScreen.Dev.Tests
             m_Host = new GameObject("DevConsoleLayoutTestHost");
             m_Settings = ScriptableObject.CreateInstance<DevConsoleSettings>();
             m_Settings.ApplyCompactDefaults();
+            m_Settings.fontOverride = null;
+            m_Settings.layout = DevConsoleLayout.Floating;
         }
 
         [TearDown]
@@ -40,6 +43,59 @@ namespace AmberScreen.Dev.Tests
         {
             int cols = DevConsoleUiUtil.ComputeAutoColumns(contentWidth, 220f, 4f);
             Assert.AreEqual(expected, cols);
+        }
+
+        [Test]
+        public void ResolveRegular_LoadsBundledInter()
+        {
+            DevConsoleHost.ReloadCachedSettings(m_Settings);
+            DevConsoleUiUtil.ResetFontCache();
+
+            var font = DevConsoleUiUtil.ResolveRegular(m_Settings);
+            Assert.IsNotNull(font);
+            Assert.IsNotNull(font.sourceFontFile, "dynamic Inter TMP asset should keep sourceFontFile");
+            StringAssert.Contains("Inter", font.sourceFontFile.name);
+        }
+
+        [Test]
+        public void FloatingHeader_HeightMatchesTitleBar_ChildrenNotTaller()
+        {
+            DevConsoleHost.ReloadCachedSettings(m_Settings);
+
+            Assert.DoesNotThrow(() =>
+            {
+                _ = new DevConsoleView(m_Host.transform);
+            });
+
+            var canvasTf = m_Host.transform.Find("DevConsoleCanvas");
+            Assert.IsNotNull(canvasTf);
+            canvasTf.gameObject.SetActive(true);
+
+            var canvas = canvasTf.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+            var panel = canvasTf.Find("Panel") as RectTransform;
+            Assert.IsNotNull(panel);
+            panel.gameObject.SetActive(true);
+
+            var header = panel.Find("Header") as RectTransform;
+            Assert.IsNotNull(header);
+
+            float expected = DevConsoleUiUtil.TitleBarHeight(m_Settings, canvas);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(panel);
+
+            Assert.That(header.rect.height, Is.EqualTo(expected).Within(0.5f));
+
+            for (int i = 0; i < header.childCount; i++)
+            {
+                var child = header.GetChild(i) as RectTransform;
+                if (child == null)
+                    continue;
+                Assert.That(
+                    child.rect.height,
+                    Is.LessThanOrEqualTo(header.rect.height + 0.5f),
+                    child.name + " taller than header");
+            }
         }
 
         [TestCase(DevConsoleLayout.Floating)]

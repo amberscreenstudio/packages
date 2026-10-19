@@ -24,6 +24,6 @@ Additive fields on `DevConsoleSettings` (`Resources/AmberScreenDevConsoleSetting
 | `autoColumns` | true | Column count from content width / `minEntryWidth` |
 | `minEntryWidth` | 220 | Used when `autoColumns` is on |
 | `columns` | 1 | Used when `autoColumns` is off |
-| `bundledRegular` / `bundledSemiBold` | Inter TTFs | Filled by editor Reset/OnValidate |
+| `fontOverride` | null | Optional TMP font; otherwise Inter from package Resources |
 
-Games with an existing settings asset should run **Amber Screen → Reset DevConsole Settings To Defaults** (Sandbox menu) or update `buttonHeight`, `fontSize`, and `spacing` by hand, and assign the bundled Inter fonts if those fields are empty.
+Games with an existing settings asset should run **Amber Screen → Reset DevConsole Settings To Defaults** (Sandbox menu) or update `buttonHeight`, `fontSize`, and `spacing` by hand. Inter loads from the package Resources folder automatically.

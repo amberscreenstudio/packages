@@ -42,8 +42,12 @@ namespace AmberScreen.Dev
         TextMeshProUGUI m_Status;
         TextMeshProUGUI m_History;
         Button m_CollapseButton;
-        Button m_HistoryToggleButton;
-        TextMeshProUGUI m_HistoryToggleLabel;
+        LayoutElement m_TitleLe;
+        LayoutElement m_StatusLe;
+        LayoutElement m_CollapseLe;
+        LayoutElement m_CloseLe;
+        TextMeshProUGUI m_CollapseLabel;
+        TextMeshProUGUI m_CloseLabel;
 
         Canvas m_DevCanvas;
         CanvasScaler m_DevScaler;
@@ -51,10 +55,10 @@ namespace AmberScreen.Dev
         RectTransform m_DevButtonRt;
         Button m_CloseButton;
         LayoutElement m_HeaderLe;
+        HorizontalLayoutGroup m_HeaderRow;
         VerticalLayoutGroup m_PanelVlg;
 
         bool m_Collapsed;
-        bool m_HistoryExpanded = true;
         bool m_ChromeSized;
         Rect m_LastSafeArea;
         Rect m_DevLastSafeArea;
@@ -87,6 +91,7 @@ namespace AmberScreen.Dev
                 m_Root.gameObject.SetActive(visible);
             if (visible)
             {
+                DevConsoleUiUtil.LogFontOnce();
                 EnsureChromeSizes();
                 SyncCanvasScaler();
                 ApplyLayout();
@@ -246,7 +251,9 @@ namespace AmberScreen.Dev
             {
                 m_LastScreen = screen;
                 m_LastSafeArea = safe;
+                m_ChromeSized = false;
                 SyncCanvasScaler();
+                EnsureChromeSizes();
                 ApplyLayout();
                 Rebuild();
             }
@@ -608,7 +615,7 @@ namespace AmberScreen.Dev
 
         void EnsureChromeSizes()
         {
-            if (m_ChromeSized || m_Canvas == null)
+            if (m_Canvas == null)
                 return;
 
             Canvas.ForceUpdateCanvases();
@@ -626,35 +633,112 @@ namespace AmberScreen.Dev
                 m_PanelVlg.spacing = settings.spacing;
             }
 
+            ApplyHeaderChrome(titleH, font);
+            ApplyCollapsedHeaderChrome(titleH, font);
+
+            if (m_History != null)
+            {
+                DevConsoleUiUtil.StyleLabel(m_History, false);
+                m_History.fontSize = font * 0.75f;
+                m_History.textWrappingMode = TextWrappingModes.Normal;
+            }
+
+            UpdateHistoryLayout();
+            if (m_Panel != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(m_Panel);
+            m_ChromeSized = true;
+        }
+
+        void ApplyHeaderChrome(float titleH, float font)
+        {
+            float btn = Mathf.Max(16f, titleH - 6f);
+
             if (m_HeaderLe != null)
             {
                 m_HeaderLe.minHeight = titleH;
                 m_HeaderLe.preferredHeight = titleH;
+                m_HeaderLe.flexibleHeight = 0f;
+                m_HeaderLe.layoutPriority = 2;
+            }
+
+            if (m_HeaderRow != null)
+            {
+                m_HeaderRow.childControlWidth = true;
+                m_HeaderRow.childControlHeight = true;
+                m_HeaderRow.childForceExpandWidth = false;
+                m_HeaderRow.childForceExpandHeight = true;
+                m_HeaderRow.childScaleWidth = false;
+                m_HeaderRow.childScaleHeight = false;
+                m_HeaderRow.padding = new RectOffset(6, 6, 2, 2);
+                m_HeaderRow.spacing = 6f;
+            }
+
+            if (m_TitleLe != null)
+            {
+                m_TitleLe.preferredHeight = titleH;
+                m_TitleLe.flexibleHeight = 0f;
+                m_TitleLe.flexibleWidth = 1.2f;
+                m_TitleLe.minWidth = 80f;
+            }
+
+            if (m_StatusLe != null)
+            {
+                m_StatusLe.preferredHeight = titleH;
+                m_StatusLe.flexibleHeight = 0f;
+                m_StatusLe.flexibleWidth = 1f;
+                m_StatusLe.minWidth = 40f;
             }
 
             if (m_Title != null)
             {
-                m_Title.font = DevConsoleUiUtil.FontSemiBold;
+                DevConsoleUiUtil.StyleLabel(m_Title, true);
                 m_Title.fontSize = font;
-                DevConsoleUiUtil.ApplyCrisp(m_Title);
+                m_Title.color = DevConsoleUiUtil.Accent;
             }
 
             if (m_Status != null)
             {
-                m_Status.font = DevConsoleUiUtil.Font;
+                DevConsoleUiUtil.StyleLabel(m_Status, false);
                 m_Status.fontSize = font * 0.85f;
-                DevConsoleUiUtil.ApplyCrisp(m_Status);
             }
 
-            if (m_History != null)
+            ApplyChromeButtonSize(m_CollapseLe, m_CollapseLabel, btn, font);
+            ApplyChromeButtonSize(m_CloseLe, m_CloseLabel, btn, font);
+        }
+
+        static void ApplyChromeButtonSize(
+            LayoutElement le, TextMeshProUGUI label, float btn, float font)
+        {
+            if (le != null)
             {
-                m_History.font = DevConsoleUiUtil.Font;
-                m_History.fontSize = font * 0.75f;
-                DevConsoleUiUtil.ApplyCrisp(m_History);
+                le.minWidth = btn;
+                le.preferredWidth = btn;
+                le.minHeight = btn;
+                le.preferredHeight = btn;
+                le.flexibleWidth = 0f;
+                le.flexibleHeight = 0f;
             }
 
-            UpdateHistoryLayout();
-            m_ChromeSized = true;
+            if (label != null)
+            {
+                DevConsoleUiUtil.StyleLabel(label, true);
+                label.fontSize = font * 0.9f;
+            }
+        }
+
+        void ApplyCollapsedHeaderChrome(float titleH, float font)
+        {
+            if (m_CollapsedHeader == null)
+                return;
+
+            m_CollapsedHeader.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, titleH);
+            m_CollapsedHeader.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 180f);
+            var label = m_CollapsedHeader.GetComponentInChildren<TextMeshProUGUI>();
+            if (label != null)
+            {
+                DevConsoleUiUtil.StyleLabel(label, true);
+                label.fontSize = font * 0.9f;
+            }
         }
 
         void UpdateHistoryLayout()
@@ -662,12 +746,8 @@ namespace AmberScreen.Dev
             if (m_HistoryLe == null || m_HistoryScroll == null)
                 return;
 
-            var settings = DevConsoleHost.Settings;
-            float font = DevConsoleUiUtil.FontSize(settings, m_Canvas);
-            if (m_HistoryToggleLabel != null)
-                m_HistoryToggleLabel.text = m_HistoryExpanded ? "v" : ">";
-
-            if (!m_HistoryExpanded)
+            var notes = DevConsoleRegistry.Notes;
+            if (notes.Count == 0)
             {
                 m_HistoryScroll.gameObject.SetActive(false);
                 m_HistoryLe.minHeight = 0f;
@@ -676,6 +756,8 @@ namespace AmberScreen.Dev
                 return;
             }
 
+            var settings = DevConsoleHost.Settings;
+            float font = DevConsoleUiUtil.FontSize(settings, m_Canvas);
             m_HistoryScroll.gameObject.SetActive(true);
             float line = Mathf.Max(font * 0.75f * 1.2f, 14f);
             float h = line * 4f + 8f;
@@ -693,6 +775,8 @@ namespace AmberScreen.Dev
 
         void BuildPanel(DevConsoleSettings settings)
         {
+            float titleH = DevConsoleUiUtil.TitleBarHeight(settings, m_Canvas);
+
             m_Panel = DevConsoleUiUtil.CreateRect("Panel", m_Root);
             DevConsoleUiUtil.AddImage(m_Panel, DevConsoleUiUtil.PanelBg);
             m_PanelVlg = m_Panel.gameObject.AddComponent<VerticalLayoutGroup>();
@@ -706,53 +790,59 @@ namespace AmberScreen.Dev
 
             var header = DevConsoleUiUtil.CreateRect("Header", m_Panel);
             m_HeaderLe = header.gameObject.AddComponent<LayoutElement>();
-            m_HeaderLe.minHeight = 32f;
-            m_HeaderLe.preferredHeight = 32f;
-            var headerRow = header.gameObject.AddComponent<HorizontalLayoutGroup>();
-            headerRow.childAlignment = TextAnchor.MiddleCenter;
-            headerRow.spacing = 6f;
-            headerRow.childForceExpandWidth = false;
-            headerRow.childForceExpandHeight = true;
-            headerRow.padding = new RectOffset(4, 4, 0, 0);
+            m_HeaderLe.minHeight = titleH;
+            m_HeaderLe.preferredHeight = titleH;
+            m_HeaderLe.flexibleHeight = 0f;
+            m_HeaderLe.layoutPriority = 2;
+
+            m_HeaderRow = header.gameObject.AddComponent<HorizontalLayoutGroup>();
+            m_HeaderRow.childAlignment = TextAnchor.MiddleCenter;
+            m_HeaderRow.spacing = 6f;
+            m_HeaderRow.childControlWidth = true;
+            m_HeaderRow.childControlHeight = true;
+            m_HeaderRow.childForceExpandWidth = false;
+            m_HeaderRow.childForceExpandHeight = true;
+            m_HeaderRow.childScaleWidth = false;
+            m_HeaderRow.childScaleHeight = false;
+            m_HeaderRow.padding = new RectOffset(6, 6, 2, 2);
 
             var titleRt = DevConsoleUiUtil.CreateRect("Title", header);
-            var titleLe = titleRt.gameObject.AddComponent<LayoutElement>();
-            titleLe.flexibleWidth = 1.2f;
-            titleLe.minWidth = 80f;
+            m_TitleLe = titleRt.gameObject.AddComponent<LayoutElement>();
+            m_TitleLe.flexibleWidth = 1.2f;
+            m_TitleLe.minWidth = 80f;
+            m_TitleLe.preferredHeight = titleH;
+            m_TitleLe.flexibleHeight = 0f;
             m_Title = titleRt.gameObject.AddComponent<TextMeshProUGUI>();
-            var semi = DevConsoleUiUtil.FontSemiBold;
-            if (semi != null)
-                m_Title.font = semi;
+            DevConsoleUiUtil.StyleLabel(m_Title, true);
             m_Title.fontSize = 16f;
             m_Title.color = DevConsoleUiUtil.Accent;
             m_Title.alignment = TextAlignmentOptions.MidlineLeft;
             m_Title.raycastTarget = false;
-            DevConsoleUiUtil.ApplyCrisp(m_Title);
 
             var statusRt = DevConsoleUiUtil.CreateRect("Status", header);
-            var statusLe = statusRt.gameObject.AddComponent<LayoutElement>();
-            statusLe.flexibleWidth = 1f;
-            statusLe.minWidth = 40f;
+            m_StatusLe = statusRt.gameObject.AddComponent<LayoutElement>();
+            m_StatusLe.flexibleWidth = 1f;
+            m_StatusLe.minWidth = 40f;
+            m_StatusLe.preferredHeight = titleH;
+            m_StatusLe.flexibleHeight = 0f;
             m_Status = statusRt.gameObject.AddComponent<TextMeshProUGUI>();
-            var regular = DevConsoleUiUtil.Font;
-            if (regular != null)
-                m_Status.font = regular;
+            DevConsoleUiUtil.StyleLabel(m_Status, false);
             m_Status.fontSize = 14f;
             m_Status.color = DevConsoleUiUtil.TextColor;
             m_Status.alignment = TextAlignmentOptions.MidlineRight;
             m_Status.raycastTarget = false;
-            DevConsoleUiUtil.ApplyCrisp(m_Status);
 
-            m_HistoryToggleButton = CreateTextButton(header, "HistToggle", "v", 14f, 28f, ToggleHistory);
-            m_HistoryToggleLabel = m_HistoryToggleButton.GetComponentInChildren<TextMeshProUGUI>();
+            m_CollapseButton = CreateChromeButton(
+                header, "Collapse", "-", false, () =>
+                {
+                    if (DevConsoleHost.Settings.layout == DevConsoleLayout.DockRight)
+                        SetCollapsed(true);
+                },
+                out m_CollapseLe, out m_CollapseLabel);
 
-            m_CollapseButton = CreateTextButton(header, "Collapse", "-", 16f, 28f, () =>
-            {
-                if (DevConsoleHost.Settings.layout == DevConsoleLayout.DockRight)
-                    SetCollapsed(true);
-            });
-
-            m_CloseButton = CreateTextButton(header, "Close", "X", 16f, 28f, DevConsole.Close);
+            m_CloseButton = CreateChromeButton(
+                header, "Close", "X", true, DevConsole.Close,
+                out m_CloseLe, out m_CloseLabel);
 
             var scrollRt = DevConsoleUiUtil.CreateRect("Scroll", m_Panel);
             m_ScrollLe = scrollRt.gameObject.AddComponent<LayoutElement>();
@@ -790,10 +880,11 @@ namespace AmberScreen.Dev
 
             var histScroll = DevConsoleUiUtil.CreateRect("HistoryScroll", m_Panel);
             m_HistoryLe = histScroll.gameObject.AddComponent<LayoutElement>();
-            m_HistoryLe.minHeight = 48f;
-            m_HistoryLe.preferredHeight = 48f;
+            m_HistoryLe.minHeight = 0f;
+            m_HistoryLe.preferredHeight = 0f;
             DevConsoleUiUtil.AddImage(histScroll, new Color(0, 0, 0, 0.25f));
             m_HistoryScroll = histScroll.gameObject.AddComponent<ScrollRect>();
+            histScroll.gameObject.SetActive(false);
 
             var histVp = DevConsoleUiUtil.CreateRect("Viewport", histScroll);
             DevConsoleUiUtil.Stretch(histVp);
@@ -807,15 +898,13 @@ namespace AmberScreen.Dev
             m_HistoryContent.sizeDelta = new Vector2(0, 40f);
 
             m_History = m_HistoryContent.gameObject.AddComponent<TextMeshProUGUI>();
-            if (regular != null)
-                m_History.font = regular;
+            DevConsoleUiUtil.StyleLabel(m_History, false);
             m_History.fontSize = 12f;
             m_History.color = new Color(0.75f, 0.78f, 0.82f, 1f);
             m_History.alignment = TextAlignmentOptions.TopLeft;
             m_History.textWrappingMode = TextWrappingModes.Normal;
             m_History.overflowMode = TextOverflowModes.Ellipsis;
             m_History.raycastTarget = false;
-            DevConsoleUiUtil.ApplyCrisp(m_History);
             var histMargins = m_History.margin;
             histMargins.x = 6f;
             histMargins.z = 6f;
@@ -830,26 +919,22 @@ namespace AmberScreen.Dev
             m_HistoryScroll.movementType = ScrollRect.MovementType.Clamped;
         }
 
-        void ToggleHistory()
-        {
-            m_HistoryExpanded = !m_HistoryExpanded;
-            UpdateHistoryLayout();
-        }
-
         void BuildCollapsedHeader(DevConsoleSettings settings)
         {
+            float titleH = DevConsoleUiUtil.TitleBarHeight(settings, m_Canvas);
             float font = settings.fontSize;
             m_CollapsedHeader = DevConsoleUiUtil.CreateRect("CollapsedHeader", m_Root);
             m_CollapsedHeader.anchorMin = new Vector2(1, 1);
             m_CollapsedHeader.anchorMax = new Vector2(1, 1);
             m_CollapsedHeader.pivot = new Vector2(1, 1);
-            m_CollapsedHeader.sizeDelta = new Vector2(180f, 40f);
+            m_CollapsedHeader.sizeDelta = new Vector2(180f, titleH);
             m_CollapsedHeader.anchoredPosition = new Vector2(-8f, -8f);
 
             m_CollapsedExpandButton = DevConsoleUiUtil.AddButton(m_CollapsedHeader, DevConsoleUiUtil.PanelBg);
-            DevConsoleUiUtil.AddLabel(
-                m_CollapsedHeader, "Label", "Dev Console >", font,
+            var label = DevConsoleUiUtil.AddLabel(
+                m_CollapsedHeader, "Label", "Dev Console >", font * 0.9f,
                 TextAlignmentOptions.Midline, semiBold: true);
+            DevConsoleUiUtil.StyleLabel(label, true);
             m_CollapsedExpandButton.onClick.AddListener(() => SetCollapsed(false));
             m_CollapsedHeader.gameObject.SetActive(false);
         }
@@ -1066,29 +1151,36 @@ namespace AmberScreen.Dev
             return Mathf.Max(1, settings.columns);
         }
 
-        static Button CreateTextButton(
+        static Button CreateChromeButton(
             Transform parent,
             string name,
             string text,
-            float font,
-            float width,
-            UnityEngine.Events.UnityAction onClick)
+            bool isClose,
+            UnityEngine.Events.UnityAction onClick,
+            out LayoutElement le,
+            out TextMeshProUGUI label)
         {
             var rt = DevConsoleUiUtil.CreateRect(name, parent);
-            var le = rt.gameObject.AddComponent<LayoutElement>();
-            if (width > 0f)
-            {
-                le.minWidth = width;
-                le.preferredWidth = width;
-            }
-            else
-            {
-                le.flexibleWidth = 1f;
-            }
+            le = rt.gameObject.AddComponent<LayoutElement>();
+            le.minWidth = 26f;
+            le.preferredWidth = 26f;
+            le.minHeight = 26f;
+            le.preferredHeight = 26f;
+            le.flexibleWidth = 0f;
+            le.flexibleHeight = 0f;
 
-            var btn = DevConsoleUiUtil.AddButton(rt, DevConsoleUiUtil.ButtonBg);
-            DevConsoleUiUtil.AddLabel(rt, "Label", text, font, TextAlignmentOptions.Midline);
-            btn.onClick.AddListener(onClick);
+            Color hover = isClose
+                ? DevConsoleUiUtil.ChromeCloseHover
+                : DevConsoleUiUtil.ChromeButtonHighlight;
+            var btn = DevConsoleUiUtil.AddChromeButton(
+                rt,
+                DevConsoleUiUtil.ChromeButtonBg,
+                hover,
+                isClose ? hover : (Color?)null);
+            label = DevConsoleUiUtil.AddLabel(
+                rt, "Label", text, 14f, TextAlignmentOptions.Midline, semiBold: true);
+            if (btn != null)
+                btn.onClick.AddListener(onClick);
             return btn;
         }
     }

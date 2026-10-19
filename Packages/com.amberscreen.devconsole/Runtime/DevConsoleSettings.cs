@@ -2,10 +2,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
 namespace AmberScreen.Dev
 {
     public enum DevConsoleLayout
@@ -28,11 +24,6 @@ namespace AmberScreen.Dev
     public sealed class DevConsoleSettings : ScriptableObject
     {
         public const string ResourcesName = "AmberScreenDevConsoleSettings";
-
-        const string BundledRegularPath =
-            "Packages/com.amberscreen.devconsole/Runtime/Fonts/Inter-Regular.ttf";
-        const string BundledSemiBoldPath =
-            "Packages/com.amberscreen.devconsole/Runtime/Fonts/Inter-SemiBold.ttf";
 
         [Header("Compile / discovery")]
         [Tooltip("Editor: add AMBERSCREEN_DEVCONSOLE to the active build target if missing.")]
@@ -71,12 +62,6 @@ namespace AmberScreen.Dev
         [Header("Font")]
         [Tooltip("Optional TMP override. If set, used instead of bundled Inter.")]
         public TMP_FontAsset fontOverride;
-
-        [Tooltip("Bundled Inter Regular (SIL OFL 1.1). Filled by editor Reset/OnValidate.")]
-        public Font bundledRegular;
-
-        [Tooltip("Bundled Inter SemiBold (SIL OFL 1.1). Filled by editor Reset/OnValidate.")]
-        public Font bundledSemiBold;
 
         [Header("Open bindings")]
         public Key openKey = Key.F1;
@@ -128,7 +113,7 @@ namespace AmberScreen.Dev
         }
 
         /// <summary>
-        /// Applies the compact 0.2.3 defaults (layout fields and bundled Inter refs in editor).
+        /// Applies the compact defaults (layout sizing fields).
         /// </summary>
         public void ApplyCompactDefaults()
         {
@@ -140,9 +125,6 @@ namespace AmberScreen.Dev
             floatingScreenFraction = new Vector2(0.9f, 0.88f);
             dockRightScreenFraction = 0.28f;
             columns = 1;
-#if UNITY_EDITOR
-            AssignBundledFonts();
-#endif
         }
 
         internal static void ResetRuntimeDefault()
@@ -166,19 +148,10 @@ namespace AmberScreen.Dev
 
         void OnValidate()
         {
-            AssignBundledFonts();
 #if AMBERSCREEN_DEVCONSOLE
             if (Application.isPlaying)
                 DevConsoleHost.ReloadCachedSettings(this);
 #endif
-        }
-
-        public void AssignBundledFonts()
-        {
-            if (bundledRegular == null)
-                bundledRegular = AssetDatabase.LoadAssetAtPath<Font>(BundledRegularPath);
-            if (bundledSemiBold == null)
-                bundledSemiBold = AssetDatabase.LoadAssetAtPath<Font>(BundledSemiBoldPath);
         }
 #endif
     }

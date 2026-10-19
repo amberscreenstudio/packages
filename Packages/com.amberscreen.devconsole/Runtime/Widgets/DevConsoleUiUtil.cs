@@ -8,15 +8,22 @@ namespace AmberScreen.Dev
 {
     static class DevConsoleUiUtil
     {
+        const string InterRegularResource = "AmberScreenDevConsole/Inter-Regular";
+        const string InterSemiBoldResource = "AmberScreenDevConsole/Inter-SemiBold";
+
         static TMP_FontAsset s_Regular;
         static TMP_FontAsset s_SemiBold;
         static bool s_WarnedMissingFont;
+        static bool s_LoggedFont;
+        static string s_FontLogLabel = "TMP default (Inter not found)";
 
         public static void ResetFontCache()
         {
             s_Regular = null;
             s_SemiBold = null;
             s_WarnedMissingFont = false;
+            s_LoggedFont = false;
+            s_FontLogLabel = "TMP default (Inter not found)";
         }
 
         public static TMP_FontAsset ResolveFont(DevConsoleSettings settings = null) =>
@@ -36,24 +43,32 @@ namespace AmberScreen.Dev
             if (settings.fontOverride != null)
             {
                 s_Regular = settings.fontOverride;
+                s_FontLogLabel = "override " + settings.fontOverride.name;
                 return s_Regular;
             }
 
-            if (settings.bundledRegular != null)
-                s_Regular = CreateDynamicFontAsset(settings.bundledRegular);
+            var bundled = Resources.Load<Font>(InterRegularResource);
+            if (bundled != null)
+            {
+                s_Regular = CreateDynamicFontAsset(bundled);
+                if (s_Regular != null)
+                    s_FontLogLabel = "Inter (bundled)";
+            }
 
             if (s_Regular == null)
             {
                 try { s_Regular = TMP_Settings.GetFontAsset(); }
                 catch { /* TMP Essential Resources may be missing */ }
+                if (s_Regular != null)
+                    s_FontLogLabel = "TMP default (Inter not found)";
             }
 
             if (s_Regular == null && !s_WarnedMissingFont)
             {
                 s_WarnedMissingFont = true;
                 Debug.LogWarning(
-                    "[AmberScreen DevConsole] No font available. Assign bundled Inter on DevConsoleSettings " +
-                    "or import TMP Essential Resources.");
+                    "[AmberScreen DevConsole] No font available. Ensure Inter is under " +
+                    "Runtime/Resources/AmberScreenDevConsole/ or import TMP Essential Resources.");
             }
 
             return s_Regular;
@@ -72,13 +87,23 @@ namespace AmberScreen.Dev
                 return s_SemiBold;
             }
 
-            if (settings.bundledSemiBold != null)
-                s_SemiBold = CreateDynamicFontAsset(settings.bundledSemiBold);
+            var bundled = Resources.Load<Font>(InterSemiBoldResource);
+            if (bundled != null)
+                s_SemiBold = CreateDynamicFontAsset(bundled);
 
             if (s_SemiBold == null)
                 s_SemiBold = ResolveRegular(settings);
 
             return s_SemiBold;
+        }
+
+        public static void LogFontOnce()
+        {
+            if (s_LoggedFont)
+                return;
+            ResolveRegular();
+            s_LoggedFont = true;
+            Debug.Log("[DevConsole] Font: " + s_FontLogLabel);
         }
 
         static TMP_FontAsset CreateDynamicFontAsset(Font font)
@@ -105,6 +130,18 @@ namespace AmberScreen.Dev
             tmp.characterSpacing = 0f;
         }
 
+        public static void StyleLabel(TextMeshProUGUI tmp, bool semiBold = false)
+        {
+            if (tmp == null)
+                return;
+            var font = semiBold ? FontSemiBold : Font;
+            if (font != null)
+                tmp.font = font;
+            ApplyCrisp(tmp);
+            tmp.textWrappingMode = TextWrappingModes.NoWrap;
+            tmp.overflowMode = TextOverflowModes.Ellipsis;
+        }
+
         public static int ComputeAutoColumns(float contentWidth, float minEntryWidth, float spacing)
         {
             float denom = minEntryWidth + spacing;
@@ -119,6 +156,9 @@ namespace AmberScreen.Dev
         public static Color ButtonDisabled => new Color(0.25f, 0.25f, 0.28f, 1f);
         public static Color TextColor => new Color(0.95f, 0.95f, 0.97f, 1f);
         public static Color Accent => new Color(0.95f, 0.75f, 0.25f, 1f);
+        public static Color ChromeButtonBg => new Color(1f, 1f, 1f, 0.06f);
+        public static Color ChromeButtonHighlight => new Color(1f, 1f, 1f, 0.14f);
+        public static Color ChromeCloseHover => new Color(0.85f, 0.25f, 0.25f, 1f);
 
         public static float DpToCanvas(Canvas canvas)
         {
@@ -180,17 +220,12 @@ namespace AmberScreen.Dev
             var rt = CreateRect(name, parent);
             Stretch(rt);
             var tmp = rt.gameObject.AddComponent<TextMeshProUGUI>();
-            var font = semiBold ? FontSemiBold : Font;
-            if (font != null)
-                tmp.font = font;
+            StyleLabel(tmp, semiBold);
             tmp.text = text;
             tmp.fontSize = fontSize;
             tmp.color = TextColor;
             tmp.alignment = align;
             tmp.raycastTarget = false;
-            tmp.textWrappingMode = TextWrappingModes.NoWrap;
-            tmp.overflowMode = TextOverflowModes.Ellipsis;
-            ApplyCrisp(tmp);
             return tmp;
         }
 
@@ -208,6 +243,29 @@ namespace AmberScreen.Dev
             colors.pressedColor = Color.Lerp(normal, Color.black, 0.15f);
             colors.disabledColor = ButtonDisabled;
             colors.selectedColor = Color.Lerp(normal, Accent, 0.35f);
+            btn.colors = colors;
+            btn.navigation = new Navigation { mode = Navigation.Mode.Automatic };
+            return btn;
+        }
+
+        public static Button AddChromeButton(
+            RectTransform rt,
+            Color normal,
+            Color highlight,
+            Color? selectedOverride = null)
+        {
+            var img = AddImage(rt, normal);
+            if (img == null)
+                return null;
+
+            var btn = rt.gameObject.AddComponent<Button>();
+            btn.targetGraphic = img;
+            var colors = btn.colors;
+            colors.normalColor = normal;
+            colors.highlightedColor = highlight;
+            colors.pressedColor = Color.Lerp(highlight, Color.black, 0.2f);
+            colors.disabledColor = ButtonDisabled;
+            colors.selectedColor = selectedOverride ?? highlight;
             btn.colors = colors;
             btn.navigation = new Navigation { mode = Navigation.Mode.Automatic };
             return btn;
