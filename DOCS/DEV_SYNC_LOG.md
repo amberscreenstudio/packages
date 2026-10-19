@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **devconsole 0.3.3: section window draws above the rail in portrait**
+- Save: n/a
+
 - **devconsole 0.3.2: missing test .meta, README, dpi-based portrait scaling + portraitUiScale**
 - Save: n/a
 

@@ -116,6 +116,34 @@ namespace AmberScreen.Dev.Tests
             Assert.GreaterOrEqual(grid.constraintCount, 4, "expected multi-column grid at 1920x1080");
         }
 
+        [TestCase(1920, 1080)]
+        [TestCase(1080, 1920)]
+        public void OpenSection_SectionWindowDrawsAboveRail(int width, int height)
+        {
+            DevConsoleView.SetLayoutScreenOverride(width, height, 160f);
+            DevConsole.Register("DrawOrder", "One", () => { });
+
+            DevConsoleHost.EnsureExists();
+            DevConsole.Open();
+            DevConsole.OpenSection("DrawOrder");
+
+            var blocker = FindNamedRect("Blocker");
+            var rail = FindNamedRect("Rail");
+            var railTab = FindNamedRect("RailTab");
+            var window = FindNamedRect("SectionWindow");
+            Assert.IsNotNull(blocker);
+            Assert.IsNotNull(rail);
+            Assert.IsNotNull(railTab);
+            Assert.IsNotNull(window);
+
+            Assert.Greater(window.GetSiblingIndex(), rail.GetSiblingIndex(),
+                "SectionWindow must draw above Rail");
+            Assert.Greater(window.GetSiblingIndex(), railTab.GetSiblingIndex(),
+                "SectionWindow must draw above RailTab");
+            Assert.Less(blocker.GetSiblingIndex(), rail.GetSiblingIndex(),
+                "Blocker must stay below Rail so rail stays clickable in landscape");
+        }
+
         [Test]
         public void OpenSection_Portrait_WindowCoversCanvasWithinSafeArea()
         {

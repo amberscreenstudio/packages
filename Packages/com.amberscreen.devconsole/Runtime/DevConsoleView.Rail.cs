@@ -72,6 +72,7 @@ namespace AmberScreen.Dev
 
         void BuildRailUi(DevConsoleSettings settings)
         {
+            // Draw order (bottom → top): Blocker, Rail, RailTab, SectionWindow.
             m_Blocker = DevConsoleUiUtil.CreateRect("Blocker", m_Root);
             DevConsoleUiUtil.Stretch(m_Blocker);
             var blockerImg = DevConsoleUiUtil.AddImage(m_Blocker, new Color(0, 0, 0, 0f));
@@ -80,18 +81,6 @@ namespace AmberScreen.Dev
             blockerBtn.transition = Selectable.Transition.None;
             blockerBtn.onClick.AddListener(() => DevConsole.CloseSection());
             m_Blocker.gameObject.SetActive(false);
-
-            m_SectionWindow = DevConsoleUiUtil.CreateRect("SectionWindow", m_Root);
-            DevConsoleUiUtil.AddImage(m_SectionWindow, DevConsoleUiUtil.PanelBg);
-            var winV = m_SectionWindow.gameObject.AddComponent<VerticalLayoutGroup>();
-            winV.padding = new RectOffset(8, 8, 8, 8);
-            winV.spacing = settings.spacing;
-            winV.childControlWidth = true;
-            winV.childControlHeight = true;
-            winV.childForceExpandWidth = true;
-            winV.childForceExpandHeight = false;
-            BuildSectionWindowChrome(settings);
-            m_SectionWindow.gameObject.SetActive(false);
 
             m_Rail = DevConsoleUiUtil.CreateRect("Rail", m_Root);
             DevConsoleUiUtil.AddImage(m_Rail, new Color(0.08f, 0.09f, 0.11f, 0.88f));
@@ -166,6 +155,32 @@ namespace AmberScreen.Dev
             DevConsoleUiUtil.AddLabel(m_RailTab, "Label", "DEV", 12f, TextAlignmentOptions.Midline, true);
             tabBtn.onClick.AddListener(() => SetCollapsed(false));
             m_RailTab.gameObject.SetActive(false);
+
+            m_SectionWindow = DevConsoleUiUtil.CreateRect("SectionWindow", m_Root);
+            DevConsoleUiUtil.AddImage(m_SectionWindow, DevConsoleUiUtil.PanelBg);
+            var winV = m_SectionWindow.gameObject.AddComponent<VerticalLayoutGroup>();
+            winV.padding = new RectOffset(8, 8, 8, 8);
+            winV.spacing = settings.spacing;
+            winV.childControlWidth = true;
+            winV.childControlHeight = true;
+            winV.childForceExpandWidth = true;
+            winV.childForceExpandHeight = false;
+            BuildSectionWindowChrome(settings);
+            m_SectionWindow.gameObject.SetActive(false);
+
+            ApplyRailDrawOrder();
+        }
+
+        void ApplyRailDrawOrder()
+        {
+            if (m_Blocker != null)
+                m_Blocker.SetAsFirstSibling();
+            if (m_Rail != null)
+                m_Rail.SetSiblingIndex(m_Blocker != null ? 1 : 0);
+            if (m_RailTab != null)
+                m_RailTab.SetSiblingIndex(m_Rail != null ? m_Rail.GetSiblingIndex() + 1 : 1);
+            if (m_SectionWindow != null)
+                m_SectionWindow.SetAsLastSibling();
         }
 
         void BuildRailTitleBar(DevConsoleSettings settings)
@@ -465,7 +480,11 @@ namespace AmberScreen.Dev
             }
 
             if (m_SectionWindow != null)
+            {
                 m_SectionWindow.gameObject.SetActive(show);
+                if (show)
+                    ApplyRailDrawOrder();
+            }
 
             if (!show)
             {

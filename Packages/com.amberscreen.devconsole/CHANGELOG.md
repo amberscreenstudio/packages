@@ -2,6 +2,12 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.3.3] - 2026-10-19
+
+### Fixed
+
+- Section window now draws above the rail in portrait.
+
 ## [0.3.2] - 2026-10-19
 
 ### Fixed
