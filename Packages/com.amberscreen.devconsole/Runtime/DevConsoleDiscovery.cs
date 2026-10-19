@@ -69,7 +69,7 @@ namespace AmberScreen.Dev
                             continue;
 
                         var captured = method;
-                        DevConsole.Register(attr.Section, attr.Label, () =>
+                        Action invoke = () =>
                         {
                             try { captured.Invoke(null, null); }
                             catch (Exception e)
@@ -77,7 +77,10 @@ namespace AmberScreen.Dev
                                 Debug.LogException(e);
                                 DevConsole.Note($"DevButton error: {e.Message}");
                             }
-                        });
+                        };
+                        DevConsole.Register(attr.Section, attr.Label, invoke);
+                        if (attr.Quick)
+                            DevConsole.RegisterQuick(attr.Label, invoke);
                     }
                 }
             }

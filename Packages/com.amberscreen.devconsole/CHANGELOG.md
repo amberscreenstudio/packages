@@ -2,6 +2,22 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.3.0] - 2026-10-19
+
+### Added
+
+- **Rail** layout: right-edge column that stays open without blocking the game; section buttons open a large blocking window.
+- API: `RegisterQuick`, `UnregisterQuick`, `PinReadout`, `OpenSection`, `CloseSection`, `OpenSectionName`, `IsRailOpen`, `IsPointerOverConsole`.
+- `[DevButton(..., Quick = true)]` also appears in the rail quick grid.
+- Settings: `railScreenFraction`, `railMinWidth`, `railMaxWidth`, `railEdgeMargin`, `windowMargin`, `rememberState` (PlayerPrefs).
+- Sandbox: Rail defaults, quick/pin demos, Density fillers, tiny game-input label for blocking.
+
+### Changed
+
+- Default layout for new settings / Reset is **Rail**. Existing game assets keep their layout.
+- Gate gameplay on `BlocksGame` (not `IsOpen`); skip world clicks when `IsPointerOverConsole` is true.
+- Esc closes the section window first, then the rail. `pauseTimescaleWhileOpen` applies only while a window is open (Rail).
+
 ## [0.2.5] - 2026-10-19
 
 ### Fixed

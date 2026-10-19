@@ -6,17 +6,21 @@ namespace AmberScreen.Dev
     /// <summary>
     /// Public static API for the Amber Screen Dev Console.
     /// When <c>AMBERSCREEN_DEVCONSOLE</c> is stripped, Register calls are no-ops and <see cref="IsOpen"/> is always false.
+    /// Gate gameplay input on <see cref="BlocksGame"/> (not <see cref="IsOpen"/>). Skip world clicks when
+    /// <see cref="IsPointerOverConsole"/> is true.
     /// </summary>
     public static class DevConsole
     {
 #if AMBERSCREEN_DEVCONSOLE
         static bool s_IsOpen;
         static bool s_Collapsed;
+        static string s_OpenSectionName;
         static bool s_Discovered;
         static Action<bool> s_OpenChanged;
         static Action<bool> s_BlocksGameChanged;
         static float s_SavedTimescale = 1f;
         static bool s_HasSavedCursor;
+        static bool s_TimescalePaused;
         static CursorLockMode s_SavedLock;
         static bool s_SavedCursorVisible;
         static bool s_ConsumedCloseThisFrame;
@@ -26,11 +30,13 @@ namespace AmberScreen.Dev
         {
             s_IsOpen = false;
             s_Collapsed = false;
+            s_OpenSectionName = null;
             s_Discovered = false;
             s_OpenChanged = null;
             s_BlocksGameChanged = null;
             s_SavedTimescale = 1f;
             s_HasSavedCursor = false;
+            s_TimescalePaused = false;
             s_SavedLock = CursorLockMode.None;
             s_SavedCursorVisible = true;
             s_ConsumedCloseThisFrame = false;
@@ -46,6 +52,7 @@ namespace AmberScreen.Dev
             if (!CanActivate())
                 return;
             DevConsoleHost.EnsureExists();
+            DevConsoleHost.TryRestoreRememberedOpen();
         }
 #endif
 
@@ -58,19 +65,21 @@ namespace AmberScreen.Dev
 #endif
         }
 
-        /// <summary>True when open and not collapsed (DockRight collapse).</summary>
+        /// <summary>
+        /// True when gameplay should be blocked. For Rail (landscape): only while a section window is open.
+        /// For Rail (portrait sheet): while the rail is open and expanded. For other layouts: open and not collapsed.
+        /// </summary>
         public static bool BlocksGame
         {
 #if AMBERSCREEN_DEVCONSOLE
-            get => s_IsOpen && !s_Collapsed;
+            get => ComputeBlocksGame();
 #else
             get => false;
 #endif
         }
 
         /// <summary>
-        /// True for the remainder of the frame after the console handles Esc or gamepad B
-        /// while open and expanded. Games (e.g. pause menus) can skip their own close handling.
+        /// True for the remainder of the frame after the console handles Esc or gamepad B.
         /// Reset at the start of each frame.
         /// </summary>
         public static bool ConsumedCloseThisFrame
@@ -83,7 +92,33 @@ namespace AmberScreen.Dev
 #endif
         }
 
-        /// <summary>Fires when <see cref="IsOpen"/> changes. Does not fire on DockRight collapse/expand.</summary>
+        public static string OpenSectionName
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            get => s_OpenSectionName;
+#else
+            get => null;
+#endif
+        }
+
+        public static bool IsRailOpen
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            get => s_IsOpen && IsRailLayout();
+#else
+            get => false;
+#endif
+        }
+
+        public static bool IsPointerOverConsole
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            get => DevConsoleHost.Instance != null && DevConsoleHost.IsPointerOverConsoleUi();
+#else
+            get => false;
+#endif
+        }
+
         public static event Action<bool> OpenChanged
         {
 #if AMBERSCREEN_DEVCONSOLE
@@ -95,7 +130,6 @@ namespace AmberScreen.Dev
 #endif
         }
 
-        /// <summary>Fires whenever <see cref="BlocksGame"/> changes (open, close, collapse, expand).</summary>
         public static event Action<bool> BlocksGameChanged
         {
 #if AMBERSCREEN_DEVCONSOLE
@@ -118,6 +152,50 @@ namespace AmberScreen.Dev
             var entry = DevConsoleRegistry.Upsert(section, label, DevConsoleEntryKind.Button, visible, available);
             entry.Action = action;
             DevConsoleHost.NotifyRegistryChanged();
+#endif
+        }
+
+        public static void RegisterQuick(string label, Action action, Func<bool> available = null)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevConsoleRegistry.UpsertQuick(label, action, available);
+            DevConsoleHost.NotifyRegistryChanged();
+#endif
+        }
+
+        public static void UnregisterQuick(string label)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            if (DevConsoleRegistry.UnregisterQuick(label))
+                DevConsoleHost.NotifyRegistryChanged();
+#endif
+        }
+
+        public static void PinReadout(string section, string label)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevConsoleRegistry.PinReadout(section, label);
+            DevConsoleHost.NotifyRegistryChanged();
+#endif
+        }
+
+        public static void OpenSection(string section)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            if (!CanActivate() || string.IsNullOrEmpty(section))
+                return;
+            EnsureDiscovered();
+            DevConsoleHost.EnsureExists();
+            if (!s_IsOpen)
+                SetOpen(true);
+            SetOpenSection(section);
+#endif
+        }
+
+        public static void CloseSection()
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            SetOpenSection(null);
 #endif
         }
 
@@ -226,6 +304,7 @@ namespace AmberScreen.Dev
         public static void Close()
         {
 #if AMBERSCREEN_DEVCONSOLE
+            SetOpenSection(null);
             SetOpen(false);
 #endif
         }
@@ -243,14 +322,59 @@ namespace AmberScreen.Dev
 #if AMBERSCREEN_DEVCONSOLE
         internal static bool CanActivate() => Debug.isDebugBuild;
 
+        internal static bool IsRailLayout()
+        {
+            var settings = DevConsoleHost.Settings;
+            return settings != null && settings.layout == DevConsoleLayout.Rail;
+        }
+
+        internal static bool IsPortraitRail()
+        {
+            return IsRailLayout() && Screen.height > Screen.width;
+        }
+
+        static bool ComputeBlocksGame()
+        {
+            if (!s_IsOpen)
+                return false;
+
+            if (IsRailLayout())
+            {
+                if (IsPortraitRail())
+                    return !s_Collapsed;
+                return !string.IsNullOrEmpty(s_OpenSectionName);
+            }
+
+            return !s_Collapsed;
+        }
+
         internal static void SetCollapsed(bool collapsed)
         {
             if (s_Collapsed == collapsed)
                 return;
             bool prevBlocks = BlocksGame;
             s_Collapsed = collapsed;
-            if (prevBlocks != BlocksGame)
-                s_BlocksGameChanged?.Invoke(BlocksGame);
+            if (IsRailLayout() && collapsed)
+                SetOpenSection(null);
+            NotifyBlocksChanged(prevBlocks);
+            DevConsoleHost.PersistStateIfNeeded();
+        }
+
+        internal static void SetOpenSection(string section)
+        {
+            string next = string.IsNullOrEmpty(section) ? null : section;
+            if (string.Equals(s_OpenSectionName, next, StringComparison.Ordinal))
+            {
+                DevConsoleHost.Instance?.NotifySectionWindowChanged();
+                return;
+            }
+
+            bool prevBlocks = BlocksGame;
+            s_OpenSectionName = next;
+            SyncPauseForBlocks();
+            NotifyBlocksChanged(prevBlocks);
+            DevConsoleHost.Instance?.NotifySectionWindowChanged();
+            DevConsoleHost.PersistStateIfNeeded();
         }
 
         internal static void NotifyHostDestroyed()
@@ -258,6 +382,7 @@ namespace AmberScreen.Dev
             if (!s_IsOpen)
             {
                 s_Collapsed = false;
+                s_OpenSectionName = null;
                 return;
             }
 
@@ -265,6 +390,7 @@ namespace AmberScreen.Dev
             bool prevBlocks = BlocksGame;
             s_IsOpen = false;
             s_Collapsed = false;
+            s_OpenSectionName = null;
             s_OpenChanged?.Invoke(false);
             if (prevBlocks)
                 s_BlocksGameChanged?.Invoke(false);
@@ -279,49 +405,79 @@ namespace AmberScreen.Dev
 
             if (open)
             {
-                ApplyWhileOpenState();
+                ApplyCursorWhileOpen();
                 s_IsOpen = true;
                 s_Collapsed = false;
                 DevConsoleHost.EnsureExists();
+                if (DevConsoleHost.Settings.rememberState)
+                    DevConsoleHost.ApplyRememberedSectionOnOpen();
                 DevConsoleHost.OnOpened();
+                SyncPauseForBlocks();
             }
             else
             {
                 RestoreWhileOpenState();
                 s_IsOpen = false;
                 s_Collapsed = false;
+                s_OpenSectionName = null;
                 DevConsoleHost.OnClosed();
             }
 
             s_OpenChanged?.Invoke(s_IsOpen);
+            NotifyBlocksChanged(prevBlocks);
+            DevConsoleHost.PersistStateIfNeeded();
+        }
+
+        static void NotifyBlocksChanged(bool prevBlocks)
+        {
             if (prevBlocks != BlocksGame)
                 s_BlocksGameChanged?.Invoke(BlocksGame);
         }
 
-        static void ApplyWhileOpenState()
+        static void ApplyCursorWhileOpen()
         {
             var settings = DevConsoleSettings.LoadOrDefault();
-            if (settings.pauseTimescaleWhileOpen)
+            if (!settings.showCursorWhileOpen)
+                return;
+
+            s_SavedLock = Cursor.lockState;
+            s_SavedCursorVisible = Cursor.visible;
+            s_HasSavedCursor = true;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+
+        static void SyncPauseForBlocks()
+        {
+            var settings = DevConsoleSettings.LoadOrDefault();
+            if (!settings.pauseTimescaleWhileOpen)
+                return;
+
+            bool shouldPause = IsRailLayout()
+                ? !string.IsNullOrEmpty(s_OpenSectionName)
+                : BlocksGame;
+
+            if (shouldPause && !s_TimescalePaused)
             {
                 s_SavedTimescale = Time.timeScale;
                 Time.timeScale = 0f;
+                s_TimescalePaused = true;
             }
-
-            if (settings.showCursorWhileOpen)
+            else if (!shouldPause && s_TimescalePaused)
             {
-                s_SavedLock = Cursor.lockState;
-                s_SavedCursorVisible = Cursor.visible;
-                s_HasSavedCursor = true;
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
+                Time.timeScale = s_SavedTimescale;
+                s_TimescalePaused = false;
             }
         }
 
         static void RestoreWhileOpenState()
         {
             var settings = DevConsoleSettings.LoadOrDefault();
-            if (settings.pauseTimescaleWhileOpen)
+            if (s_TimescalePaused && settings.pauseTimescaleWhileOpen)
+            {
                 Time.timeScale = s_SavedTimescale;
+                s_TimescalePaused = false;
+            }
 
             if (s_HasSavedCursor && settings.showCursorWhileOpen)
             {
@@ -348,6 +504,8 @@ namespace AmberScreen.Dev
         {
             ResetStatics();
         }
+
+        internal static bool IsCollapsed => s_Collapsed;
 #endif
     }
 }

@@ -139,11 +139,16 @@ namespace AmberScreen.Sandbox.Editor
             var root = new GameObject("SandboxRoot");
             var commands = root.AddComponent<SandboxCommands>();
             root.AddComponent<SandboxStatusLabel>();
+            var gameInput = root.AddComponent<SandboxGameInput>();
 
             var so = new SerializedObject(commands);
             so.FindProperty("cube").objectReferenceValue = cube.transform;
             so.FindProperty("cubeRenderer").objectReferenceValue = renderer;
             so.ApplyModifiedPropertiesWithoutUndo();
+
+            var gi = new SerializedObject(gameInput);
+            gi.FindProperty("cubeRenderer").objectReferenceValue = renderer;
+            gi.ApplyModifiedPropertiesWithoutUndo();
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[]

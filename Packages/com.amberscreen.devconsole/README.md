@@ -2,17 +2,43 @@
 
 Runtime debug console. Namespace: `AmberScreen.Dev`. No render-pipeline code — works on URP, URP 2D, and HDRP.
 
-**Version:** 0.2.4  
+**Version:** 0.3.0  
 **Unity:** 6000.6+  
 **Package / asmdef name:** `com.amberscreen.devconsole` / `AmberScreen.DevConsole`
 
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.2.4
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.3.0
 ```
 
 (Use `main` or a local `file:` path until the tag exists.)
+
+## Rail layout (default for new settings)
+
+Modelled on the Lines of Mercy console: a slim **right-edge rail** that can stay open during gameplay without blocking. Section buttons open a large **section window** that does block.
+
+| State | Blocks game? |
+| --- | --- |
+| Rail open (landscape) | No |
+| Section window open | Yes (`BlocksGame == true`) |
+| Rail collapsed to DEV tab | No |
+| Portrait rail (taller than wide) | Yes — full-width sheet |
+
+**Gate gameplay on `BlocksGame`, not `IsOpen`.** Skip world clicks / raycasts when `IsPointerOverConsole` is true (pointer over rail, tab, or window).
+
+```csharp
+DevConsole.RegisterQuick("God mode", () => ToggleGod());
+DevConsole.PinReadout("Perf", "FPS");
+DevConsole.OpenSection("Economy"); // opens rail if needed + window
+// [DevButton("Bench", "Reset", Quick = true)]
+```
+
+Esc closes the window first, then the rail. `ConsumedCloseThisFrame` is set both times. `rememberState` restores rail/window via PlayerPrefs.
+
+### Migration
+
+Set `layout` to **Rail** in your `AmberScreenDevConsoleSettings` asset (or run Reset). Optionally mark 2–4 `[DevButton]` methods with `Quick = true`. Floating / DockRight / MobilePortrait still work unchanged.
 
 ## Font
 
@@ -41,7 +67,7 @@ The define strip runs in `OnPreprocessBuild`. A Unity 6 Build Profile with its o
 | Input | Action |
 | --- | --- |
 | F1 | Open / toggle |
-| Esc | Close (only when open and not DockRight-collapsed) |
+| Esc | Rail: close window, then rail. Other layouts: close when blocking |
 | Gamepad Select + Start (held) | Open / toggle |
 | 3-finger tap (release) | Open / toggle |
 | 2 s hold in top-left 15% of safe area | Open only |

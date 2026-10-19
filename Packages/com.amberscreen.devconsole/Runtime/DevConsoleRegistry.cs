@@ -38,23 +38,43 @@ namespace AmberScreen.Dev
         public readonly List<DevConsoleEntry> Entries = new List<DevConsoleEntry>();
     }
 
+    sealed class DevConsoleQuickEntry
+    {
+        public string Label;
+        public Action Action;
+        public Func<bool> Available;
+        public int Order;
+    }
+
+    sealed class DevConsolePinnedReadout
+    {
+        public string Section;
+        public string Label;
+    }
+
     static class DevConsoleRegistry
     {
         static readonly Dictionary<string, DevConsoleSection> s_Sections =
             new Dictionary<string, DevConsoleSection>(StringComparer.Ordinal);
         static readonly List<string> s_SectionOrderOverride = new List<string>();
         static readonly List<string> s_Notes = new List<string>(50);
+        static readonly List<DevConsoleQuickEntry> s_Quicks = new List<DevConsoleQuickEntry>();
+        static readonly List<DevConsolePinnedReadout> s_Pins = new List<DevConsolePinnedReadout>();
         static string s_Status = string.Empty;
         static int s_NextOrder;
 
         public static string Status => s_Status;
         public static IReadOnlyList<string> Notes => s_Notes;
+        public static IReadOnlyList<DevConsoleQuickEntry> Quicks => s_Quicks;
+        public static IReadOnlyList<DevConsolePinnedReadout> Pins => s_Pins;
 
         public static void Reset()
         {
             s_Sections.Clear();
             s_SectionOrderOverride.Clear();
             s_Notes.Clear();
+            s_Quicks.Clear();
+            s_Pins.Clear();
             s_Status = string.Empty;
             s_NextOrder = 0;
         }
@@ -79,6 +99,57 @@ namespace AmberScreen.Dev
             s_Notes.Add(message);
             while (s_Notes.Count > 50)
                 s_Notes.RemoveAt(0);
+        }
+
+        public static void UpsertQuick(string label, Action action, Func<bool> available)
+        {
+            label = label ?? string.Empty;
+            for (int i = 0; i < s_Quicks.Count; i++)
+            {
+                if (string.Equals(s_Quicks[i].Label, label, StringComparison.Ordinal))
+                {
+                    s_Quicks[i].Action = action;
+                    s_Quicks[i].Available = available;
+                    return;
+                }
+            }
+
+            s_Quicks.Add(new DevConsoleQuickEntry
+            {
+                Label = label,
+                Action = action,
+                Available = available,
+                Order = s_NextOrder++
+            });
+        }
+
+        public static bool UnregisterQuick(string label)
+        {
+            label = label ?? string.Empty;
+            for (int i = 0; i < s_Quicks.Count; i++)
+            {
+                if (string.Equals(s_Quicks[i].Label, label, StringComparison.Ordinal))
+                {
+                    s_Quicks.RemoveAt(i);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static void PinReadout(string section, string label)
+        {
+            section = section ?? string.Empty;
+            label = label ?? string.Empty;
+            for (int i = 0; i < s_Pins.Count; i++)
+            {
+                if (string.Equals(s_Pins[i].Section, section, StringComparison.Ordinal) &&
+                    string.Equals(s_Pins[i].Label, label, StringComparison.Ordinal))
+                    return;
+            }
+
+            s_Pins.Add(new DevConsolePinnedReadout { Section = section, Label = label });
         }
 
         public static DevConsoleEntry Upsert(
@@ -163,6 +234,7 @@ namespace AmberScreen.Dev
                     return true;
                 }
             }
+
             return false;
         }
 
@@ -180,6 +252,7 @@ namespace AmberScreen.Dev
                 if (string.Equals(sec.Entries[i].Label, label, StringComparison.Ordinal))
                     return sec.Entries[i];
             }
+
             return null;
         }
 
@@ -209,7 +282,29 @@ namespace AmberScreen.Dev
             return result;
         }
 
+        public static int CountVisibleEntries(DevConsoleSection section)
+        {
+            if (section == null)
+                return 0;
+            int n = 0;
+            for (int i = 0; i < section.Entries.Count; i++)
+            {
+                if (section.Entries[i].Visible)
+                    n++;
+            }
+
+            return n;
+        }
+
         public static bool IsAvailable(DevConsoleEntry entry)
+        {
+            if (entry?.Available == null)
+                return true;
+            try { return entry.Available(); }
+            catch { return false; }
+        }
+
+        public static bool IsQuickAvailable(DevConsoleQuickEntry entry)
         {
             if (entry?.Available == null)
                 return true;

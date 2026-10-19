@@ -35,6 +35,7 @@ namespace AmberScreen.Dev.Tests
         [TestCase(DevConsoleLayout.Floating)]
         [TestCase(DevConsoleLayout.DockRight)]
         [TestCase(DevConsoleLayout.MobilePortrait)]
+        [TestCase(DevConsoleLayout.Rail)]
         public void Constructor_StartsClosed_NoExceptions(DevConsoleLayout layout)
         {
             m_Settings.layout = layout;

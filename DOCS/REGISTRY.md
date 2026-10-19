@@ -4,7 +4,7 @@ RULE: claim before building (approved by Fabio 2026-10-19). Before writing a Cur
 
 | Module | Owner (director/game) | State (planned / in progress / settled / in library) | Wanted by | Planned package | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Dev console | Packages (shared) | in library 0.1.x | all five | com.amberscreen.devconsole | no game builds a new one; Watchmaker, S&I, S&S and LWN consoles fold in |
+| Dev console | Packages (shared) | in library 0.3.x | all five | com.amberscreen.devconsole | Rail layout follows Lines of Mercy console model; no game builds a new one; Watchmaker, S&I, S&S and LWN consoles fold in |
 | Versioning (0.MAJOR.MINOR, label, save-version check) | Sand & Ink | settled | all five | com.amberscreen.versioning | extract after S&I week 2 check; Watchmaker's version check folds in |
 | Save scaffolding (slots, safe write, version stamp) | Sand & Ink (+ Watchmaker JSON slots) | settled scheme | Snorkel & Sail, LWN, Twin Ticks | com.amberscreen.save (approved by Fabio; lead to be picked) | game save data classes stay in games |
 | Time-of-day interface (current time, day count, change event, saveable) | to be decided | planned | Sand & Ink, Snorkel & Sail, LWN, Twin Ticks | to be decided | S&I connects TimeOfDay, S&S connects Enviro 3, LWN shift clock, Twin Ticks phone clock |

@@ -4,5 +4,5 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.devconsole
 
-- **0.2.5** current (not tagged). Test asmdef TMP/uGUI refs; playtest 0.2.4 UI, then tag (or retag as 0.2.5), then Twin Ticks adopts it.
-- Namespace is `AmberScreen.Dev` (package/asmdef names unchanged).
+- **0.3.0** pushed (not tagged). Rail layout + section windows; Fabio playtests Sandbox, then tags `devconsole/0.3.0`, then Twin Ticks / games adopt it.
+- Namespace is `AmberScreen.Dev` (package/asmdef names unchanged). Gate gameplay on `BlocksGame` / `IsPointerOverConsole`.

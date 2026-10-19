@@ -13,11 +13,16 @@ namespace AmberScreen.Dev
         const float ThreeFingerBeginWindow = 0.25f;
         const float ThreeFingerEndWindow = 0.5f;
         const float ThreeFingerMaxMoveDp = 30f;
+        const string StatePrefsKey = "AmberScreen.DevConsole.State";
 
         static DevConsoleHost s_Instance;
         static bool s_RegistryDirty;
         static bool s_NotesDirty;
         static DevConsoleSettings s_CachedSettings;
+        static string s_RememberedSection;
+        static bool s_RememberedOpen;
+        static bool s_RememberedCollapsed;
+        static bool s_StateLoaded;
 
         DevConsoleView m_View;
         GameObject m_OwnedEventSystem;
@@ -48,6 +53,111 @@ namespace AmberScreen.Dev
             s_NotesDirty = false;
             s_CachedSettings = null;
             s_WarnedWrongSceneModule = false;
+            s_RememberedSection = null;
+            s_RememberedOpen = false;
+            s_RememberedCollapsed = false;
+            s_StateLoaded = false;
+        }
+
+        internal void NotifySectionWindowChanged()
+        {
+            m_View?.OnSectionWindowChanged();
+        }
+
+        internal static bool IsPointerOverConsoleUi()
+        {
+            return s_Instance != null && s_Instance.m_View != null &&
+                   s_Instance.m_View.IsPointerOverConsole();
+        }
+
+        internal static void TryRestoreRememberedOpen()
+        {
+            LoadState();
+            if (!Settings.rememberState || !s_RememberedOpen)
+                return;
+            if (!DevConsole.CanActivate())
+                return;
+            DevConsole.Open();
+            if (s_RememberedCollapsed)
+                DevConsole.SetCollapsed(true);
+        }
+
+        internal static void ApplyRememberedSectionOnOpen()
+        {
+            LoadState();
+            if (!Settings.rememberState || string.IsNullOrEmpty(s_RememberedSection))
+                return;
+            DevConsole.SetOpenSection(s_RememberedSection);
+        }
+
+        internal static void PersistStateIfNeeded()
+        {
+            if (!Settings.rememberState || !DevConsole.CanActivate())
+                return;
+
+            int rail = 0;
+            if (DevConsole.IsOpen)
+                rail = DevConsole.IsCollapsed ? 2 : 1;
+            string section = DevConsole.OpenSectionName ?? string.Empty;
+            string json = $"{{\"rail\":{rail},\"section\":\"{EscapeJson(section)}\"}}";
+            PlayerPrefs.SetString(StatePrefsKey, json);
+            PlayerPrefs.Save();
+            s_RememberedOpen = rail != 0;
+            s_RememberedCollapsed = rail == 2;
+            s_RememberedSection = section;
+            s_StateLoaded = true;
+        }
+
+        static void LoadState()
+        {
+            if (s_StateLoaded)
+                return;
+            s_StateLoaded = true;
+            if (!PlayerPrefs.HasKey(StatePrefsKey))
+                return;
+            string json = PlayerPrefs.GetString(StatePrefsKey, string.Empty);
+            if (string.IsNullOrEmpty(json))
+                return;
+
+            int rail = ExtractInt(json, "rail");
+            s_RememberedOpen = rail == 1 || rail == 2;
+            s_RememberedCollapsed = rail == 2;
+            s_RememberedSection = ExtractString(json, "section");
+        }
+
+        static int ExtractInt(string json, string key)
+        {
+            string token = "\"" + key + "\":";
+            int i = json.IndexOf(token, System.StringComparison.Ordinal);
+            if (i < 0)
+                return 0;
+            i += token.Length;
+            int end = i;
+            while (end < json.Length && (char.IsDigit(json[end]) || json[end] == '-'))
+                end++;
+            if (int.TryParse(json.Substring(i, end - i), out int v))
+                return v;
+            return 0;
+        }
+
+        static string ExtractString(string json, string key)
+        {
+            string token = "\"" + key + "\":\"";
+            int i = json.IndexOf(token, System.StringComparison.Ordinal);
+            if (i < 0)
+                return string.Empty;
+            i += token.Length;
+            int end = i;
+            while (end < json.Length && json[end] != '"')
+                end++;
+            return json.Substring(i, end - i);
+        }
+
+        static string EscapeJson(string s)
+        {
+            if (string.IsNullOrEmpty(s))
+                return string.Empty;
+            return s.Replace("\\", "\\\\").Replace("\"", "\\\"");
         }
 
         public static void ReloadCachedSettings(DevConsoleSettings settings = null)
@@ -219,35 +329,41 @@ namespace AmberScreen.Dev
 
         void PollCloseWhileOpen()
         {
-            if (!DevConsole.IsOpen || !DevConsole.BlocksGame)
+            if (!DevConsole.IsOpen)
                 return;
 
             var keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
-            {
-                if (m_View != null && m_View.TryCloseDropdown())
-                {
-                    DevConsole.ConsumedCloseThisFrame = true;
-                    return;
-                }
+            bool esc = keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
+            var pad = Gamepad.current;
+            bool cancel = pad != null && pad.buttonEast.wasPressedThisFrame;
+            if (!esc && !cancel)
+                return;
 
+            if (m_View != null && m_View.TryCloseDropdown())
+            {
+                DevConsole.ConsumedCloseThisFrame = true;
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(DevConsole.OpenSectionName))
+            {
+                DevConsole.ConsumedCloseThisFrame = true;
+                DevConsole.CloseSection();
+                return;
+            }
+
+            if (DevConsole.IsRailLayout())
+            {
                 DevConsole.ConsumedCloseThisFrame = true;
                 DevConsole.Close();
                 return;
             }
 
-            var pad = Gamepad.current;
-            if (pad != null && pad.buttonEast.wasPressedThisFrame)
-            {
-                if (m_View != null && m_View.TryCloseDropdown())
-                {
-                    DevConsole.ConsumedCloseThisFrame = true;
-                    return;
-                }
+            if (!DevConsole.BlocksGame)
+                return;
 
-                DevConsole.ConsumedCloseThisFrame = true;
-                DevConsole.Close();
-            }
+            DevConsole.ConsumedCloseThisFrame = true;
+            DevConsole.Close();
         }
 
         void PollGamepadChord()

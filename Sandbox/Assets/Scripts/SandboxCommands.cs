@@ -4,7 +4,7 @@ using UnityEngine;
 namespace AmberScreen.Sandbox
 {
     /// <summary>
-    /// Registers one of each Dev Console widget for local playtesting.
+    /// Registers Dev Console widgets for local playtesting (Rail + classic layouts).
     /// </summary>
     public sealed class SandboxCommands : MonoBehaviour
     {
@@ -54,7 +54,7 @@ namespace AmberScreen.Sandbox
                 () =>
                 {
                     float dt = Time.unscaledDeltaTime;
-                    return dt > 0f ? (1f / dt).ToString("0") : "â€”";
+                    return dt > 0f ? (1f / dt).ToString("0") : "—";
                 },
                 0.25f);
 
@@ -65,7 +65,20 @@ namespace AmberScreen.Sandbox
                     .ToString("0.0"),
                 0.5f);
 
+            DevConsole.RegisterReadout(
+                "Readouts",
+                "Cube angle",
+                () => cube != null ? cube.eulerAngles.y.ToString("0.0") : "—",
+                0.1f);
+
+            DevConsole.PinReadout("Readouts", "Cube angle");
+            DevConsole.PinReadout("Readouts", "FPS");
+
             DevConsole.RegisterConfirm("Danger", "Reset Cube", ResetCube);
+
+            DevConsole.RegisterQuick("Spin cube", () => m_Spin = !m_Spin);
+            DevConsole.RegisterQuick("Reset cube", ResetCube);
+            DevConsole.RegisterQuick("Colour", () => ApplyColour(Random.Range(0, 4)));
 
             for (int i = 1; i <= 40; i++)
             {
@@ -98,7 +111,7 @@ namespace AmberScreen.Sandbox
             if (cubeRenderer != null)
                 cubeRenderer.material.color = m_Color;
 
-            DevConsole.Note($"Cube colour â†’ index {index}");
+            DevConsole.Note($"Cube colour → index {index}");
         }
 
         void ResetCube()

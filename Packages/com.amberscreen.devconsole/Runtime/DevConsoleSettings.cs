@@ -8,7 +8,8 @@ namespace AmberScreen.Dev
     {
         Floating = 0,
         DockRight = 1,
-        MobilePortrait = 2
+        MobilePortrait = 2,
+        Rail = 3
     }
 
     public enum DevConsoleScalePreset
@@ -36,7 +37,7 @@ namespace AmberScreen.Dev
         public bool enableProviderDiscovery = true;
 
         [Header("Layout")]
-        public DevConsoleLayout layout = DevConsoleLayout.Floating;
+        public DevConsoleLayout layout = DevConsoleLayout.Rail;
         public DevConsoleScalePreset scale = DevConsoleScalePreset.Medium;
         [Min(0.25f)] public float scaleMultiplier = 1f;
         [Min(1)] public int columns = 1;
@@ -59,6 +60,14 @@ namespace AmberScreen.Dev
         [Tooltip("Minimum DockRight width (canvas units).")]
         [Min(120f)] public float dockRightWidth = 320f;
 
+        [Header("Rail")]
+        [Min(0.05f)] public float railScreenFraction = 0.17f;
+        [Min(80f)] public float railMinWidth = 220f;
+        [Min(80f)] public float railMaxWidth = 340f;
+        [Min(0f)] public float railEdgeMargin = 6f;
+        [Min(0f)] public float windowMargin = 24f;
+        public bool rememberState = true;
+
         [Header("Font")]
         [Tooltip("Optional TMP override. If set, used instead of bundled Inter.")]
         public TMP_FontAsset fontOverride;
@@ -74,6 +83,7 @@ namespace AmberScreen.Dev
 
         [Header("While open")]
         public bool showCursorWhileOpen = true;
+        [Tooltip("For Rail: pauses only while a section window is open. For other layouts: while the console is open and expanded.")]
         public bool pauseTimescaleWhileOpen = false;
 
         static DevConsoleSettings s_RuntimeDefault;
@@ -112,11 +122,9 @@ namespace AmberScreen.Dev
             return s_RuntimeDefault;
         }
 
-        /// <summary>
-        /// Applies the compact defaults (layout sizing fields).
-        /// </summary>
         public void ApplyCompactDefaults()
         {
+            layout = DevConsoleLayout.Rail;
             buttonHeight = 30f;
             fontSize = 16f;
             spacing = 4f;
@@ -125,6 +133,12 @@ namespace AmberScreen.Dev
             floatingScreenFraction = new Vector2(0.9f, 0.88f);
             dockRightScreenFraction = 0.28f;
             columns = 1;
+            railScreenFraction = 0.17f;
+            railMinWidth = 220f;
+            railMaxWidth = 340f;
+            railEdgeMargin = 6f;
+            windowMargin = 24f;
+            rememberState = true;
         }
 
         internal static void ResetRuntimeDefault()

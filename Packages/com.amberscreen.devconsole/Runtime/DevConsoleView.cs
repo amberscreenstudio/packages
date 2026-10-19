@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace AmberScreen.Dev
 {
-    sealed class DevConsoleView
+    sealed partial class DevConsoleView
     {
         struct SelectableSlot
         {
@@ -125,15 +125,44 @@ namespace AmberScreen.Dev
             DevConsole.SetCollapsed(collapsed);
             ApplyLayout();
 
+            if (DevConsole.IsRailLayout())
+            {
+                RefreshRailChrome();
+                return;
+            }
+
             if (collapsed)
                 SelectCollapsedHeader();
             else
                 RestoreSelection(null, null);
         }
 
+        public void OnSectionWindowChanged()
+        {
+            if (DevConsole.IsRailLayout())
+                RefreshRailSectionWindow();
+        }
+
+        public bool IsPointerOverConsole()
+        {
+            if (DevConsole.IsRailLayout())
+                return IsPointerOverRailUi();
+            if (m_Root == null || !m_Root.gameObject.activeInHierarchy)
+                return false;
+            return RectContainsScreenPoint(m_Panel) ||
+                   (m_CollapsedHeader != null && m_CollapsedHeader.gameObject.activeInHierarchy &&
+                    RectContainsScreenPoint(m_CollapsedHeader));
+        }
+
         public void Rebuild()
         {
             DevConsoleHost.ClearRegistryDirty();
+
+            if (DevConsole.IsRailLayout())
+            {
+                RebuildRail();
+                return;
+            }
 
             if (m_Content == null)
                 return;
@@ -183,11 +212,20 @@ namespace AmberScreen.Dev
             if (m_Title == null)
                 return;
             string scene = SceneManager.GetActiveScene().name;
-            m_Title.text = "Dev Console  ·  " + Application.version + "  ·  " + scene;
+            if (DevConsole.IsRailLayout())
+                m_Title.text = "DEV  ·  " + scene;
+            else
+                m_Title.text = "Dev Console  ·  " + Application.version + "  ·  " + scene;
         }
 
         public void RefreshNotes()
         {
+            if (DevConsole.IsRailLayout())
+            {
+                RefreshRailNotes();
+                return;
+            }
+
             if (m_Status != null)
                 m_Status.text = DevConsoleRegistry.Status ?? string.Empty;
 
@@ -258,6 +296,9 @@ namespace AmberScreen.Dev
                 Rebuild();
             }
 
+            if (DevConsole.IsRailLayout())
+                TickPins(unscaledDeltaTime);
+
             FollowSelectionScroll();
             MaybeRepositionDevButton();
         }
@@ -284,6 +325,8 @@ namespace AmberScreen.Dev
 
             for (int i = 0; i < m_Buttons.Count; i++)
                 m_Buttons[i].RefreshInteractable();
+            for (int i = 0; i < m_QuickButtons.Count; i++)
+                m_QuickButtons[i].RefreshInteractable();
             for (int i = 0; i < m_Toggles.Count; i++)
                 m_Toggles[i].RefreshValueOnly();
         }
@@ -472,8 +515,14 @@ namespace AmberScreen.Dev
             m_Root = canvasGo.GetComponent<RectTransform>();
             DevConsoleUiUtil.Stretch(m_Root);
 
-            BuildPanel(settings);
-            BuildCollapsedHeader(settings);
+            if (settings.layout == DevConsoleLayout.Rail)
+                BuildRailUi(settings);
+            else
+            {
+                BuildPanel(settings);
+                BuildCollapsedHeader(settings);
+            }
+
             m_LastScreen = new Vector2Int(Screen.width, Screen.height);
             m_LastSafeArea = Screen.safeArea;
             ApplyLayout();
@@ -513,10 +562,13 @@ namespace AmberScreen.Dev
             var settings = DevConsoleHost.Settings;
             m_Canvas.sortingOrder = settings.sortingOrder;
 
-            if (settings.layout == DevConsoleLayout.MobilePortrait)
+            if (settings.layout == DevConsoleLayout.MobilePortrait ||
+                (settings.layout == DevConsoleLayout.Rail && Screen.height > Screen.width))
             {
                 m_Scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                m_Scaler.referenceResolution = settings.ReferenceResolution;
+                m_Scaler.referenceResolution = settings.layout == DevConsoleLayout.MobilePortrait
+                    ? settings.ReferenceResolution
+                    : new Vector2(1080f, 1920f);
                 m_Scaler.matchWidthOrHeight = 1f;
             }
             else
@@ -944,6 +996,12 @@ namespace AmberScreen.Dev
             var settings = DevConsoleHost.Settings;
             SyncCanvasScaler();
             SyncDevScaler();
+
+            if (settings.layout == DevConsoleLayout.Rail)
+            {
+                ApplyRailLayout();
+                return;
+            }
 
             bool dockCollapsed = settings.layout == DevConsoleLayout.DockRight && m_Collapsed;
             if (m_CollapsedHeader != null)
