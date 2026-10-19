@@ -175,7 +175,10 @@ namespace AmberScreen.Dev
 
         public static float LandscapeScaleFactor(DevConsoleSettings settings)
         {
-            float baseScale = Mathf.Clamp(Screen.height / 1080f, 0.9f, 2f);
+            float height = DevConsoleView.s_LayoutScreenHeight > 0
+                ? DevConsoleView.s_LayoutScreenHeight
+                : Screen.height;
+            float baseScale = Mathf.Clamp(height / 1080f, 0.9f, 2f);
             return baseScale * settings.ResolvedScaleFactor;
         }
 
@@ -185,6 +188,22 @@ namespace AmberScreen.Dev
             var rt = go.GetComponent<RectTransform>();
             rt.SetParent(parent, false);
             return rt;
+        }
+
+        /// <summary>
+        /// After setting top-stretch anchors (min=(0,1), max=(1,1)), clear the default
+        /// sizeDelta (100,100) so width matches the parent instead of parent+100.
+        /// </summary>
+        public static void FitTopStretchContent(RectTransform rt, float height = 0f)
+        {
+            if (rt == null)
+                return;
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(0f, height);
+            var omin = rt.offsetMin;
+            var omax = rt.offsetMax;
+            rt.offsetMin = new Vector2(0f, omin.y);
+            rt.offsetMax = new Vector2(0f, omax.y);
         }
 
         public static Image AddImage(RectTransform rt, Color color)

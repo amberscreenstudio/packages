@@ -330,7 +330,15 @@ namespace AmberScreen.Dev
 
         internal static bool IsPortraitRail()
         {
-            return IsRailLayout() && Screen.height > Screen.width;
+            if (!IsRailLayout())
+                return false;
+            int w = DevConsoleView.s_LayoutScreenWidth > 0
+                ? DevConsoleView.s_LayoutScreenWidth
+                : Screen.width;
+            int h = DevConsoleView.s_LayoutScreenHeight > 0
+                ? DevConsoleView.s_LayoutScreenHeight
+                : Screen.height;
+            return h > w;
         }
 
         static bool ComputeBlocksGame()
@@ -502,6 +510,7 @@ namespace AmberScreen.Dev
 
         internal static void ResetForTests()
         {
+            DevConsoleView.ClearLayoutScreenOverride();
             ResetStatics();
         }
 

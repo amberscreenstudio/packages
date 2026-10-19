@@ -562,6 +562,14 @@ namespace AmberScreen.Dev
             var settings = DevConsoleHost.Settings;
             m_Canvas.sortingOrder = settings.sortingOrder;
 
+            if (s_LayoutScreenWidth > 0)
+            {
+                m_Scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+                m_Scaler.scaleFactor = 1f;
+                ApplyLayoutScreenCanvasSize();
+                return;
+            }
+
             if (settings.layout == DevConsoleLayout.MobilePortrait ||
                 (settings.layout == DevConsoleLayout.Rail && Screen.height > Screen.width))
             {
@@ -576,6 +584,22 @@ namespace AmberScreen.Dev
                 m_Scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
                 m_Scaler.scaleFactor = DevConsoleUiUtil.LandscapeScaleFactor(settings);
             }
+        }
+
+        void ApplyLayoutScreenCanvasSize()
+        {
+            if (s_LayoutScreenWidth <= 0 || m_Root == null || m_Canvas == null)
+                return;
+
+            // Overlay canvases always match Screen; use World Space so edit-mode
+            // layout tests can pin an exact logical resolution.
+            m_Canvas.renderMode = RenderMode.WorldSpace;
+            m_Root.anchorMin = new Vector2(0.5f, 0.5f);
+            m_Root.anchorMax = new Vector2(0.5f, 0.5f);
+            m_Root.pivot = new Vector2(0.5f, 0.5f);
+            m_Root.anchoredPosition3D = Vector3.zero;
+            m_Root.localScale = Vector3.one;
+            m_Root.sizeDelta = new Vector2(s_LayoutScreenWidth, s_LayoutScreenHeight);
         }
 
         void SyncDevScaler()
@@ -913,7 +937,7 @@ namespace AmberScreen.Dev
             m_Content.anchorMin = new Vector2(0, 1);
             m_Content.anchorMax = new Vector2(1, 1);
             m_Content.pivot = new Vector2(0.5f, 1f);
-            m_Content.sizeDelta = Vector2.zero;
+            DevConsoleUiUtil.FitTopStretchContent(m_Content);
             var contentV = m_Content.gameObject.AddComponent<VerticalLayoutGroup>();
             contentV.spacing = settings.spacing;
             contentV.childAlignment = TextAnchor.UpperCenter;
@@ -946,8 +970,7 @@ namespace AmberScreen.Dev
             m_HistoryContent.anchorMin = new Vector2(0, 1);
             m_HistoryContent.anchorMax = new Vector2(1, 1);
             m_HistoryContent.pivot = new Vector2(0.5f, 1f);
-            m_HistoryContent.anchoredPosition = Vector2.zero;
-            m_HistoryContent.sizeDelta = new Vector2(0, 40f);
+            DevConsoleUiUtil.FitTopStretchContent(m_HistoryContent, 40f);
 
             m_History = m_HistoryContent.gameObject.AddComponent<TextMeshProUGUI>();
             DevConsoleUiUtil.StyleLabel(m_History, false);

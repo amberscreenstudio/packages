@@ -2,6 +2,12 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.3.1] - 2026-10-19
+
+### Fixed
+
+- Rail content width, section window sized on open, layout containment tests.
+
 ## [0.3.0] - 2026-10-19
 
 ### Added

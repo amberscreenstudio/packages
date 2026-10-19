@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **devconsole 0.3.1: rail content width, section window sized on open, layout containment tests**
+- Save: n/a
+
 - **devconsole 0.3.0: Rail layout + blocking section windows, RegisterQuick/PinReadout, rememberState**
 - Save: n/a
 

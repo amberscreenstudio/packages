@@ -116,7 +116,7 @@ namespace AmberScreen.Dev
             content.anchorMin = new Vector2(0, 1);
             content.anchorMax = new Vector2(1, 1);
             content.pivot = new Vector2(0.5f, 1f);
-            content.sizeDelta = new Vector2(0, itemH);
+            DevConsoleUiUtil.FitTopStretchContent(content, itemH);
             var vlg = content.gameObject.AddComponent<VerticalLayoutGroup>();
             vlg.childForceExpandWidth = true;
             vlg.childForceExpandHeight = false;

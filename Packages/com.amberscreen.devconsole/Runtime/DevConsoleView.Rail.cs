@@ -34,6 +34,33 @@ namespace AmberScreen.Dev
         bool m_LogWindowOpen;
         float m_RailWidth;
 
+        /// <summary>Edit-mode tests set these so layout does not depend on the Game view size.</summary>
+        internal static int s_LayoutScreenWidth;
+        internal static int s_LayoutScreenHeight;
+
+        static int LayoutScreenWidth =>
+            s_LayoutScreenWidth > 0 ? s_LayoutScreenWidth : Screen.width;
+
+        static int LayoutScreenHeight =>
+            s_LayoutScreenHeight > 0 ? s_LayoutScreenHeight : Screen.height;
+
+        static Rect LayoutSafeArea =>
+            s_LayoutScreenWidth > 0
+                ? new Rect(0f, 0f, s_LayoutScreenWidth, s_LayoutScreenHeight)
+                : Screen.safeArea;
+
+        internal static void SetLayoutScreenOverride(int width, int height)
+        {
+            s_LayoutScreenWidth = width;
+            s_LayoutScreenHeight = height;
+        }
+
+        internal static void ClearLayoutScreenOverride()
+        {
+            s_LayoutScreenWidth = 0;
+            s_LayoutScreenHeight = 0;
+        }
+
         void BuildRailUi(DevConsoleSettings settings)
         {
             m_Blocker = DevConsoleUiUtil.CreateRect("Blocker", m_Root);
@@ -96,6 +123,7 @@ namespace AmberScreen.Dev
             m_SectionListContent.anchorMin = new Vector2(0, 1);
             m_SectionListContent.anchorMax = new Vector2(1, 1);
             m_SectionListContent.pivot = new Vector2(0.5f, 1f);
+            DevConsoleUiUtil.FitTopStretchContent(m_SectionListContent);
             var secV = m_SectionListContent.gameObject.AddComponent<VerticalLayoutGroup>();
             secV.spacing = settings.spacing;
             secV.childControlWidth = true;
@@ -119,6 +147,10 @@ namespace AmberScreen.Dev
             m_RailStatusButton.onClick.AddListener(OpenLogWindow);
 
             m_RailTab = DevConsoleUiUtil.CreateRect("RailTab", m_Root);
+            m_RailTab.anchorMin = new Vector2(1f, 0.6f);
+            m_RailTab.anchorMax = new Vector2(1f, 0.6f);
+            m_RailTab.pivot = new Vector2(1f, 0.5f);
+            m_RailTab.anchoredPosition = Vector2.zero;
             m_RailTab.sizeDelta = new Vector2(44f, 22f);
             var tabBtn = DevConsoleUiUtil.AddChromeButton(
                 m_RailTab, DevConsoleUiUtil.ChromeButtonBg, DevConsoleUiUtil.ChromeButtonHighlight);
@@ -248,10 +280,12 @@ namespace AmberScreen.Dev
             m_WindowContent.anchorMin = new Vector2(0, 1);
             m_WindowContent.anchorMax = new Vector2(1, 1);
             m_WindowContent.pivot = new Vector2(0.5f, 1f);
+            DevConsoleUiUtil.FitTopStretchContent(m_WindowContent);
             var grid = m_WindowContent.gameObject.AddComponent<GridLayoutGroup>();
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             grid.constraintCount = 1;
             grid.spacing = new Vector2(settings.spacing, settings.spacing);
+            grid.padding = new RectOffset(0, 0, 0, 0);
             m_WindowContent.gameObject.AddComponent<ContentSizeFitter>().verticalFit =
                 ContentSizeFitter.FitMode.PreferredSize;
             m_WindowScroll.content = m_WindowContent;
@@ -270,6 +304,8 @@ namespace AmberScreen.Dev
             EnsureChromeSizes();
             SyncCanvasScaler();
             ApplyRailLayout();
+            if (m_Rail != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(m_Rail);
             Canvas.ForceUpdateCanvases();
 
             RebuildQuickGrid();
@@ -296,7 +332,14 @@ namespace AmberScreen.Dev
             var settings = DevConsoleHost.Settings;
             var grid = m_QuickRoot.GetComponent<GridLayoutGroup>();
             float cellH = settings.buttonHeight;
-            float w = Mathf.Max(40f, (m_RailWidth - 12f - settings.spacing) * 0.5f);
+            if (m_Rail != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(m_Rail);
+            float padL = m_PanelVlg != null ? m_PanelVlg.padding.left : 6f;
+            float padR = m_PanelVlg != null ? m_PanelVlg.padding.right : 6f;
+            float inner = m_Rail != null
+                ? Mathf.Max(40f, m_Rail.rect.width - padL - padR)
+                : Mathf.Max(40f, m_RailWidth - padL - padR);
+            float w = Mathf.Max(40f, (inner - settings.spacing) * 0.5f);
             grid.cellSize = new Vector2(w, cellH);
             grid.spacing = new Vector2(settings.spacing, settings.spacing);
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
@@ -404,8 +447,14 @@ namespace AmberScreen.Dev
 
             bool log = m_LogWindowOpen;
             bool show = !string.IsNullOrEmpty(section) || log;
+            bool showBlocker = show && !(LayoutScreenHeight > LayoutScreenWidth);
             if (m_Blocker != null)
-                m_Blocker.gameObject.SetActive(show && !DevConsole.IsPortraitRail());
+            {
+                m_Blocker.gameObject.SetActive(showBlocker);
+                if (showBlocker)
+                    DevConsoleUiUtil.Stretch(m_Blocker);
+            }
+
             if (m_SectionWindow != null)
                 m_SectionWindow.gameObject.SetActive(show);
 
@@ -415,11 +464,16 @@ namespace AmberScreen.Dev
                 return;
             }
 
+            ApplySectionWindowRect();
+            if (m_SectionWindow != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(m_SectionWindow);
+            Canvas.ForceUpdateCanvases();
+
             if (log)
             {
                 m_WindowTitle.text = "Log";
                 if (m_WindowCloseLabel != null)
-                    m_WindowCloseLabel.text = DevConsole.IsPortraitRail() ? "<" : "X";
+                    m_WindowCloseLabel.text = LayoutScreenHeight > LayoutScreenWidth ? "<" : "X";
                 RebuildLogWindowBody();
                 RebuildSectionButtons();
                 return;
@@ -427,7 +481,7 @@ namespace AmberScreen.Dev
 
             m_WindowTitle.text = string.IsNullOrEmpty(section) ? "(default)" : section;
             if (m_WindowCloseLabel != null)
-                m_WindowCloseLabel.text = DevConsole.IsPortraitRail() ? "<" : "X";
+                m_WindowCloseLabel.text = LayoutScreenHeight > LayoutScreenWidth ? "<" : "X";
             RebuildSectionWindowBody(section);
             RebuildSectionButtons();
         }
@@ -458,15 +512,15 @@ namespace AmberScreen.Dev
             if (section == null)
                 return;
 
-            Canvas.ForceUpdateCanvases();
-            float contentWidth = m_WindowScroll.viewport.rect.width;
+            float viewportWidth = m_WindowScroll.viewport.rect.width;
             int cols = DevConsoleUiUtil.ComputeAutoColumns(
-                contentWidth, settings.minEntryWidth, settings.spacing);
+                viewportWidth, settings.minEntryWidth, settings.spacing);
             float cellH = DevConsoleUiUtil.MinTouch(settings, m_Canvas);
             float cellW = cols <= 1
-                ? contentWidth
-                : (contentWidth - settings.spacing * (cols - 1)) / cols;
+                ? viewportWidth
+                : (viewportWidth - settings.spacing * (cols - 1)) / cols;
             var grid = m_WindowContent.GetComponent<GridLayoutGroup>();
+            grid.padding = new RectOffset(0, 0, 0, 0);
             grid.cellSize = new Vector2(Mathf.Max(80f, cellW), cellH);
             grid.spacing = new Vector2(settings.spacing, settings.spacing);
             grid.constraintCount = cols;
@@ -600,11 +654,14 @@ namespace AmberScreen.Dev
 
         void ApplyRailLayout()
         {
+            ApplyLayoutScreenCanvasSize();
             var settings = DevConsoleHost.Settings;
             float scale = Mathf.Max(m_Canvas != null ? m_Canvas.scaleFactor : 1f, 0.01f);
-            Rect safe = Screen.safeArea;
+            if (s_LayoutScreenWidth > 0)
+                scale = 1f;
+            Rect safe = LayoutSafeArea;
             m_LastSafeArea = safe;
-            bool portrait = Screen.height > Screen.width;
+            bool portrait = LayoutScreenHeight > LayoutScreenWidth;
             float margin = settings.railEdgeMargin;
 
             float canvasW = safe.width / scale;
@@ -616,9 +673,9 @@ namespace AmberScreen.Dev
 
             if (m_Rail != null)
             {
-                float top = (Screen.height - (safe.y + safe.height)) / scale + margin;
+                float top = (LayoutScreenHeight - (safe.y + safe.height)) / scale + margin;
                 float bot = safe.y / scale + margin;
-                float right = (Screen.width - (safe.x + safe.width)) / scale + margin;
+                float right = (LayoutScreenWidth - (safe.x + safe.width)) / scale + margin;
                 m_Rail.anchorMin = new Vector2(1, 0);
                 m_Rail.anchorMax = new Vector2(1, 1);
                 m_Rail.pivot = new Vector2(1, 0.5f);
@@ -635,27 +692,7 @@ namespace AmberScreen.Dev
                 m_RailTab.sizeDelta = new Vector2(44f, 22f);
             }
 
-            if (m_SectionWindow != null && m_SectionWindow.gameObject.activeSelf)
-            {
-                float winMargin = canvasW < 900f ? 8f : settings.windowMargin;
-                float left = safe.x / scale + (portrait ? 0f : winMargin);
-                float rightGap = width + margin + winMargin;
-                if (portrait)
-                {
-                    DevConsoleUiUtil.Stretch(m_SectionWindow);
-                    m_SectionWindow.offsetMin = Vector2.zero;
-                    m_SectionWindow.offsetMax = Vector2.zero;
-                }
-                else
-                {
-                    m_SectionWindow.anchorMin = Vector2.zero;
-                    m_SectionWindow.anchorMax = Vector2.one;
-                    m_SectionWindow.offsetMin = new Vector2(left, safe.y / scale + winMargin);
-                    m_SectionWindow.offsetMax = new Vector2(
-                        -((Screen.width - (safe.x + safe.width)) / scale + rightGap),
-                        -((Screen.height - (safe.y + safe.height)) / scale + winMargin));
-                }
-            }
+            ApplySectionWindowRect();
 
             if (m_HeaderLe != null)
             {
@@ -666,6 +703,55 @@ namespace AmberScreen.Dev
             RefreshRailChrome();
             if (m_Rail != null)
                 LayoutRebuilder.ForceRebuildLayoutImmediate(m_Rail);
+        }
+
+        void ApplySectionWindowRect()
+        {
+            if (m_SectionWindow == null)
+                return;
+
+            var settings = DevConsoleHost.Settings;
+            float scale = Mathf.Max(m_Canvas != null ? m_Canvas.scaleFactor : 1f, 0.01f);
+            if (s_LayoutScreenWidth > 0)
+                scale = 1f;
+            Rect safe = LayoutSafeArea;
+            bool portrait = LayoutScreenHeight > LayoutScreenWidth;
+            float margin = settings.railEdgeMargin;
+            float canvasW = safe.width / scale;
+            float railW = m_RailWidth;
+            if (railW <= 0f)
+            {
+                railW = Mathf.Clamp(canvasW * settings.railScreenFraction,
+                    settings.railMinWidth, settings.railMaxWidth);
+                if (portrait)
+                    railW = canvasW - (safe.x / scale);
+            }
+
+            float winMargin = canvasW < 900f ? 8f : settings.windowMargin;
+            if (portrait)
+            {
+                DevConsoleUiUtil.Stretch(m_SectionWindow);
+                m_SectionWindow.offsetMin = new Vector2(
+                    safe.x / scale,
+                    safe.y / scale);
+                m_SectionWindow.offsetMax = new Vector2(
+                    -((LayoutScreenWidth - (safe.x + safe.width)) / scale),
+                    -((LayoutScreenHeight - (safe.y + safe.height)) / scale));
+            }
+            else
+            {
+                float left = safe.x / scale + winMargin;
+                float rightGap = railW + margin + winMargin;
+                m_SectionWindow.anchorMin = Vector2.zero;
+                m_SectionWindow.anchorMax = Vector2.one;
+                m_SectionWindow.pivot = new Vector2(0.5f, 0.5f);
+                m_SectionWindow.anchoredPosition = Vector2.zero;
+                m_SectionWindow.sizeDelta = Vector2.zero;
+                m_SectionWindow.offsetMin = new Vector2(left, safe.y / scale + winMargin);
+                m_SectionWindow.offsetMax = new Vector2(
+                    -((LayoutScreenWidth - (safe.x + safe.width)) / scale + rightGap),
+                    -((LayoutScreenHeight - (safe.y + safe.height)) / scale + winMargin));
+            }
         }
 
         void TickPins(float dt)
