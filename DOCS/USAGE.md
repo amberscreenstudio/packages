@@ -2,15 +2,15 @@
 
 ## Package versions per game
 
-| Game | Repo | com.amberscreen.devconsole |
-| --- | --- | --- |
-| Twin Ticks | amberscreenstudio/Twin-Ticks | `devconsole/0.3.1` (Twin Ticks 0.0.18), bumping to 0.3.3 |
-| Sand & Ink | amberscreenstudio/Sand-and-Ink | switching to `devconsole/0.3.3` (S&I 0.1.9) |
-| Snorkel & Sail | (local) | not yet (own console) |
-| LWN | (local) | not yet (own console) |
-| The Watchmaker Shop | local, `E:\Unity Projects\Time & Tension` | not yet (own console) |
+| Game | Repo | com.amberscreen.devconsole | com.amberscreen.meters |
+| --- | --- | --- | --- |
+| Twin Ticks | amberscreenstudio/Twin-Ticks | `devconsole/0.3.1` (Twin Ticks 0.0.18), bumping to 0.3.3 | none |
+| Sand & Ink | amberscreenstudio/Sand-and-Ink | switching to `devconsole/0.3.3` (S&I 0.1.9) | adopting for drinking water |
+| Snorkel & Sail | (local) | not yet (own console) | switching from `Assets/Shared/Meters` |
+| LWN | (local) | not yet (own console) | none |
+| The Watchmaker Shop | local, `E:\Unity Projects\Time & Tension` | not yet (own console) | none |
 
-Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3`. Always pin a tag, never `main`.
+Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3` or `#meters/0.1.0`. Always pin a tag, never `main`.
 
 ## com.amberscreen.devconsole settings (0.2.3+)
 

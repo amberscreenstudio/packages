@@ -126,7 +126,7 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.meters
 
-- **Owner:** Snorkel & Sail | **State:** planned (next S&S prompt after 0.0.9) | **Users:** S&S, S&I
+- **Owner:** Snorkel & Sail | **State:** in library, `meters/0.1.0` | **Users:** S&S, S&I
 - **Includes:** Meter (value, max/capacity, drain and regen/fill, named thresholds, warning/empty/full events, saveable state), CharacterMeters (one set for land and water)
 - **Stays in games:** which meters exist and their numbers (stamina, breath, water, radiator), meter UI
 - **Interfaces:** Meter, meter events, save state

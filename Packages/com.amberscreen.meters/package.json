@@ -1,0 +1,18 @@
+{
+  "name": "com.amberscreen.meters",
+  "version": "0.1.0",
+  "displayName": "Amber Screen Meters",
+  "description": "Game-free capacity meters (stamina, breath, coolant, …). No UI or render-pipeline dependency.",
+  "unity": "6000.6",
+  "documentationUrl": "https://github.com/amberscreenstudio/packages/blob/main/Packages/com.amberscreen.meters/README.md",
+  "changelogUrl": "https://github.com/amberscreenstudio/packages/blob/main/Packages/com.amberscreen.meters/CHANGELOG.md",
+  "keywords": [
+    "meters",
+    "stamina",
+    "amberscreen"
+  ],
+  "author": {
+    "name": "Amber Screen Studio"
+  },
+  "dependencies": {}
+}

@@ -1,9 +1,11 @@
 {
   "testables": [
-    "com.amberscreen.devconsole"
+    "com.amberscreen.devconsole",
+    "com.amberscreen.meters"
   ],
   "dependencies": {
     "com.amberscreen.devconsole": "file:../../Packages/com.amberscreen.devconsole",
+    "com.amberscreen.meters": "file:../../Packages/com.amberscreen.meters",
     "com.unity.inputsystem": "1.20.0",
     "com.unity.render-pipelines.universal": "17.6.0",
     "com.unity.test-framework": "1.6.0",
