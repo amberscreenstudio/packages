@@ -2,6 +2,15 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.2.2] - 2026-10-19
+
+### Fixed
+
+- NullReferenceException building the collapsed header left an empty, unclosable panel on screen at startup.
+- `BuildCollapsedHeader`: removed duplicate `AddImage` on the same GameObject as `AddButton` (Unity allows one Graphic per object).
+- `DevConsoleUiUtil.AddImage` / `AddButton`: reuse existing Image; error and return null if another Graphic is present; null-check before use.
+- `DevConsoleHost.Bootstrap`: catch UI build failures, log, destroy half-built canvases, leave console closed.
+
 ## [0.2.1] - 2026-10-19
 
 ### Fixed

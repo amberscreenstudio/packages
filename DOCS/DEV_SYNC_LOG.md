@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **devconsole 0.2.2: NullReferenceException on console UI build (collapsed header dual Graphic); Bootstrap catches build failures**
+- Save: n/a
+
 - **devconsole 0.2.1: UI input actions fix; Sandbox rebuilt by editor script instead of hand-written YAML**
 - Save: n/a
 

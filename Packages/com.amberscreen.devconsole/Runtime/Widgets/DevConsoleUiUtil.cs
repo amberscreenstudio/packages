@@ -78,7 +78,21 @@ namespace AmberScreen.Dev
 
         public static Image AddImage(RectTransform rt, Color color)
         {
-            var img = rt.gameObject.AddComponent<Image>();
+            var img = rt.GetComponent<Image>();
+            if (img == null)
+            {
+                var existing = rt.GetComponent<Graphic>();
+                if (existing != null)
+                {
+                    Debug.LogError(
+                        $"[DevConsole] Cannot add Image to '{rt.gameObject.name}': " +
+                        $"already has {existing.GetType().Name}.");
+                    return null;
+                }
+
+                img = rt.gameObject.AddComponent<Image>();
+            }
+
             img.color = color;
             img.raycastTarget = true;
             return img;
@@ -110,6 +124,9 @@ namespace AmberScreen.Dev
         public static Button AddButton(RectTransform rt, Color normal)
         {
             var img = AddImage(rt, normal);
+            if (img == null)
+                return null;
+
             var btn = rt.gameObject.AddComponent<Button>();
             btn.targetGraphic = img;
             var colors = btn.colors;

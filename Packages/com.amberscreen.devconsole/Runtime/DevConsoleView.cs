@@ -746,7 +746,6 @@ namespace AmberScreen.Dev
             m_CollapsedHeader.pivot = new Vector2(1, 1);
             m_CollapsedHeader.sizeDelta = new Vector2(200f, 56f);
             m_CollapsedHeader.anchoredPosition = new Vector2(-8f, -8f);
-            DevConsoleUiUtil.AddImage(m_CollapsedHeader, DevConsoleUiUtil.PanelBg);
 
             m_CollapsedExpandButton = DevConsoleUiUtil.AddButton(m_CollapsedHeader, DevConsoleUiUtil.PanelBg);
             DevConsoleUiUtil.AddLabel(

@@ -114,10 +114,30 @@ namespace AmberScreen.Dev
         void Bootstrap()
         {
             s_CachedSettings = DevConsoleSettings.LoadOrDefault();
-            m_View = new DevConsoleView(transform);
-            m_View.SetVisible(false);
+            try
+            {
+                m_View = new DevConsoleView(transform);
+                m_View.SetVisible(false);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogException(e);
+                m_View = null;
+                DestroyHalfBuiltCanvases();
+            }
+
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.activeSceneChanged += OnSceneChanged;
+        }
+
+        void DestroyHalfBuiltCanvases()
+        {
+            for (int i = transform.childCount - 1; i >= 0; i--)
+            {
+                var child = transform.GetChild(i);
+                if (child != null && child.GetComponent<Canvas>() != null)
+                    Destroy(child.gameObject);
+            }
         }
 
         void OnDestroy()
