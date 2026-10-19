@@ -2,15 +2,17 @@
 
 Runtime debug console. Namespace: `AmberScreen.Dev`. No render-pipeline code — works on URP, URP 2D, and HDRP.
 
-**Version:** 0.3.3  
+**Version:** 0.3.4  
 **Unity:** 6000.6+  
 **Package / asmdef name:** `com.amberscreen.devconsole` / `AmberScreen.DevConsole`
 
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.3.3
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.3.4
 ```
+
+Requires TextMeshPro Essential Resources (Window > TextMeshPro > Import TMP Essential Resources). Without them the console logs an error and stays off.
 
 ## Rail layout (default for new settings)
 

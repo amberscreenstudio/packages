@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **devconsole 0.3.4: TMP Essentials missing guard (no silent F1 failure)**
+- Save: n/a
+
 - **meters 0.1.0: lifted from Snorkel & Sail 0.0.11 (1a12b5b) into the library**
 - Save: n/a
 

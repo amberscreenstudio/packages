@@ -1,4 +1,5 @@
 #if AMBERSCREEN_DEVCONSOLE
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.TextCore.LowLevel;
@@ -111,14 +112,31 @@ namespace AmberScreen.Dev
             if (font == null)
                 return null;
 
-            return TMP_FontAsset.CreateFontAsset(
-                font,
-                90,
-                9,
-                GlyphRenderMode.SDFAA,
-                1024,
-                1024,
-                AtlasPopulationMode.Dynamic);
+            try
+            {
+                if (TMP_Settings.instance == null)
+                {
+                    DevConsoleHost.ReportTmpEssentialsMissing();
+                    return null;
+                }
+
+                var asset = TMP_FontAsset.CreateFontAsset(
+                    font,
+                    90,
+                    9,
+                    GlyphRenderMode.SDFAA,
+                    1024,
+                    1024,
+                    AtlasPopulationMode.Dynamic);
+                if (asset == null)
+                    DevConsoleHost.ReportTmpEssentialsMissing();
+                return asset;
+            }
+            catch (Exception)
+            {
+                DevConsoleHost.ReportTmpEssentialsMissing();
+                return null;
+            }
         }
 
         public static void ApplyCrisp(TextMeshProUGUI tmp)

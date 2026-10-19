@@ -1,4 +1,6 @@
 #if AMBERSCREEN_DEVCONSOLE
+using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -15,6 +17,18 @@ namespace AmberScreen.Dev
         const float ThreeFingerMaxMoveDp = 30f;
         const string StatePrefsKey = "AmberScreen.DevConsole.State";
 
+        internal const string TmpEssentialsMissingMessage =
+            "[DevConsole] TextMeshPro Essential Resources are missing. " +
+            "Import them via Window > TextMeshPro > Import TMP Essential Resources, then re-enter Play mode.";
+
+        /// <summary>Edit-mode tests override this to simulate missing TMP Essentials.</summary>
+        internal static Func<bool> TmpReady = DefaultTmpReady;
+
+#if UNITY_EDITOR
+        /// <summary>Editor assembly sets this to show a one-shot import dialog.</summary>
+        internal static Action TmpEssentialsMissingEditorHook;
+#endif
+
         static DevConsoleHost s_Instance;
         static bool s_RegistryDirty;
         static bool s_NotesDirty;
@@ -23,6 +37,7 @@ namespace AmberScreen.Dev
         static bool s_RememberedOpen;
         static bool s_RememberedCollapsed;
         static bool s_StateLoaded;
+        static bool s_LoggedTmpMissing;
 
         DevConsoleView m_View;
         GameObject m_OwnedEventSystem;
@@ -57,6 +72,27 @@ namespace AmberScreen.Dev
             s_RememberedOpen = false;
             s_RememberedCollapsed = false;
             s_StateLoaded = false;
+            s_LoggedTmpMissing = false;
+            TmpReady = DefaultTmpReady;
+        }
+
+        static bool DefaultTmpReady() => TMP_Settings.instance != null;
+
+        internal static bool IsTmpReady() =>
+            TmpReady == null ? DefaultTmpReady() : TmpReady.Invoke();
+
+        internal static void ReportTmpEssentialsMissing()
+        {
+            if (!s_LoggedTmpMissing)
+            {
+                s_LoggedTmpMissing = true;
+                Debug.LogError(TmpEssentialsMissingMessage);
+            }
+#if UNITY_EDITOR
+            // Only prompt when TMP is actually missing (not when tests stub TmpReady).
+            if (TMP_Settings.instance == null)
+                TmpEssentialsMissingEditorHook?.Invoke();
+#endif
         }
 
         internal void NotifySectionWindowChanged()
@@ -224,12 +260,22 @@ namespace AmberScreen.Dev
         void Bootstrap()
         {
             s_CachedSettings = DevConsoleSettings.LoadOrDefault();
+
+            if (!IsTmpReady())
+            {
+                ReportTmpEssentialsMissing();
+                m_View = null;
+                SceneManager.sceneLoaded += OnSceneLoaded;
+                SceneManager.activeSceneChanged += OnSceneChanged;
+                return;
+            }
+
             try
             {
                 m_View = new DevConsoleView(transform);
                 m_View.SetVisible(false);
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Debug.LogException(e);
                 m_View = null;

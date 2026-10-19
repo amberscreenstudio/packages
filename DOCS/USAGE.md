@@ -31,3 +31,5 @@ Additive fields on `DevConsoleSettings` (`Resources/AmberScreenDevConsoleSetting
 | `fontOverride` | null | Optional TMP font; otherwise Inter from package Resources |
 
 Games with an existing settings asset should run **Amber Screen → Reset DevConsole Settings To Defaults** (Sandbox menu) or update `buttonHeight`, `fontSize`, and `spacing` by hand. Inter loads from the package Resources folder automatically.
+
+**0.3.4:** TMP missing guard — if TextMeshPro Essential Resources are not imported, the console logs an error and stays off (no silent F1 failure).

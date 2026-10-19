@@ -2,6 +2,12 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.3.4] - 2026-10-19
+
+### Fixed
+
+- When TextMeshPro Essential Resources are missing, log a clear error and keep the host alive instead of failing silently on F1 (NRE in `CreateFontAsset`).
+
 ## [0.3.3] - 2026-10-19
 
 ### Fixed

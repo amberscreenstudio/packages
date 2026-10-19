@@ -8,9 +8,9 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.meters
 
-- **0.1.0** pushed (not tagged). Lifted from Snorkel & Sail `1a12b5b` with original script GUIDs; Fabio compiles Sandbox, then tags `meters/0.1.0`.
+- **0.1.0** tagged (`meters/0.1.0`). Lifted from Snorkel & Sail `1a12b5b` with original script GUIDs.
 
 ## com.amberscreen.devconsole
 
-- **0.3.3** tagged (`devconsole/0.3.3`). Section window draws above the rail in portrait.
+- **0.3.4** pushed (not tagged). TMP Essentials missing guard; Fabio playtests Sandbox F1, then tags `devconsole/0.3.4`.
 - Namespace is `AmberScreen.Dev` (package/asmdef names unchanged). Gate gameplay on `BlocksGame` / `IsPointerOverConsole`.
