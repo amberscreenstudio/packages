@@ -12,27 +12,29 @@ namespace AmberScreen.DevConsole
         readonly DevConsoleEntry m_Entry;
         readonly Button m_Button;
         readonly TextMeshProUGUI m_Label;
-        readonly RectTransform m_Root;
         float m_ConfirmUntil = -1f;
 
-        public RectTransform Root => m_Root;
         public Selectable Selectable => m_Button;
 
-        public DevConsoleConfirmWidget(Transform parent, DevConsoleEntry entry, DevConsoleSettings settings)
+        public DevConsoleConfirmWidget(
+            Transform parent,
+            DevConsoleEntry entry,
+            DevConsoleSettings settings,
+            Canvas canvas)
         {
             m_Entry = entry;
-            float h = DevConsoleUiUtil.MinTouch(settings);
-            float font = DevConsoleUiUtil.FontSize(settings);
+            float h = DevConsoleUiUtil.MinTouch(settings, canvas);
+            float font = DevConsoleUiUtil.FontSize(settings, canvas);
 
-            m_Root = DevConsoleUiUtil.CreateRect("Confirm_" + entry.Label, parent);
-            var le = m_Root.gameObject.AddComponent<LayoutElement>();
+            var root = DevConsoleUiUtil.CreateRect("Confirm_" + entry.Label, parent);
+            var le = root.gameObject.AddComponent<LayoutElement>();
             le.minHeight = h;
             le.preferredHeight = h;
             le.flexibleWidth = 1f;
 
-            m_Button = DevConsoleUiUtil.AddButton(m_Root, new Color(0.55f, 0.2f, 0.2f, 1f));
+            m_Button = DevConsoleUiUtil.AddButton(root, new Color(0.55f, 0.2f, 0.2f, 1f));
             m_Label = DevConsoleUiUtil.AddLabel(
-                m_Root, "Label", entry.Label, font, TextAlignmentOptions.Midline);
+                root, "Label", entry.Label, font, TextAlignmentOptions.Midline);
             m_Button.onClick.AddListener(OnClick);
         }
 

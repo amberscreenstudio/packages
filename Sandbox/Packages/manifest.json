@@ -1,4 +1,7 @@
 {
+  "testables": [
+    "com.amberscreen.devconsole"
+  ],
   "dependencies": {
     "com.amberscreen.devconsole": "file:../../Packages/com.amberscreen.devconsole",
     "com.unity.inputsystem": "1.20.0",

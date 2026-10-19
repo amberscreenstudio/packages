@@ -10,35 +10,43 @@ namespace AmberScreen.Sandbox
     public sealed class SandboxStatusLabel : MonoBehaviour
     {
         TextMeshProUGUI m_Label;
+        bool m_LastOpen;
+        bool m_LastBlocks;
 
         void Awake()
         {
             EnsureUi();
-            Refresh();
-            DevConsole.OpenChanged += OnOpenChanged;
+            m_LastOpen = !DevConsole.IsOpen;
+            m_LastBlocks = !DevConsole.BlocksGame;
+            RefreshIfChanged();
+            DevConsole.OpenChanged += OnFlagChanged;
+            DevConsole.BlocksGameChanged += OnFlagChanged;
         }
 
         void OnDestroy()
         {
-            DevConsole.OpenChanged -= OnOpenChanged;
+            DevConsole.OpenChanged -= OnFlagChanged;
+            DevConsole.BlocksGameChanged -= OnFlagChanged;
         }
 
-        void Update()
+        void OnFlagChanged(bool _)
         {
-            // BlocksGame can change on collapse without a full open/close.
-            Refresh();
+            RefreshIfChanged();
         }
 
-        void OnOpenChanged(bool _)
-        {
-            Refresh();
-        }
-
-        void Refresh()
+        void RefreshIfChanged()
         {
             if (m_Label == null)
                 return;
-            m_Label.text = $"IsOpen: {DevConsole.IsOpen}\nBlocksGame: {DevConsole.BlocksGame}";
+
+            bool open = DevConsole.IsOpen;
+            bool blocks = DevConsole.BlocksGame;
+            if (open == m_LastOpen && blocks == m_LastBlocks)
+                return;
+
+            m_LastOpen = open;
+            m_LastBlocks = blocks;
+            m_Label.text = $"IsOpen: {open}\nBlocksGame: {blocks}";
         }
 
         void EnsureUi()

@@ -11,47 +11,55 @@ namespace AmberScreen.DevConsole
         readonly DevConsoleEntry m_Entry;
         readonly TMP_Dropdown m_Dropdown;
         readonly Button m_Go;
-        readonly RectTransform m_Root;
         string[] m_Options = Array.Empty<string>();
 
-        public RectTransform Root => m_Root;
         public Selectable Selectable => m_Dropdown;
+
         public bool IsDropdownOpen =>
             m_Dropdown != null && m_Dropdown.transform.Find("Dropdown List") != null;
 
-        public DevConsoleDropdownWidget(Transform parent, DevConsoleEntry entry, DevConsoleSettings settings)
+        public DevConsoleDropdownWidget(
+            Transform parent,
+            DevConsoleEntry entry,
+            DevConsoleSettings settings,
+            Canvas canvas)
         {
             m_Entry = entry;
-            float h = DevConsoleUiUtil.MinTouch(settings);
-            float font = DevConsoleUiUtil.FontSize(settings);
+            float h = DevConsoleUiUtil.MinTouch(settings, canvas);
+            float font = DevConsoleUiUtil.FontSize(settings, canvas);
+            float itemH = h;
+            if (settings.layout == DevConsoleLayout.MobilePortrait)
+                itemH = Mathf.Max(h, 48f * DevConsoleUiUtil.DpToCanvas(canvas));
 
-            m_Root = DevConsoleUiUtil.CreateRect("Dropdown_" + entry.Label, parent);
-            var le = m_Root.gameObject.AddComponent<LayoutElement>();
+            var root = DevConsoleUiUtil.CreateRect("Dropdown_" + entry.Label, parent);
+            var le = root.gameObject.AddComponent<LayoutElement>();
             le.minHeight = h;
             le.preferredHeight = h;
             le.flexibleWidth = 1f;
-            DevConsoleUiUtil.AddImage(m_Root, DevConsoleUiUtil.RowBg);
+            DevConsoleUiUtil.AddImage(root, DevConsoleUiUtil.RowBg);
 
-            var row = m_Root.gameObject.AddComponent<HorizontalLayoutGroup>();
+            var row = root.gameObject.AddComponent<HorizontalLayoutGroup>();
             row.padding = new RectOffset(4, 4, 2, 2);
             row.spacing = 6f;
             row.childAlignment = TextAnchor.MiddleCenter;
             row.childForceExpandHeight = true;
             row.childForceExpandWidth = false;
 
-            var labelRt = DevConsoleUiUtil.CreateRect("Label", m_Root);
+            var labelRt = DevConsoleUiUtil.CreateRect("Label", root);
             var labelLe = labelRt.gameObject.AddComponent<LayoutElement>();
             labelLe.preferredWidth = 100f;
             labelLe.flexibleWidth = 0.3f;
             var label = labelRt.gameObject.AddComponent<TextMeshProUGUI>();
-            label.font = DevConsoleUiUtil.Font;
+            var fontAsset = DevConsoleUiUtil.Font;
+            if (fontAsset != null)
+                label.font = fontAsset;
             label.text = entry.Label;
             label.fontSize = font * 0.9f;
             label.color = DevConsoleUiUtil.TextColor;
             label.alignment = TextAlignmentOptions.MidlineLeft;
             label.raycastTarget = false;
 
-            var dropRt = DevConsoleUiUtil.CreateRect("Dropdown", m_Root);
+            var dropRt = DevConsoleUiUtil.CreateRect("Dropdown", root);
             var dropLe = dropRt.gameObject.AddComponent<LayoutElement>();
             dropLe.flexibleWidth = 1f;
             dropLe.minWidth = 120f;
@@ -62,13 +70,14 @@ namespace AmberScreen.DevConsole
             captionRt.offsetMin = new Vector2(8, 2);
             captionRt.offsetMax = new Vector2(-24, -2);
             var caption = captionRt.gameObject.AddComponent<TextMeshProUGUI>();
-            caption.font = DevConsoleUiUtil.Font;
+            if (fontAsset != null)
+                caption.font = fontAsset;
             caption.fontSize = font * 0.85f;
             caption.color = DevConsoleUiUtil.TextColor;
             caption.alignment = TextAlignmentOptions.MidlineLeft;
             caption.raycastTarget = false;
 
-            var template = CreateDropdownTemplate(dropRt, font);
+            var template = CreateDropdownTemplate(dropRt, font, itemH);
             m_Dropdown = dropRt.gameObject.AddComponent<TMP_Dropdown>();
             m_Dropdown.targetGraphic = dropBg;
             m_Dropdown.captionText = caption;
@@ -77,7 +86,7 @@ namespace AmberScreen.DevConsole
                 .GetComponent<TextMeshProUGUI>();
             m_Dropdown.navigation = new Navigation { mode = Navigation.Mode.Automatic };
 
-            var goRt = DevConsoleUiUtil.CreateRect("Go", m_Root);
+            var goRt = DevConsoleUiUtil.CreateRect("Go", root);
             var goLe = goRt.gameObject.AddComponent<LayoutElement>();
             goLe.preferredWidth = Mathf.Max(72f, h * 1.5f);
             goLe.minHeight = h;
@@ -88,7 +97,7 @@ namespace AmberScreen.DevConsole
             RefreshOptions();
         }
 
-        static RectTransform CreateDropdownTemplate(Transform parent, float font)
+        static RectTransform CreateDropdownTemplate(Transform parent, float font, float itemH)
         {
             var template = DevConsoleUiUtil.CreateRect("Template", parent);
             template.gameObject.SetActive(false);
@@ -96,7 +105,7 @@ namespace AmberScreen.DevConsole
             template.anchorMax = new Vector2(1, 0);
             template.pivot = new Vector2(0.5f, 1f);
             template.anchoredPosition = Vector2.zero;
-            template.sizeDelta = new Vector2(0, 160f);
+            template.sizeDelta = new Vector2(0, Mathf.Max(160f, itemH * 4f));
             DevConsoleUiUtil.AddImage(template, new Color(0.1f, 0.1f, 0.12f, 0.98f));
 
             var scroll = template.gameObject.AddComponent<ScrollRect>();
@@ -110,7 +119,7 @@ namespace AmberScreen.DevConsole
             content.anchorMin = new Vector2(0, 1);
             content.anchorMax = new Vector2(1, 1);
             content.pivot = new Vector2(0.5f, 1f);
-            content.sizeDelta = new Vector2(0, 28f);
+            content.sizeDelta = new Vector2(0, itemH);
             var vlg = content.gameObject.AddComponent<VerticalLayoutGroup>();
             vlg.childForceExpandWidth = true;
             vlg.childForceExpandHeight = false;
@@ -119,8 +128,8 @@ namespace AmberScreen.DevConsole
 
             var item = DevConsoleUiUtil.CreateRect("Item", content);
             var itemLe = item.gameObject.AddComponent<LayoutElement>();
-            itemLe.minHeight = 28f;
-            itemLe.preferredHeight = 28f;
+            itemLe.minHeight = itemH;
+            itemLe.preferredHeight = itemH;
             var toggle = item.gameObject.AddComponent<Toggle>();
             var itemBg = DevConsoleUiUtil.AddImage(item, new Color(0.18f, 0.2f, 0.24f, 1f));
             toggle.targetGraphic = itemBg;
@@ -135,7 +144,9 @@ namespace AmberScreen.DevConsole
             itemLabelRt.offsetMin = new Vector2(8, 0);
             itemLabelRt.offsetMax = new Vector2(-8, 0);
             var itemLabel = itemLabelRt.gameObject.AddComponent<TextMeshProUGUI>();
-            itemLabel.font = DevConsoleUiUtil.Font;
+            var fontAsset = DevConsoleUiUtil.Font;
+            if (fontAsset != null)
+                itemLabel.font = fontAsset;
             itemLabel.fontSize = font * 0.8f;
             itemLabel.color = DevConsoleUiUtil.TextColor;
             itemLabel.alignment = TextAlignmentOptions.MidlineLeft;

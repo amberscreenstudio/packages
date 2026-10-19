@@ -10,17 +10,33 @@ namespace AmberScreen.DevConsole
     [DefaultExecutionOrder(-1000)]
     sealed class DevConsoleHost : MonoBehaviour
     {
+        const float ThreeFingerBeginWindow = 0.25f;
+        const float ThreeFingerEndWindow = 0.5f;
+        const float ThreeFingerMaxMoveDp = 30f;
+
         static DevConsoleHost s_Instance;
         static bool s_RegistryDirty;
         static bool s_NotesDirty;
 
         DevConsoleView m_View;
         DevConsoleSettings m_Settings;
+        GameObject m_OwnedEventSystem;
+
         float m_CornerHoldTime;
         bool m_GamepadChordLatched;
-        bool m_ThreeFingerLatched;
+
+        // 3-finger tap: begin within 0.25s, all up within 0.5s, move <= 30 dp.
+        bool m_TapActive;
+        float m_TapFirstBegin;
+        float m_TapMaxTravelPx;
+        int m_TapBeganCount;
+        readonly Vector2[] m_TapOrigin = new Vector2[10];
+        readonly int[] m_TapFinger = new int[10];
+        int m_TapTracked;
 
         public static DevConsoleHost Instance => s_Instance;
+
+        internal static bool IsRegistryDirty => s_RegistryDirty;
 
         public static void ResetStatics()
         {
@@ -45,23 +61,24 @@ namespace AmberScreen.DevConsole
         public static void NotifyRegistryChanged()
         {
             s_RegistryDirty = true;
-            if (s_Instance != null && DevConsole.IsOpen)
-                s_Instance.m_View?.Rebuild();
         }
 
         public static void NotifyNotesChanged()
         {
             s_NotesDirty = true;
-            if (s_Instance != null && DevConsole.IsOpen)
-                s_Instance.m_View?.RefreshNotes();
+        }
+
+        public static void ClearRegistryDirty()
+        {
+            s_RegistryDirty = false;
         }
 
         public static void OnOpened()
         {
             EnsureExists();
+            s_Instance.EnsureEventSystemForOpen();
             s_Instance.m_View?.SetVisible(true);
             s_Instance.m_View?.Rebuild();
-            s_Instance.m_View?.SelectFirst();
         }
 
         public static void OnClosed()
@@ -75,7 +92,6 @@ namespace AmberScreen.DevConsole
         void Bootstrap()
         {
             m_Settings = DevConsoleSettings.LoadOrDefault();
-            EnsureEventSystem();
             m_View = new DevConsoleView(transform);
             m_View.SetVisible(false);
             SceneManager.activeSceneChanged += OnSceneChanged;
@@ -86,6 +102,12 @@ namespace AmberScreen.DevConsole
             SceneManager.activeSceneChanged -= OnSceneChanged;
             m_View?.Dispose();
             m_View = null;
+            if (m_OwnedEventSystem != null)
+            {
+                Destroy(m_OwnedEventSystem);
+                m_OwnedEventSystem = null;
+            }
+
             if (s_Instance == this)
             {
                 s_Instance = null;
@@ -101,17 +123,22 @@ namespace AmberScreen.DevConsole
 
         void Update()
         {
-            // Closed path: poll open bindings only — no string/list allocations.
+            DevConsole.ConsumedCloseThisFrame = false;
+
+            if (m_Settings == null)
+                m_Settings = DevConsoleSettings.LoadOrDefault();
+
             PollOpenCloseInput();
+            SyncOwnedEventSystem();
 
             if (!DevConsole.IsOpen)
+            {
+                m_View?.TickClosed();
                 return;
+            }
 
             if (s_RegistryDirty)
-            {
-                s_RegistryDirty = false;
                 m_View?.Rebuild();
-            }
 
             if (s_NotesDirty)
             {
@@ -120,7 +147,7 @@ namespace AmberScreen.DevConsole
             }
 
             m_View?.TickOpen(Time.unscaledDeltaTime);
-            PollOpenNavigation();
+            PollCloseWhileOpen();
         }
 
         void PollOpenCloseInput()
@@ -128,24 +155,11 @@ namespace AmberScreen.DevConsole
             if (!DevConsole.CanActivate())
                 return;
 
-            if (m_Settings == null)
-                m_Settings = DevConsoleSettings.LoadOrDefault();
-
             var keyboard = Keyboard.current;
-
-            if (keyboard != null)
+            if (keyboard != null && keyboard[m_Settings.openKey].wasPressedThisFrame)
             {
-                if (keyboard[m_Settings.openKey].wasPressedThisFrame)
-                {
-                    DevConsole.Toggle();
-                    return;
-                }
-
-                if (DevConsole.IsOpen && keyboard.escapeKey.wasPressedThisFrame)
-                {
-                    DevConsole.Close();
-                    return;
-                }
+                DevConsole.Toggle();
+                return;
             }
 
             if (m_Settings.enableGamepadChord)
@@ -156,6 +170,39 @@ namespace AmberScreen.DevConsole
 
             if (m_Settings.enableCornerHold)
                 PollCornerHold();
+        }
+
+        void PollCloseWhileOpen()
+        {
+            if (!DevConsole.IsOpen || !DevConsole.BlocksGame)
+                return;
+
+            var keyboard = Keyboard.current;
+            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
+            {
+                if (m_View != null && m_View.TryCloseDropdown())
+                {
+                    DevConsole.ConsumedCloseThisFrame = true;
+                    return;
+                }
+
+                DevConsole.ConsumedCloseThisFrame = true;
+                DevConsole.Close();
+                return;
+            }
+
+            var pad = Gamepad.current;
+            if (pad != null && pad.buttonEast.wasPressedThisFrame)
+            {
+                if (m_View != null && m_View.TryCloseDropdown())
+                {
+                    DevConsole.ConsumedCloseThisFrame = true;
+                    return;
+                }
+
+                DevConsole.ConsumedCloseThisFrame = true;
+                DevConsole.Close();
+            }
         }
 
         void PollGamepadChord()
@@ -187,30 +234,89 @@ namespace AmberScreen.DevConsole
             var touch = Touchscreen.current;
             if (touch == null)
             {
-                m_ThreeFingerLatched = false;
+                ResetThreeFingerTap();
                 return;
             }
 
-            int pressed = 0;
+            float maxMovePx = ThreeFingerMaxMoveDp * ((Screen.dpi > 0f ? Screen.dpi : 160f) / 160f);
             var touches = touch.touches;
-            for (int i = 0; i < touches.Count; i++)
-            {
-                if (touches[i].press.isPressed)
-                    pressed++;
-            }
+            int touchCount = touches.Count;
+            int pressed = 0;
 
-            if (pressed >= 3)
+            for (int i = 0; i < touchCount; i++)
             {
-                if (!m_ThreeFingerLatched)
+                var t = touches[i];
+                if (t.press.wasPressedThisFrame)
                 {
-                    m_ThreeFingerLatched = true;
-                    DevConsole.Toggle();
+                    if (m_TapTracked < m_TapFinger.Length)
+                    {
+                        if (!m_TapActive)
+                        {
+                            m_TapActive = true;
+                            m_TapFirstBegin = Time.unscaledTime;
+                            m_TapMaxTravelPx = 0f;
+                            m_TapBeganCount = 0;
+                            m_TapTracked = 0;
+                        }
+
+                        if (Time.unscaledTime - m_TapFirstBegin <= ThreeFingerBeginWindow)
+                        {
+                            m_TapFinger[m_TapTracked] = t.touchId.ReadValue();
+                            m_TapOrigin[m_TapTracked] = t.position.ReadValue();
+                            m_TapTracked++;
+                            m_TapBeganCount++;
+                        }
+                    }
+                }
+
+                if (t.press.isPressed)
+                {
+                    pressed++;
+                    if (m_TapActive)
+                    {
+                        int id = t.touchId.ReadValue();
+                        Vector2 pos = t.position.ReadValue();
+                        for (int s = 0; s < m_TapTracked; s++)
+                        {
+                            if (m_TapFinger[s] != id)
+                                continue;
+                            m_TapMaxTravelPx = Mathf.Max(
+                                m_TapMaxTravelPx, Vector2.Distance(pos, m_TapOrigin[s]));
+                            break;
+                        }
+                    }
                 }
             }
-            else
+
+            if (!m_TapActive)
+                return;
+
+            float elapsed = Time.unscaledTime - m_TapFirstBegin;
+            if (m_TapMaxTravelPx > maxMovePx || elapsed > ThreeFingerEndWindow)
             {
-                m_ThreeFingerLatched = false;
+                ResetThreeFingerTap();
+                return;
             }
+
+            // Fire on release: all fingers up, at least 3 began in the begin window.
+            if (pressed == 0)
+            {
+                if (m_TapBeganCount >= 3 &&
+                    elapsed <= ThreeFingerEndWindow &&
+                    m_TapMaxTravelPx <= maxMovePx)
+                {
+                    DevConsole.Toggle();
+                }
+                ResetThreeFingerTap();
+            }
+        }
+
+        void ResetThreeFingerTap()
+        {
+            m_TapActive = false;
+            m_TapBeganCount = 0;
+            m_TapTracked = 0;
+            m_TapMaxTravelPx = 0f;
         }
 
         void PollCornerHold()
@@ -218,20 +324,28 @@ namespace AmberScreen.DevConsole
             bool inCorner = false;
             Vector2 pos = default;
 
-            if (Touchscreen.current != null)
+            var touch = Touchscreen.current;
+            if (touch != null)
             {
-                var primary = Touchscreen.current.primaryTouch;
-                if (primary.press.isPressed)
+                var touches = touch.touches;
+                for (int i = 0; i < touches.Count; i++)
                 {
-                    pos = primary.position.ReadValue();
+                    if (!touches[i].press.isPressed)
+                        continue;
+                    pos = touches[i].position.ReadValue();
                     inCorner = true;
+                    break;
                 }
             }
-            else if (Mouse.current != null && Mouse.current.leftButton.isPressed)
+#if UNITY_EDITOR
+            else if (m_Settings.cornerHoldWithMouseInEditor &&
+                     Mouse.current != null &&
+                     Mouse.current.leftButton.isPressed)
             {
                 pos = Mouse.current.position.ReadValue();
                 inCorner = true;
             }
+#endif
 
             if (!inCorner)
             {
@@ -239,9 +353,13 @@ namespace AmberScreen.DevConsole
                 return;
             }
 
-            float w = Screen.width;
-            float h = Screen.height;
-            bool topLeft = pos.x <= w * 0.15f && pos.y >= h * (1f - 0.15f);
+            Rect safe = Screen.safeArea;
+            float cornerW = safe.width * 0.15f;
+            float cornerH = safe.height * 0.15f;
+            bool topLeft =
+                pos.x >= safe.x && pos.x <= safe.x + cornerW &&
+                pos.y >= safe.y + safe.height - cornerH && pos.y <= safe.y + safe.height;
+
             if (!topLeft)
             {
                 m_CornerHoldTime = 0f;
@@ -252,40 +370,51 @@ namespace AmberScreen.DevConsole
             if (m_CornerHoldTime >= 2f)
             {
                 m_CornerHoldTime = 0f;
-                DevConsole.Toggle();
+                if (!DevConsole.IsOpen)
+                    DevConsole.Open();
             }
         }
 
-        void PollOpenNavigation()
-        {
-            var pad = Gamepad.current;
-            if (pad == null || !DevConsole.IsOpen)
-                return;
-
-            if (pad.buttonEast.wasPressedThisFrame)
-            {
-                if (m_View != null && m_View.TryCloseDropdown())
-                    return;
-                DevConsole.Close();
-            }
-        }
-
-        static void EnsureEventSystem()
+        void EnsureEventSystemForOpen()
         {
             if (EventSystem.current != null)
             {
-                if (EventSystem.current.GetComponent<InputSystemUIInputModule>() == null &&
-                    EventSystem.current.GetComponent<BaseInputModule>() == null)
+                if (m_OwnedEventSystem != null &&
+                    EventSystem.current.gameObject != m_OwnedEventSystem)
                 {
-                    EventSystem.current.gameObject.AddComponent<InputSystemUIInputModule>();
+                    Destroy(m_OwnedEventSystem);
+                    m_OwnedEventSystem = null;
                 }
                 return;
             }
 
-            var go = new GameObject("EventSystem");
-            DontDestroyOnLoad(go);
+            if (m_OwnedEventSystem != null)
+                return;
+
+            var go = new GameObject("DevConsoleEventSystem");
+            go.transform.SetParent(transform, false);
             go.AddComponent<EventSystem>();
             go.AddComponent<InputSystemUIInputModule>();
+            m_OwnedEventSystem = go;
+        }
+
+        void SyncOwnedEventSystem()
+        {
+            if (!DevConsole.IsOpen)
+                return;
+
+            if (EventSystem.current == null)
+            {
+                EnsureEventSystemForOpen();
+                return;
+            }
+
+            if (m_OwnedEventSystem != null &&
+                EventSystem.current.gameObject != m_OwnedEventSystem)
+            {
+                Destroy(m_OwnedEventSystem);
+                m_OwnedEventSystem = null;
+            }
         }
     }
 }

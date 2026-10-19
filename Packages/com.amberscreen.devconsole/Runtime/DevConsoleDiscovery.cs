@@ -7,13 +7,34 @@ namespace AmberScreen.DevConsole
 {
     static class DevConsoleDiscovery
     {
+        static readonly string[] s_SkipPrefixes =
+        {
+            "System", "Unity", "UnityEngine", "UnityEditor", "Mono", "mscorlib",
+            "netstandard", "nunit", "Microsoft"
+        };
+
+        static bool ShouldSkip(Assembly assembly)
+        {
+            if (assembly.IsDynamic)
+                return true;
+            string name = assembly.GetName().Name;
+            if (string.IsNullOrEmpty(name))
+                return true;
+            for (int i = 0; i < s_SkipPrefixes.Length; i++)
+            {
+                if (name.StartsWith(s_SkipPrefixes[i], StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
+        }
+
         public static void DiscoverAttributes()
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             for (int a = 0; a < assemblies.Length; a++)
             {
                 Assembly assembly = assemblies[a];
-                if (assembly.IsDynamic)
+                if (ShouldSkip(assembly))
                     continue;
 
                 Type[] types;
@@ -68,7 +89,7 @@ namespace AmberScreen.DevConsole
             for (int a = 0; a < assemblies.Length; a++)
             {
                 Assembly assembly = assemblies[a];
-                if (assembly.IsDynamic)
+                if (ShouldSkip(assembly))
                     continue;
 
                 Type[] types;

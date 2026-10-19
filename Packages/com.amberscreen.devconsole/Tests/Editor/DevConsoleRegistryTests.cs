@@ -1,5 +1,4 @@
 #if AMBERSCREEN_DEVCONSOLE
-using System;
 using NUnit.Framework;
 
 namespace AmberScreen.DevConsole.Tests
@@ -31,6 +30,17 @@ namespace AmberScreen.DevConsole.Tests
             entry.Action.Invoke();
             Assert.AreEqual(0, first);
             Assert.AreEqual(1, second);
+        }
+
+        [Test]
+        public void Register_SameSectionAndLabel_ResetsCaptionToLabel()
+        {
+            DevConsole.Register("Sec", "Act", () => { });
+            DevConsole.SetButtonCaption("Sec", "Act", "Custom");
+            DevConsole.Register("Sec", "Act", () => { });
+            var entry = DevConsoleRegistry.Find("Sec", "Act");
+            Assert.IsNotNull(entry);
+            Assert.AreEqual("Act", entry.Caption);
         }
 
         [Test]
@@ -66,6 +76,18 @@ namespace AmberScreen.DevConsole.Tests
             var entry = DevConsoleRegistry.Find("Sec", "Act");
             Assert.IsNotNull(entry);
             Assert.AreEqual("New Caption", entry.Caption);
+        }
+
+        [Test]
+        public void NotifyRegistryChanged_OnlyMarksDirty()
+        {
+            Assert.IsFalse(DevConsoleHost.IsRegistryDirty);
+            DevConsole.Register("Sec", "Act", () => { });
+            Assert.IsTrue(DevConsoleHost.IsRegistryDirty);
+            DevConsoleHost.ClearRegistryDirty();
+            Assert.IsFalse(DevConsoleHost.IsRegistryDirty);
+            DevConsoleHost.NotifyRegistryChanged();
+            Assert.IsTrue(DevConsoleHost.IsRegistryDirty);
         }
     }
 }

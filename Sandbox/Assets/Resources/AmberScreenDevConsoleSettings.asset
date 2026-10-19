@@ -13,20 +13,25 @@ MonoBehaviour:
   m_Name: AmberScreenDevConsoleSettings
   m_EditorClassIdentifier: AmberScreen.DevConsole::AmberScreen.DevConsole.DevConsoleSettings
   autoAddDefine: 1
+  keepInReleaseBuilds: 0
   enableAttributeDiscovery: 1
   enableProviderDiscovery: 1
   layout: 0
   scale: 1
   scaleMultiplier: 1
   columns: 1
-  buttonHeight: 36
-  fontSize: 18
+  buttonHeight: 44
+  fontSize: 22
   spacing: 8
   sortingOrder: 1000
-  openKey: 58
+  floatingPanelWidth: 560
+  dockRightWidth: 320
+  fontOverride: {fileID: 0}
+  openKey: 94
   enableGamepadChord: 1
   enableThreeFingerTap: 1
   enableCornerHold: 1
+  cornerHoldWithMouseInEditor: 0
   showOnScreenDevButton: 0
   showCursorWhileOpen: 1
   pauseTimescaleWhileOpen: 0

@@ -1,11 +1,14 @@
 using System;
+using UnityEngine.Scripting;
 
 namespace AmberScreen.DevConsole
 {
     /// <summary>
     /// Marks a static parameterless method for discovery the first time the console opens.
+    /// For IL2CPP, also put <see cref="PreserveAttribute"/> on the method (or use a link.xml).
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    [Preserve]
     public sealed class DevButtonAttribute : Attribute
     {
         public string Section { get; }

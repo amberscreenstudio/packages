@@ -8,16 +8,51 @@ namespace AmberScreen.DevConsole
     static class DevConsoleUiUtil
     {
         static TMP_FontAsset s_Font;
+        static bool s_WarnedMissingFont;
 
-        public static TMP_FontAsset Font
+        public static void ResetFontCache()
         {
-            get
-            {
-                if (s_Font == null)
-                    s_Font = TMP_Settings.defaultFontAsset;
-                return s_Font;
-            }
+            s_Font = null;
+            s_WarnedMissingFont = false;
         }
+
+        public static TMP_FontAsset ResolveFont(DevConsoleSettings settings = null)
+        {
+            if (s_Font != null)
+                return s_Font;
+
+            settings ??= DevConsoleSettings.LoadOrDefault();
+
+            try
+            {
+                s_Font = TMP_Settings.GetFontAsset();
+            }
+            catch
+            {
+                // TMP settings may be unavailable before Essential Resources import.
+            }
+
+            if (s_Font == null && settings.fontOverride != null)
+                s_Font = settings.fontOverride;
+
+            if (s_Font == null)
+            {
+                s_Font = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF")
+                         ?? Resources.Load<TMP_FontAsset>("LiberationSans SDF");
+            }
+
+            if (s_Font == null && !s_WarnedMissingFont)
+            {
+                s_WarnedMissingFont = true;
+                Debug.LogWarning(
+                    "[AmberScreen DevConsole] No TMP font found. Import TMP Essential Resources " +
+                    "(Window → TextMeshPro → Import TMP Essential Resources).");
+            }
+
+            return s_Font;
+        }
+
+        public static TMP_FontAsset Font => ResolveFont();
 
         public static Color PanelBg => new Color(0.08f, 0.09f, 0.11f, 0.94f);
         public static Color RowBg => new Color(0.14f, 0.15f, 0.18f, 1f);
@@ -25,6 +60,13 @@ namespace AmberScreen.DevConsole
         public static Color ButtonDisabled => new Color(0.25f, 0.25f, 0.28f, 1f);
         public static Color TextColor => new Color(0.95f, 0.95f, 0.97f, 1f);
         public static Color Accent => new Color(0.95f, 0.75f, 0.25f, 1f);
+
+        public static float DpToCanvas(Canvas canvas)
+        {
+            float dpi = Screen.dpi > 0f ? Screen.dpi : 160f;
+            float scale = canvas != null && canvas.scaleFactor > 0f ? canvas.scaleFactor : 1f;
+            return (dpi / 160f) / scale;
+        }
 
         public static RectTransform CreateRect(string name, Transform parent)
         {
@@ -52,7 +94,9 @@ namespace AmberScreen.DevConsole
             var rt = CreateRect(name, parent);
             Stretch(rt);
             var tmp = rt.gameObject.AddComponent<TextMeshProUGUI>();
-            tmp.font = Font;
+            var font = Font;
+            if (font != null)
+                tmp.font = font;
             tmp.text = text;
             tmp.fontSize = fontSize;
             tmp.color = TextColor;
@@ -92,16 +136,27 @@ namespace AmberScreen.DevConsole
             rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
         }
 
-        public static float MinTouch(DevConsoleSettings settings)
+        public static float MinTouch(DevConsoleSettings settings, Canvas canvas = null)
         {
             float h = settings.buttonHeight * settings.ResolvedScaleFactor;
             if (settings.layout == DevConsoleLayout.MobilePortrait)
-                return Mathf.Max(h, 48f);
+            {
+                float dp = DpToCanvas(canvas);
+                return Mathf.Max(h, 48f * dp);
+            }
             return h;
         }
 
-        public static float FontSize(DevConsoleSettings settings) =>
-            settings.fontSize * settings.ResolvedScaleFactor;
+        public static float FontSize(DevConsoleSettings settings, Canvas canvas = null)
+        {
+            float size = settings.fontSize * settings.ResolvedScaleFactor;
+            if (settings.layout == DevConsoleLayout.MobilePortrait)
+            {
+                float dp = DpToCanvas(canvas);
+                return Mathf.Max(size, 16f * dp);
+            }
+            return size;
+        }
     }
 }
 #endif

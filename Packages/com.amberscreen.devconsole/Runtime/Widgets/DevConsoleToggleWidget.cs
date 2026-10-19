@@ -10,34 +10,36 @@ namespace AmberScreen.DevConsole
         readonly DevConsoleEntry m_Entry;
         readonly Toggle m_Toggle;
         readonly TextMeshProUGUI m_Label;
-        readonly RectTransform m_Root;
         bool m_Suppress;
 
-        public RectTransform Root => m_Root;
         public Selectable Selectable => m_Toggle;
 
-        public DevConsoleToggleWidget(Transform parent, DevConsoleEntry entry, DevConsoleSettings settings)
+        public DevConsoleToggleWidget(
+            Transform parent,
+            DevConsoleEntry entry,
+            DevConsoleSettings settings,
+            Canvas canvas)
         {
             m_Entry = entry;
-            float h = DevConsoleUiUtil.MinTouch(settings);
-            float font = DevConsoleUiUtil.FontSize(settings);
+            float h = DevConsoleUiUtil.MinTouch(settings, canvas);
+            float font = DevConsoleUiUtil.FontSize(settings, canvas);
 
-            m_Root = DevConsoleUiUtil.CreateRect("Toggle_" + entry.Label, parent);
-            DevConsoleUiUtil.SetHeight(m_Root, h);
-            var le = m_Root.gameObject.AddComponent<LayoutElement>();
+            var root = DevConsoleUiUtil.CreateRect("Toggle_" + entry.Label, parent);
+            DevConsoleUiUtil.SetHeight(root, h);
+            var le = root.gameObject.AddComponent<LayoutElement>();
             le.minHeight = h;
             le.preferredHeight = h;
             le.flexibleWidth = 1f;
-            DevConsoleUiUtil.AddImage(m_Root, DevConsoleUiUtil.RowBg);
+            DevConsoleUiUtil.AddImage(root, DevConsoleUiUtil.RowBg);
 
-            var row = m_Root.gameObject.AddComponent<HorizontalLayoutGroup>();
+            var row = root.gameObject.AddComponent<HorizontalLayoutGroup>();
             row.padding = new RectOffset(8, 8, 4, 4);
             row.spacing = 8f;
             row.childAlignment = TextAnchor.MiddleLeft;
             row.childForceExpandWidth = false;
             row.childForceExpandHeight = true;
 
-            var boxRt = DevConsoleUiUtil.CreateRect("Box", m_Root);
+            var boxRt = DevConsoleUiUtil.CreateRect("Box", root);
             var boxLe = boxRt.gameObject.AddComponent<LayoutElement>();
             boxLe.minWidth = h * 0.7f;
             boxLe.minHeight = h * 0.7f;
@@ -57,18 +59,20 @@ namespace AmberScreen.DevConsole
             m_Toggle.navigation = new Navigation { mode = Navigation.Mode.Automatic };
             m_Toggle.onValueChanged.AddListener(OnChanged);
 
-            var labelRt = DevConsoleUiUtil.CreateRect("Label", m_Root);
+            var labelRt = DevConsoleUiUtil.CreateRect("Label", root);
             var labelLe = labelRt.gameObject.AddComponent<LayoutElement>();
             labelLe.flexibleWidth = 1f;
             m_Label = labelRt.gameObject.AddComponent<TextMeshProUGUI>();
-            m_Label.font = DevConsoleUiUtil.Font;
+            var fontAsset = DevConsoleUiUtil.Font;
+            if (fontAsset != null)
+                m_Label.font = fontAsset;
             m_Label.text = entry.Label;
             m_Label.fontSize = font;
             m_Label.color = DevConsoleUiUtil.TextColor;
             m_Label.alignment = TextAlignmentOptions.MidlineLeft;
             m_Label.raycastTarget = false;
 
-            Refresh();
+            RefreshValueOnly();
         }
 
         void OnChanged(bool value)
@@ -83,16 +87,18 @@ namespace AmberScreen.DevConsole
             }
         }
 
-        public void Refresh()
+        public void RefreshValueOnly()
         {
             bool value = false;
             try { value = m_Entry.ToggleGet != null && m_Entry.ToggleGet(); }
             catch { /* ignore */ }
 
+            if (m_Toggle.isOn == value)
+                return;
+
             m_Suppress = true;
             m_Toggle.isOn = value;
             m_Suppress = false;
-            m_Label.text = m_Entry.Label;
         }
     }
 }

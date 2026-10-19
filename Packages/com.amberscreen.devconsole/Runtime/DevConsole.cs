@@ -14,10 +14,12 @@ namespace AmberScreen.DevConsole
         static bool s_Collapsed;
         static bool s_Discovered;
         static Action<bool> s_OpenChanged;
+        static Action<bool> s_BlocksGameChanged;
         static float s_SavedTimescale = 1f;
         static bool s_HasSavedCursor;
         static CursorLockMode s_SavedLock;
         static bool s_SavedCursorVisible;
+        static bool s_ConsumedCloseThisFrame;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
@@ -26,12 +28,15 @@ namespace AmberScreen.DevConsole
             s_Collapsed = false;
             s_Discovered = false;
             s_OpenChanged = null;
+            s_BlocksGameChanged = null;
             s_SavedTimescale = 1f;
             s_HasSavedCursor = false;
             s_SavedLock = CursorLockMode.None;
             s_SavedCursorVisible = true;
+            s_ConsumedCloseThisFrame = false;
             DevConsoleRegistry.Reset();
             DevConsoleSettings.ResetRuntimeDefault();
+            DevConsoleUiUtil.ResetFontCache();
             DevConsoleHost.ResetStatics();
         }
 
@@ -63,11 +68,39 @@ namespace AmberScreen.DevConsole
 #endif
         }
 
+        /// <summary>
+        /// True for the remainder of the frame after the console handles Esc or gamepad B
+        /// while open and expanded. Games (e.g. pause menus) can skip their own close handling.
+        /// Reset at the start of each frame.
+        /// </summary>
+        public static bool ConsumedCloseThisFrame
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            get => s_ConsumedCloseThisFrame;
+            internal set => s_ConsumedCloseThisFrame = value;
+#else
+            get => false;
+#endif
+        }
+
+        /// <summary>Fires when <see cref="IsOpen"/> changes. Does not fire on DockRight collapse/expand.</summary>
         public static event Action<bool> OpenChanged
         {
 #if AMBERSCREEN_DEVCONSOLE
             add => s_OpenChanged += value;
             remove => s_OpenChanged -= value;
+#else
+            add { }
+            remove { }
+#endif
+        }
+
+        /// <summary>Fires whenever <see cref="BlocksGame"/> changes (open, close, collapse, expand).</summary>
+        public static event Action<bool> BlocksGameChanged
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            add => s_BlocksGameChanged += value;
+            remove => s_BlocksGameChanged -= value;
 #else
             add { }
             remove { }
@@ -214,9 +247,10 @@ namespace AmberScreen.DevConsole
         {
             if (s_Collapsed == collapsed)
                 return;
+            bool prevBlocks = BlocksGame;
             s_Collapsed = collapsed;
-            // BlocksGame is derived; notify open-changed consumers so UI labels refresh.
-            s_OpenChanged?.Invoke(s_IsOpen);
+            if (prevBlocks != BlocksGame)
+                s_BlocksGameChanged?.Invoke(BlocksGame);
         }
 
         internal static void NotifyHostDestroyed()
@@ -228,15 +262,20 @@ namespace AmberScreen.DevConsole
             }
 
             RestoreWhileOpenState();
+            bool prevBlocks = BlocksGame;
             s_IsOpen = false;
             s_Collapsed = false;
             s_OpenChanged?.Invoke(false);
+            if (prevBlocks)
+                s_BlocksGameChanged?.Invoke(false);
         }
 
         static void SetOpen(bool open)
         {
             if (s_IsOpen == open)
                 return;
+
+            bool prevBlocks = BlocksGame;
 
             if (open)
             {
@@ -255,6 +294,8 @@ namespace AmberScreen.DevConsole
             }
 
             s_OpenChanged?.Invoke(s_IsOpen);
+            if (prevBlocks != BlocksGame)
+                s_BlocksGameChanged?.Invoke(BlocksGame);
         }
 
         static void ApplyWhileOpenState()
@@ -303,7 +344,6 @@ namespace AmberScreen.DevConsole
                 DevConsoleDiscovery.DiscoverProviders();
         }
 
-        // Exposed for tests / host
         internal static void ResetForTests()
         {
             ResetStatics();

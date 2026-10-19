@@ -9,26 +9,27 @@ namespace AmberScreen.DevConsole
     {
         readonly DevConsoleEntry m_Entry;
         readonly TextMeshProUGUI m_Label;
-        readonly RectTransform m_Root;
         float m_Accum;
 
-        public RectTransform Root => m_Root;
-
-        public DevConsoleReadoutWidget(Transform parent, DevConsoleEntry entry, DevConsoleSettings settings)
+        public DevConsoleReadoutWidget(
+            Transform parent,
+            DevConsoleEntry entry,
+            DevConsoleSettings settings,
+            Canvas canvas)
         {
             m_Entry = entry;
-            float h = DevConsoleUiUtil.MinTouch(settings) * 0.85f;
-            float font = DevConsoleUiUtil.FontSize(settings);
+            float h = DevConsoleUiUtil.MinTouch(settings, canvas) * 0.85f;
+            float font = DevConsoleUiUtil.FontSize(settings, canvas);
 
-            m_Root = DevConsoleUiUtil.CreateRect("Readout_" + entry.Label, parent);
-            var le = m_Root.gameObject.AddComponent<LayoutElement>();
+            var root = DevConsoleUiUtil.CreateRect("Readout_" + entry.Label, parent);
+            var le = root.gameObject.AddComponent<LayoutElement>();
             le.minHeight = h;
             le.preferredHeight = h;
             le.flexibleWidth = 1f;
-            DevConsoleUiUtil.AddImage(m_Root, DevConsoleUiUtil.RowBg);
+            DevConsoleUiUtil.AddImage(root, DevConsoleUiUtil.RowBg);
 
             m_Label = DevConsoleUiUtil.AddLabel(
-                m_Root, "Label", entry.Label + ": —", font * 0.9f,
+                root, "Label", entry.Label + ": -", font * 0.9f,
                 TextAlignmentOptions.MidlineLeft);
             var rt = m_Label.rectTransform;
             rt.offsetMin = new Vector2(8, 0);
@@ -48,8 +49,8 @@ namespace AmberScreen.DevConsole
 
         void RefreshNow()
         {
-            string value = "—";
-            try { value = m_Entry.ReadoutValue?.Invoke() ?? "—"; }
+            string value = "-";
+            try { value = m_Entry.ReadoutValue?.Invoke() ?? "-"; }
             catch { value = "err"; }
             m_Label.text = m_Entry.Label + ": " + value;
         }

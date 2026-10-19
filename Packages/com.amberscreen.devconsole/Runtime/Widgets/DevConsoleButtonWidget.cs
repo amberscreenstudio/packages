@@ -10,31 +10,30 @@ namespace AmberScreen.DevConsole
         readonly DevConsoleEntry m_Entry;
         readonly Button m_Button;
         readonly TextMeshProUGUI m_Label;
-        readonly RectTransform m_Root;
 
-        public RectTransform Root => m_Root;
         public Selectable Selectable => m_Button;
 
-        public DevConsoleButtonWidget(Transform parent, DevConsoleEntry entry, DevConsoleSettings settings)
+        public DevConsoleButtonWidget(
+            Transform parent,
+            DevConsoleEntry entry,
+            DevConsoleSettings settings,
+            Canvas canvas)
         {
             m_Entry = entry;
-            float h = DevConsoleUiUtil.MinTouch(settings);
-            float font = DevConsoleUiUtil.FontSize(settings);
+            float h = DevConsoleUiUtil.MinTouch(settings, canvas);
+            float font = DevConsoleUiUtil.FontSize(settings, canvas);
 
-            m_Root = DevConsoleUiUtil.CreateRect("Button_" + entry.Label, parent);
-            DevConsoleUiUtil.SetHeight(m_Root, h);
-            var le = m_Root.gameObject.AddComponent<LayoutElement>();
+            var root = DevConsoleUiUtil.CreateRect("Button_" + entry.Label, parent);
+            DevConsoleUiUtil.SetHeight(root, h);
+            var le = root.gameObject.AddComponent<LayoutElement>();
             le.minHeight = h;
             le.preferredHeight = h;
             le.flexibleWidth = 1f;
 
-            m_Button = DevConsoleUiUtil.AddButton(m_Root, DevConsoleUiUtil.ButtonBg);
+            m_Button = DevConsoleUiUtil.AddButton(root, DevConsoleUiUtil.ButtonBg);
             m_Label = DevConsoleUiUtil.AddLabel(
-                m_Root, "Label", entry.Caption ?? entry.Label, font,
+                root, "Label", entry.Caption ?? entry.Label, font,
                 TextAlignmentOptions.Midline);
-
-            var pad = m_Root.gameObject.AddComponent<LayoutElement>();
-            _ = pad;
 
             m_Button.onClick.AddListener(OnClick);
             Refresh();
@@ -55,6 +54,11 @@ namespace AmberScreen.DevConsole
         public void Refresh()
         {
             m_Label.text = string.IsNullOrEmpty(m_Entry.Caption) ? m_Entry.Label : m_Entry.Caption;
+            RefreshInteractable();
+        }
+
+        public void RefreshInteractable()
+        {
             m_Button.interactable = DevConsoleRegistry.IsAvailable(m_Entry);
         }
     }
