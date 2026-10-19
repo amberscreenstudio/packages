@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **devconsole 0.2.5: test asmdef references TextMeshPro**
+- Save: n/a
+
 - **devconsole 0.2.4: fixed-height title bar, history toggle removed, Inter from package Resources + font log**
 - Save: n/a
 

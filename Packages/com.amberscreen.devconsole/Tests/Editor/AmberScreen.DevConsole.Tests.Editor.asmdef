@@ -4,6 +4,8 @@
   "references": [
     "AmberScreen.DevConsole",
     "Unity.InputSystem",
+    "Unity.TextMeshPro",
+    "UnityEngine.UI",
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner"
   ],

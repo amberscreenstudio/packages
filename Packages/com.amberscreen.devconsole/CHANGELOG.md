@@ -2,6 +2,12 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.2.5] - 2026-10-19
+
+### Fixed
+
+- Test asmdef references TextMeshPro (and UnityEngine.UI for layout tests).
+
 ## [0.2.4] - 2026-10-19
 
 ### Fixed
