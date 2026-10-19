@@ -1,0 +1,22 @@
+{
+  "name": "com.amberscreen.devconsole",
+  "version": "0.1.0",
+  "displayName": "Amber Screen Dev Console",
+  "description": "Runtime debug console for Amber Screen games. Buttons, toggles, dropdowns, confirm actions, and readouts. No render-pipeline dependency.",
+  "unity": "6000.6",
+  "documentationUrl": "https://github.com/amberscreenstudio/packages/blob/main/Packages/com.amberscreen.devconsole/README.md",
+  "changelogUrl": "https://github.com/amberscreenstudio/packages/blob/main/Packages/com.amberscreen.devconsole/CHANGELOG.md",
+  "keywords": [
+    "debug",
+    "console",
+    "dev",
+    "amberscreen"
+  ],
+  "author": {
+    "name": "Amber Screen Studio"
+  },
+  "dependencies": {
+    "com.unity.inputsystem": "1.20.0",
+    "com.unity.ugui": "2.0.0"
+  }
+}

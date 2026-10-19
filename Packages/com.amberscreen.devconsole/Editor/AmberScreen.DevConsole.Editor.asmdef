@@ -1,0 +1,18 @@
+{
+  "name": "AmberScreen.DevConsole.Editor",
+  "rootNamespace": "AmberScreen.DevConsole.Editor",
+  "references": [
+    "AmberScreen.DevConsole"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,9 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!313546621 &1
+MemorySettings:
+  m_ObjectHideFlags: 0
+  m_EditorMemoryDisabled: 0
+  m_EditorMemoryFlushAllocationSizeThreshold: 0
+  m_PlayerMemoryDisabled: 0
+  m_PlayerMemoryFlushAllocationSizeThreshold: 0

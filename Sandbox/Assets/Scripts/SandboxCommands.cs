@@ -1,0 +1,123 @@
+using AmberScreen.DevConsole;
+using UnityEngine;
+
+namespace AmberScreen.Sandbox
+{
+    /// <summary>
+    /// Registers one of each Dev Console widget for local playtesting.
+    /// </summary>
+    public sealed class SandboxCommands : MonoBehaviour
+    {
+        [SerializeField] Transform cube;
+        [SerializeField] Renderer cubeRenderer;
+
+        bool m_Spin;
+        Color m_Color = Color.white;
+        Vector3 m_StartPos;
+        Quaternion m_StartRot;
+        Vector3 m_StartScale;
+
+        void Awake()
+        {
+            if (cube == null)
+            {
+                var found = GameObject.Find("Cube");
+                if (found != null)
+                    cube = found.transform;
+            }
+
+            if (cube != null)
+            {
+                m_StartPos = cube.position;
+                m_StartRot = cube.rotation;
+                m_StartScale = cube.localScale;
+                if (cubeRenderer == null)
+                    cubeRenderer = cube.GetComponent<Renderer>();
+            }
+        }
+
+        void Start()
+        {
+            DevConsole.SetSectionOrder("Sandbox", "Readouts", "Danger", "Provider");
+
+            DevConsole.RegisterToggle("Sandbox", "Spin Cube", () => m_Spin, v => m_Spin = v);
+
+            DevConsole.RegisterDropdown(
+                "Sandbox",
+                "Cube Colour",
+                () => new[] { "White", "Amber", "Teal", "Magenta" },
+                ApplyColour);
+
+            DevConsole.RegisterReadout(
+                "Readouts",
+                "FPS",
+                () =>
+                {
+                    float dt = Time.unscaledDeltaTime;
+                    return dt > 0f ? (1f / dt).ToString("0") : "—";
+                },
+                0.25f);
+
+            DevConsole.RegisterReadout(
+                "Readouts",
+                "Memory MB",
+                () => (UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong() / (1024f * 1024f))
+                    .ToString("0.0"),
+                0.5f);
+
+            DevConsole.RegisterConfirm("Danger", "Reset Cube", ResetCube);
+
+            DevConsole.Note("Sandbox ready — press F1");
+        }
+
+        void Update()
+        {
+            if (m_Spin && cube != null)
+                cube.Rotate(0f, 90f * Time.deltaTime, 0f, Space.Self);
+        }
+
+        void ApplyColour(int index)
+        {
+            m_Color = index switch
+            {
+                1 => new Color(0.95f, 0.75f, 0.25f),
+                2 => new Color(0.2f, 0.75f, 0.7f),
+                3 => new Color(0.85f, 0.25f, 0.7f),
+                _ => Color.white
+            };
+
+            if (cubeRenderer != null)
+                cubeRenderer.material.color = m_Color;
+
+            DevConsole.Note($"Cube colour → index {index}");
+        }
+
+        void ResetCube()
+        {
+            if (cube == null)
+                return;
+
+            m_Spin = false;
+            cube.SetPositionAndRotation(m_StartPos, m_StartRot);
+            cube.localScale = m_StartScale;
+            m_Color = Color.white;
+            if (cubeRenderer != null)
+                cubeRenderer.material.color = m_Color;
+            DevConsole.Note("Cube reset");
+        }
+
+        [DevButton("Sandbox", "Write Note")]
+        static void WriteNoteButton()
+        {
+            DevConsole.Note("DevButton fired at " + Time.frameCount);
+        }
+    }
+
+    public sealed class SandboxProviderSection : IDevConsoleSectionProvider
+    {
+        public void Register()
+        {
+            DevConsole.Register("Provider", "Provider Ping", () => DevConsole.Note("IDevConsoleSectionProvider ok"));
+        }
+    }
+}

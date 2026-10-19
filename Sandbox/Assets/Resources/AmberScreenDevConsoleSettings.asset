@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d, type: 3}
+  m_Name: AmberScreenDevConsoleSettings
+  m_EditorClassIdentifier: AmberScreen.DevConsole::AmberScreen.DevConsole.DevConsoleSettings
+  autoAddDefine: 1
+  enableAttributeDiscovery: 1
+  enableProviderDiscovery: 1
+  layout: 0
+  scale: 1
+  scaleMultiplier: 1
+  columns: 1
+  buttonHeight: 36
+  fontSize: 18
+  spacing: 8
+  sortingOrder: 1000
+  openKey: 58
+  enableGamepadChord: 1
+  enableThreeFingerTap: 1
+  enableCornerHold: 1
+  showOnScreenDevButton: 0
+  showCursorWhileOpen: 1
+  pauseTimescaleWhileOpen: 0
