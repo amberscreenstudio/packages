@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **2026-10-19, registry v3: one entry per package listing includes, stays-in-games, interfaces and dependencies; rule added for changing a package you don't own; added llmchat, IReplyClassifier and timeofday moon phase. Docs only.**
+- Save: n/a
+
 - **devconsole 0.3.3: section window draws above the rail in portrait**
 - Save: n/a
 

@@ -1,12 +1,16 @@
 # Package usage by game
 
-| Game | Package | Version | Date |
-| --- | --- | --- | --- |
-| Sand & Ink | | | |
-| Left With Neighbour | | | |
-| Snorkel & Sail | | | |
-| The Watchmaker Shop | | | |
-| Twin Ticks | | | |
+## Package versions per game
+
+| Game | Repo | com.amberscreen.devconsole |
+| --- | --- | --- |
+| Twin Ticks | amberscreenstudio/Twin-Ticks | `devconsole/0.3.1` (Twin Ticks 0.0.18), bumping to 0.3.3 |
+| Sand & Ink | amberscreenstudio/Sand-and-Ink | switching to `devconsole/0.3.3` (S&I 0.1.9) |
+| Snorkel & Sail | (local) | not yet (own console) |
+| LWN | (local) | not yet (own console) |
+| The Watchmaker Shop | local, `E:\Unity Projects\Time & Tension` | not yet (own console) |
+
+Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3`. Always pin a tag, never `main`.
 
 ## com.amberscreen.devconsole settings (0.2.3+)
 
