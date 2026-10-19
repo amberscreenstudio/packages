@@ -38,7 +38,7 @@ namespace AmberScreen.Sandbox
 
         void Start()
         {
-            DevConsole.SetSectionOrder("Sandbox", "Readouts", "Danger", "Provider");
+            DevConsole.SetSectionOrder("Sandbox", "Readouts", "Danger", "Provider", "Density");
 
             DevConsole.RegisterToggle("Sandbox", "Spin Cube", () => m_Spin, v => m_Spin = v);
 
@@ -67,7 +67,16 @@ namespace AmberScreen.Sandbox
 
             DevConsole.RegisterConfirm("Danger", "Reset Cube", ResetCube);
 
-            DevConsole.Note("Sandbox ready â€” press F1");
+            for (int i = 1; i <= 40; i++)
+            {
+                int n = i;
+                DevConsole.Register(
+                    "Density",
+                    $"Filler {n:00}",
+                    () => DevConsole.Note($"Filler {n:00}"));
+            }
+
+            DevConsole.Note("Sandbox ready — press F1");
         }
 
         void Update()

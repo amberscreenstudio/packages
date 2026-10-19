@@ -2,6 +2,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace AmberScreen.Dev
 {
     public enum DevConsoleLayout
@@ -25,6 +29,11 @@ namespace AmberScreen.Dev
     {
         public const string ResourcesName = "AmberScreenDevConsoleSettings";
 
+        const string BundledRegularPath =
+            "Packages/com.amberscreen.devconsole/Runtime/Fonts/Inter-Regular.ttf";
+        const string BundledSemiBoldPath =
+            "Packages/com.amberscreen.devconsole/Runtime/Fonts/Inter-SemiBold.ttf";
+
         [Header("Compile / discovery")]
         [Tooltip("Editor: add AMBERSCREEN_DEVCONSOLE to the active build target if missing.")]
         public bool autoAddDefine = true;
@@ -40,16 +49,34 @@ namespace AmberScreen.Dev
         public DevConsoleScalePreset scale = DevConsoleScalePreset.Medium;
         [Min(0.25f)] public float scaleMultiplier = 1f;
         [Min(1)] public int columns = 1;
-        [Min(24f)] public float buttonHeight = 44f;
-        [Min(10f)] public float fontSize = 22f;
-        [Min(0f)] public float spacing = 8f;
+        public bool autoColumns = true;
+        [Min(80f)] public float minEntryWidth = 220f;
+        [Min(24f)] public float buttonHeight = 30f;
+        [Min(10f)] public float fontSize = 16f;
+        [Min(0f)] public float spacing = 4f;
         public int sortingOrder = 1000;
+
+        [Tooltip("Fraction of the safe area filled by the Floating panel (centred).")]
+        public Vector2 floatingScreenFraction = new Vector2(0.9f, 0.88f);
+
+        [Tooltip("Ignored for Floating layout (use floatingScreenFraction). Kept for older assets.")]
         [Min(200f)] public float floatingPanelWidth = 560f;
-        [Min(200f)] public float dockRightWidth = 320f;
+
+        [Tooltip("DockRight width as a fraction of the safe-area width.")]
+        [Min(0.1f)] public float dockRightScreenFraction = 0.28f;
+
+        [Tooltip("Minimum DockRight width (canvas units).")]
+        [Min(120f)] public float dockRightWidth = 320f;
 
         [Header("Font")]
-        [Tooltip("Optional override. If null, TMP defaults / Resources fallback are used.")]
+        [Tooltip("Optional TMP override. If set, used instead of bundled Inter.")]
         public TMP_FontAsset fontOverride;
+
+        [Tooltip("Bundled Inter Regular (SIL OFL 1.1). Filled by editor Reset/OnValidate.")]
+        public Font bundledRegular;
+
+        [Tooltip("Bundled Inter SemiBold (SIL OFL 1.1). Filled by editor Reset/OnValidate.")]
+        public Font bundledSemiBold;
 
         [Header("Open bindings")]
         public Key openKey = Key.F1;
@@ -100,6 +127,24 @@ namespace AmberScreen.Dev
             return s_RuntimeDefault;
         }
 
+        /// <summary>
+        /// Applies the compact 0.2.3 defaults (layout fields and bundled Inter refs in editor).
+        /// </summary>
+        public void ApplyCompactDefaults()
+        {
+            buttonHeight = 30f;
+            fontSize = 16f;
+            spacing = 4f;
+            autoColumns = true;
+            minEntryWidth = 220f;
+            floatingScreenFraction = new Vector2(0.9f, 0.88f);
+            dockRightScreenFraction = 0.28f;
+            columns = 1;
+#if UNITY_EDITOR
+            AssignBundledFonts();
+#endif
+        }
+
         internal static void ResetRuntimeDefault()
         {
             if (s_RuntimeDefault == null)
@@ -114,12 +159,26 @@ namespace AmberScreen.Dev
         }
 
 #if UNITY_EDITOR
+        void Reset()
+        {
+            ApplyCompactDefaults();
+        }
+
         void OnValidate()
         {
+            AssignBundledFonts();
 #if AMBERSCREEN_DEVCONSOLE
             if (Application.isPlaying)
                 DevConsoleHost.ReloadCachedSettings(this);
 #endif
+        }
+
+        public void AssignBundledFonts()
+        {
+            if (bundledRegular == null)
+                bundledRegular = AssetDatabase.LoadAssetAtPath<Font>(BundledRegularPath);
+            if (bundledSemiBold == null)
+                bundledSemiBold = AssetDatabase.LoadAssetAtPath<Font>(BundledSemiBoldPath);
         }
 #endif
     }

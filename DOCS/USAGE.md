@@ -7,3 +7,23 @@
 | Snorkel & Sail | | | |
 | The Watchmaker Shop | | | |
 | Twin Ticks | | | |
+
+## com.amberscreen.devconsole settings (0.2.3+)
+
+Additive fields on `DevConsoleSettings` (`Resources/AmberScreenDevConsoleSettings`):
+
+| Field | Default | Notes |
+| --- | --- | --- |
+| `buttonHeight` | 30 | Compact landscape row height |
+| `fontSize` | 16 | Base label size |
+| `spacing` | 4 | Grid / stack spacing |
+| `floatingScreenFraction` | (0.9, 0.88) | Floating panel fills this fraction of the safe area |
+| `floatingPanelWidth` | 560 | Ignored for Floating (kept for older assets) |
+| `dockRightScreenFraction` | 0.28 | DockRight width as a fraction of safe-area width |
+| `dockRightWidth` | 320 | Minimum DockRight width |
+| `autoColumns` | true | Column count from content width / `minEntryWidth` |
+| `minEntryWidth` | 220 | Used when `autoColumns` is on |
+| `columns` | 1 | Used when `autoColumns` is off |
+| `bundledRegular` / `bundledSemiBold` | Inter TTFs | Filled by editor Reset/OnValidate |
+
+Games with an existing settings asset should run **Amber Screen → Reset DevConsole Settings To Defaults** (Sandbox menu) or update `buttonHeight`, `fontSize`, and `spacing` by hand, and assign the bundled Inter fonts if those fields are empty.

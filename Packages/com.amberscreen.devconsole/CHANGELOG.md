@@ -2,6 +2,20 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.2.3] - 2026-10-19
+
+### Changed
+
+- Compact defaults (`buttonHeight` 30, `fontSize` 16, `spacing` 4).
+- Bundled Inter font (SIL OFL 1.1); SemiBold for title/section headers, Regular elsewhere.
+- Floating / DockRight use screen-fraction panel sizing; landscape canvases use ConstantPixelSize scaled from 1080p height.
+- Auto columns via `autoColumns` / `minEntryWidth`; MobilePortrait 2 columns when safe width ≥ 360 dp.
+- Close moved to the title bar as **X**; history capped at 4 lines with a collapsible chevron.
+
+### Added
+
+- Settings: `floatingScreenFraction`, `dockRightScreenFraction`, `autoColumns`, `minEntryWidth`, `bundledRegular`, `bundledSemiBold`.
+
 ## [0.2.2] - 2026-10-19
 
 ### Fixed

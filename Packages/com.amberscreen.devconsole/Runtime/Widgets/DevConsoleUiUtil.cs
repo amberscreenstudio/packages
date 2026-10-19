@@ -1,58 +1,117 @@
 #if AMBERSCREEN_DEVCONSOLE
 using TMPro;
 using UnityEngine;
+using UnityEngine.TextCore.LowLevel;
 using UnityEngine.UI;
 
 namespace AmberScreen.Dev
 {
     static class DevConsoleUiUtil
     {
-        static TMP_FontAsset s_Font;
+        static TMP_FontAsset s_Regular;
+        static TMP_FontAsset s_SemiBold;
         static bool s_WarnedMissingFont;
 
         public static void ResetFontCache()
         {
-            s_Font = null;
+            s_Regular = null;
+            s_SemiBold = null;
             s_WarnedMissingFont = false;
         }
 
-        public static TMP_FontAsset ResolveFont(DevConsoleSettings settings = null)
+        public static TMP_FontAsset ResolveFont(DevConsoleSettings settings = null) =>
+            ResolveRegular(settings);
+
+        public static TMP_FontAsset Font => ResolveRegular();
+
+        public static TMP_FontAsset FontSemiBold => ResolveSemiBold();
+
+        public static TMP_FontAsset ResolveRegular(DevConsoleSettings settings = null)
         {
-            if (s_Font != null)
-                return s_Font;
+            if (s_Regular != null)
+                return s_Regular;
 
             settings ??= DevConsoleSettings.LoadOrDefault();
 
-            try
+            if (settings.fontOverride != null)
             {
-                s_Font = TMP_Settings.GetFontAsset();
-            }
-            catch
-            {
-                // TMP settings may be unavailable before Essential Resources import.
+                s_Regular = settings.fontOverride;
+                return s_Regular;
             }
 
-            if (s_Font == null && settings.fontOverride != null)
-                s_Font = settings.fontOverride;
+            if (settings.bundledRegular != null)
+                s_Regular = CreateDynamicFontAsset(settings.bundledRegular);
 
-            if (s_Font == null)
+            if (s_Regular == null)
             {
-                s_Font = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF")
-                         ?? Resources.Load<TMP_FontAsset>("LiberationSans SDF");
+                try { s_Regular = TMP_Settings.GetFontAsset(); }
+                catch { /* TMP Essential Resources may be missing */ }
             }
 
-            if (s_Font == null && !s_WarnedMissingFont)
+            if (s_Regular == null && !s_WarnedMissingFont)
             {
                 s_WarnedMissingFont = true;
                 Debug.LogWarning(
-                    "[AmberScreen DevConsole] No TMP font found. Import TMP Essential Resources " +
-                    "(Window â†’ TextMeshPro â†’ Import TMP Essential Resources).");
+                    "[AmberScreen DevConsole] No font available. Assign bundled Inter on DevConsoleSettings " +
+                    "or import TMP Essential Resources.");
             }
 
-            return s_Font;
+            return s_Regular;
         }
 
-        public static TMP_FontAsset Font => ResolveFont();
+        public static TMP_FontAsset ResolveSemiBold(DevConsoleSettings settings = null)
+        {
+            if (s_SemiBold != null)
+                return s_SemiBold;
+
+            settings ??= DevConsoleSettings.LoadOrDefault();
+
+            if (settings.fontOverride != null)
+            {
+                s_SemiBold = settings.fontOverride;
+                return s_SemiBold;
+            }
+
+            if (settings.bundledSemiBold != null)
+                s_SemiBold = CreateDynamicFontAsset(settings.bundledSemiBold);
+
+            if (s_SemiBold == null)
+                s_SemiBold = ResolveRegular(settings);
+
+            return s_SemiBold;
+        }
+
+        static TMP_FontAsset CreateDynamicFontAsset(Font font)
+        {
+            if (font == null)
+                return null;
+
+            return TMP_FontAsset.CreateFontAsset(
+                font,
+                90,
+                9,
+                GlyphRenderMode.SDFAA,
+                1024,
+                1024,
+                AtlasPopulationMode.Dynamic);
+        }
+
+        public static void ApplyCrisp(TextMeshProUGUI tmp)
+        {
+            if (tmp == null)
+                return;
+            tmp.fontStyle = FontStyles.Normal;
+            tmp.extraPadding = false;
+            tmp.characterSpacing = 0f;
+        }
+
+        public static int ComputeAutoColumns(float contentWidth, float minEntryWidth, float spacing)
+        {
+            float denom = minEntryWidth + spacing;
+            if (contentWidth <= 0f || denom <= 0f)
+                return 1;
+            return Mathf.Max(1, Mathf.FloorToInt(contentWidth / denom));
+        }
 
         public static Color PanelBg => new Color(0.08f, 0.09f, 0.11f, 0.94f);
         public static Color RowBg => new Color(0.14f, 0.15f, 0.18f, 1f);
@@ -66,6 +125,18 @@ namespace AmberScreen.Dev
             float dpi = Screen.dpi > 0f ? Screen.dpi : 160f;
             float scale = canvas != null && canvas.scaleFactor > 0f ? canvas.scaleFactor : 1f;
             return (dpi / 160f) / scale;
+        }
+
+        public static float SafeAreaWidthDp()
+        {
+            float dpi = Screen.dpi > 0f ? Screen.dpi : 160f;
+            return Screen.safeArea.width * (160f / dpi);
+        }
+
+        public static float LandscapeScaleFactor(DevConsoleSettings settings)
+        {
+            float baseScale = Mathf.Clamp(Screen.height / 1080f, 0.9f, 2f);
+            return baseScale * settings.ResolvedScaleFactor;
         }
 
         public static RectTransform CreateRect(string name, Transform parent)
@@ -103,12 +174,13 @@ namespace AmberScreen.Dev
             string name,
             string text,
             float fontSize,
-            TextAlignmentOptions align = TextAlignmentOptions.MidlineLeft)
+            TextAlignmentOptions align = TextAlignmentOptions.MidlineLeft,
+            bool semiBold = false)
         {
             var rt = CreateRect(name, parent);
             Stretch(rt);
             var tmp = rt.gameObject.AddComponent<TextMeshProUGUI>();
-            var font = Font;
+            var font = semiBold ? FontSemiBold : Font;
             if (font != null)
                 tmp.font = font;
             tmp.text = text;
@@ -118,6 +190,7 @@ namespace AmberScreen.Dev
             tmp.raycastTarget = false;
             tmp.textWrappingMode = TextWrappingModes.NoWrap;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
+            ApplyCrisp(tmp);
             return tmp;
         }
 
@@ -159,8 +232,9 @@ namespace AmberScreen.Dev
             if (settings.layout == DevConsoleLayout.MobilePortrait)
             {
                 float dp = DpToCanvas(canvas);
-                return Mathf.Max(h, 48f * dp);
+                return Mathf.Max(h, 44f * dp);
             }
+
             return h;
         }
 
@@ -170,9 +244,17 @@ namespace AmberScreen.Dev
             if (settings.layout == DevConsoleLayout.MobilePortrait)
             {
                 float dp = DpToCanvas(canvas);
-                return Mathf.Max(size, 16f * dp);
+                return Mathf.Max(size, 15f * dp);
             }
+
             return size;
+        }
+
+        public static float TitleBarHeight(DevConsoleSettings settings, Canvas canvas)
+        {
+            if (settings.layout == DevConsoleLayout.MobilePortrait)
+                return Mathf.Max(32f, MinTouch(settings, canvas) * 0.9f);
+            return 32f;
         }
     }
 }

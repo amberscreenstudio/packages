@@ -29,10 +29,28 @@ namespace AmberScreen.Sandbox.Editor
             var pipeline = CreateUrpAssets();
             AssignPipeline(pipeline);
             CreateScene();
-            EnsureDevConsoleSettings();
+            ResetDevConsoleSettingsToDefaults();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log("[Sandbox] Rebuilt. Commit Sandbox/Assets and Sandbox/ProjectSettings.");
+        }
+
+        [MenuItem("AmberScreen/Reset DevConsole Settings To Defaults")]
+        public static void ResetDevConsoleSettingsToDefaults()
+        {
+            EnsureFolder("Assets/Resources");
+            var settings = AssetDatabase.LoadAssetAtPath<DevConsoleSettings>(SettingsPath);
+            if (settings == null)
+            {
+                settings = ScriptableObject.CreateInstance<DevConsoleSettings>();
+                AssetDatabase.CreateAsset(settings, SettingsPath);
+            }
+
+            settings.ApplyCompactDefaults();
+            settings.AssignBundledFonts();
+            EditorUtility.SetDirty(settings);
+            AssetDatabase.SaveAssets();
+            Debug.Log("[Sandbox] DevConsole settings reset to compact defaults.");
         }
 
         static void EnsureFolders()
@@ -94,10 +112,9 @@ namespace AmberScreen.Sandbox.Editor
             var cameraGo = new GameObject("Main Camera");
             cameraGo.tag = "MainCamera";
             cameraGo.transform.position = new Vector3(0f, 1f, -5f);
-            var camera = cameraGo.AddComponent<Camera>();
+            cameraGo.AddComponent<Camera>();
             cameraGo.AddComponent<AudioListener>();
             cameraGo.AddComponent<UniversalAdditionalCameraData>();
-            camera.clearFlags = CameraClearFlags.Skybox;
 
             var lightGo = new GameObject("Directional Light");
             lightGo.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
@@ -134,16 +151,6 @@ namespace AmberScreen.Sandbox.Editor
             {
                 new EditorBuildSettingsScene(ScenePath, true)
             };
-        }
-
-        static void EnsureDevConsoleSettings()
-        {
-            var existing = AssetDatabase.LoadAssetAtPath<DevConsoleSettings>(SettingsPath);
-            if (existing != null)
-                return;
-
-            var settings = ScriptableObject.CreateInstance<DevConsoleSettings>();
-            AssetDatabase.CreateAsset(settings, SettingsPath);
         }
     }
 }

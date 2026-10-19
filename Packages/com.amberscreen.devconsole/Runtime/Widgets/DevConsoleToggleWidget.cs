@@ -71,6 +71,7 @@ namespace AmberScreen.Dev
             m_Label.color = DevConsoleUiUtil.TextColor;
             m_Label.alignment = TextAlignmentOptions.MidlineLeft;
             m_Label.raycastTarget = false;
+            DevConsoleUiUtil.ApplyCrisp(m_Label);
 
             RefreshValueOnly();
         }

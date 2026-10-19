@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **devconsole 0.2.3: compact layout, bundled Inter font, screen-fraction panel, auto columns, Close in title bar**
+- Save: n/a
+
 - **devconsole 0.2.2: NullReferenceException on console UI build (collapsed header dual Graphic); Bootstrap catches build failures**
 - Save: n/a
 

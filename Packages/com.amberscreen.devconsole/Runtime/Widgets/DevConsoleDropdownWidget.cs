@@ -58,6 +58,7 @@ namespace AmberScreen.Dev
             label.color = DevConsoleUiUtil.TextColor;
             label.alignment = TextAlignmentOptions.MidlineLeft;
             label.raycastTarget = false;
+            DevConsoleUiUtil.ApplyCrisp(label);
 
             var dropRt = DevConsoleUiUtil.CreateRect("Dropdown", root);
             var dropLe = dropRt.gameObject.AddComponent<LayoutElement>();
@@ -76,6 +77,7 @@ namespace AmberScreen.Dev
             caption.color = DevConsoleUiUtil.TextColor;
             caption.alignment = TextAlignmentOptions.MidlineLeft;
             caption.raycastTarget = false;
+            DevConsoleUiUtil.ApplyCrisp(caption);
 
             var template = CreateDropdownTemplate(dropRt, font, itemH);
             m_Dropdown = dropRt.gameObject.AddComponent<TMP_Dropdown>();
@@ -150,6 +152,7 @@ namespace AmberScreen.Dev
             itemLabel.fontSize = font * 0.8f;
             itemLabel.color = DevConsoleUiUtil.TextColor;
             itemLabel.alignment = TextAlignmentOptions.MidlineLeft;
+            DevConsoleUiUtil.ApplyCrisp(itemLabel);
 
             scroll.content = content;
             scroll.viewport = viewport;

@@ -27,18 +27,23 @@ namespace AmberScreen.Dev
         readonly Dictionary<string, bool> m_SectionExpanded = new Dictionary<string, bool>();
 
         Canvas m_Canvas;
+        CanvasScaler m_Scaler;
         RectTransform m_Root;
         RectTransform m_Panel;
         RectTransform m_Content;
         RectTransform m_CollapsedHeader;
         Button m_CollapsedExpandButton;
         ScrollRect m_Scroll;
+        LayoutElement m_ScrollLe;
         ScrollRect m_HistoryScroll;
+        LayoutElement m_HistoryLe;
         RectTransform m_HistoryContent;
         TextMeshProUGUI m_Title;
         TextMeshProUGUI m_Status;
         TextMeshProUGUI m_History;
         Button m_CollapseButton;
+        Button m_HistoryToggleButton;
+        TextMeshProUGUI m_HistoryToggleLabel;
 
         Canvas m_DevCanvas;
         CanvasScaler m_DevScaler;
@@ -46,14 +51,14 @@ namespace AmberScreen.Dev
         RectTransform m_DevButtonRt;
         Button m_CloseButton;
         LayoutElement m_HeaderLe;
-        LayoutElement m_StatusLe;
-        LayoutElement m_CloseLe;
         VerticalLayoutGroup m_PanelVlg;
 
         bool m_Collapsed;
+        bool m_HistoryExpanded = true;
         bool m_ChromeSized;
         Rect m_LastSafeArea;
         Rect m_DevLastSafeArea;
+        Vector2Int m_LastScreen;
         Vector2Int m_DevLastScreen;
         GameObject m_LastSelected;
         float m_AvailRefreshAccum;
@@ -81,7 +86,12 @@ namespace AmberScreen.Dev
             if (m_Root != null)
                 m_Root.gameObject.SetActive(visible);
             if (visible)
+            {
                 EnsureChromeSizes();
+                SyncCanvasScaler();
+                ApplyLayout();
+            }
+
             if (!visible)
                 SetCollapsed(false);
             UpdateDevButton();
@@ -90,6 +100,9 @@ namespace AmberScreen.Dev
         public void OnSettingsReloaded()
         {
             m_ChromeSized = false;
+            DevConsoleUiUtil.ResetFontCache();
+            DevConsoleUiUtil.ResolveFont(DevConsoleHost.Settings);
+            SyncCanvasScaler();
             ApplyLayout();
             SyncDevScaler();
             UpdateDevButton();
@@ -135,8 +148,15 @@ namespace AmberScreen.Dev
             m_Selectables.Clear();
 
             EnsureChromeSizes();
+            SyncCanvasScaler();
+            ApplyLayout();
+            Canvas.ForceUpdateCanvases();
+
             var settings = DevConsoleHost.Settings;
             var sections = DevConsoleRegistry.GetOrderedSections();
+            float contentWidth = m_Scroll != null && m_Scroll.viewport != null
+                ? m_Scroll.viewport.rect.width
+                : m_Content.rect.width;
 
             for (int s = 0; s < sections.Count; s++)
             {
@@ -144,7 +164,7 @@ namespace AmberScreen.Dev
                 if (!m_SectionExpanded.ContainsKey(section.Name))
                     m_SectionExpanded[section.Name] = true;
 
-                BuildSection(section, settings);
+                BuildSection(section, settings, contentWidth);
             }
 
             RefreshTitle();
@@ -177,21 +197,18 @@ namespace AmberScreen.Dev
             else
             {
                 var sb = new System.Text.StringBuilder(notes.Count * 24);
-                for (int i = notes.Count - 1; i >= 0; i--)
+                int start = Mathf.Max(0, notes.Count - 4);
+                for (int i = notes.Count - 1; i >= start; i--)
                 {
                     if (sb.Length > 0)
                         sb.Append('\n');
                     sb.Append(notes[i]);
                 }
+
                 m_History.text = sb.ToString();
             }
 
-            if (m_HistoryContent != null)
-            {
-                m_History.ForceMeshUpdate();
-                float h = Mathf.Max(m_History.preferredHeight + 8f, 40f);
-                m_HistoryContent.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, h);
-            }
+            UpdateHistoryLayout();
         }
 
         public bool TryCloseDropdown()
@@ -201,6 +218,7 @@ namespace AmberScreen.Dev
                 if (m_Dropdowns[i].TryCloseDropdown())
                     return true;
             }
+
             return false;
         }
 
@@ -218,16 +236,19 @@ namespace AmberScreen.Dev
                 RefreshAvailabilityAndToggles();
             }
 
-            var settings = DevConsoleHost.Settings;
-            if (settings.layout == DevConsoleLayout.MobilePortrait)
+            var screen = new Vector2Int(Screen.width, Screen.height);
+            Rect safe = Screen.safeArea;
+            bool screenChanged = screen != m_LastScreen;
+            bool safeChanged = safe.x != m_LastSafeArea.x || safe.y != m_LastSafeArea.y ||
+                               safe.width != m_LastSafeArea.width || safe.height != m_LastSafeArea.height;
+
+            if (screenChanged || safeChanged)
             {
-                Rect safe = Screen.safeArea;
-                if (safe.x != m_LastSafeArea.x || safe.y != m_LastSafeArea.y ||
-                    safe.width != m_LastSafeArea.width || safe.height != m_LastSafeArea.height)
-                {
-                    m_LastSafeArea = safe;
-                    ApplyLayout();
-                }
+                m_LastScreen = screen;
+                m_LastSafeArea = safe;
+                SyncCanvasScaler();
+                ApplyLayout();
+                Rebuild();
             }
 
             FollowSelectionScroll();
@@ -282,7 +303,7 @@ namespace AmberScreen.Dev
                 var sel = m_Selectables[i].Selectable;
                 if (sel == null || sel.gameObject == current || !sel.IsInteractable())
                     continue;
-                // Skip buttons that are about to become non-interactable.
+
                 bool aboutToDisable = false;
                 for (int b = 0; b < m_Buttons.Count; b++)
                 {
@@ -292,6 +313,7 @@ namespace AmberScreen.Dev
                         break;
                     }
                 }
+
                 if (aboutToDisable)
                     continue;
 
@@ -411,19 +433,14 @@ namespace AmberScreen.Dev
             float viewMin = -viewH * 0.5f;
             float viewMax = viewH * 0.5f;
 
-            float itemTopInView = yMax;
-            float itemBotInView = yMin;
-
-            if (itemTopInView > viewMax)
+            if (yMax > viewMax)
             {
-                float delta = itemTopInView - viewMax;
-                m_Content.anchoredPosition += new Vector2(0f, -delta);
+                m_Content.anchoredPosition += new Vector2(0f, -(yMax - viewMax));
                 m_Scroll.velocity = Vector2.zero;
             }
-            else if (itemBotInView < viewMin)
+            else if (yMin < viewMin)
             {
-                float delta = viewMin - itemBotInView;
-                m_Content.anchoredPosition += new Vector2(0f, delta);
+                m_Content.anchoredPosition += new Vector2(0f, viewMin - yMin);
                 m_Scroll.velocity = Vector2.zero;
             }
         }
@@ -432,6 +449,7 @@ namespace AmberScreen.Dev
         {
             var settings = DevConsoleHost.Settings;
             DevConsoleUiUtil.ResolveFont(settings);
+            DevConsoleUiUtil.ResolveSemiBold(settings);
 
             var canvasGo = new GameObject("DevConsoleCanvas", typeof(RectTransform));
             canvasGo.transform.SetParent(m_Host, false);
@@ -439,10 +457,8 @@ namespace AmberScreen.Dev
             m_Canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             m_Canvas.sortingOrder = settings.sortingOrder;
 
-            var scaler = canvasGo.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = settings.ReferenceResolution;
-            scaler.matchWidthOrHeight = settings.layout == DevConsoleLayout.MobilePortrait ? 1f : 0.5f;
+            m_Scaler = canvasGo.AddComponent<CanvasScaler>();
+            SyncCanvasScaler();
 
             canvasGo.AddComponent<GraphicRaycaster>();
 
@@ -451,6 +467,8 @@ namespace AmberScreen.Dev
 
             BuildPanel(settings);
             BuildCollapsedHeader(settings);
+            m_LastScreen = new Vector2Int(Screen.width, Screen.height);
+            m_LastSafeArea = Screen.safeArea;
             ApplyLayout();
             SetVisible(false);
         }
@@ -464,7 +482,6 @@ namespace AmberScreen.Dev
             m_DevCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
             m_DevCanvas.sortingOrder = settings.sortingOrder + 1;
             m_DevScaler = go.AddComponent<CanvasScaler>();
-            m_DevScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             SyncDevScaler();
             go.AddComponent<GraphicRaycaster>();
 
@@ -474,23 +491,54 @@ namespace AmberScreen.Dev
             m_DevButtonRt = DevConsoleUiUtil.CreateRect("DevButton", root);
             m_DevButton = DevConsoleUiUtil.AddButton(m_DevButtonRt, DevConsoleUiUtil.Accent);
             var label = DevConsoleUiUtil.AddLabel(
-                m_DevButtonRt, "Label", "DEV", 18f, TextAlignmentOptions.Midline);
+                m_DevButtonRt, "Label", "DEV", 14f, TextAlignmentOptions.Midline);
             label.color = Color.black;
             m_DevButton.onClick.AddListener(DevConsole.Toggle);
             m_DevCanvas.gameObject.SetActive(false);
             UpdateDevButton();
         }
 
+        void SyncCanvasScaler()
+        {
+            if (m_Scaler == null)
+                return;
+
+            var settings = DevConsoleHost.Settings;
+            m_Canvas.sortingOrder = settings.sortingOrder;
+
+            if (settings.layout == DevConsoleLayout.MobilePortrait)
+            {
+                m_Scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                m_Scaler.referenceResolution = settings.ReferenceResolution;
+                m_Scaler.matchWidthOrHeight = 1f;
+            }
+            else
+            {
+                m_Scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+                m_Scaler.scaleFactor = DevConsoleUiUtil.LandscapeScaleFactor(settings);
+            }
+        }
+
         void SyncDevScaler()
         {
             if (m_DevScaler == null)
                 return;
+
             var settings = DevConsoleHost.Settings;
-            m_DevScaler.referenceResolution = settings.ReferenceResolution;
-            m_DevScaler.matchWidthOrHeight =
-                settings.layout == DevConsoleLayout.MobilePortrait ? 1f : 0.5f;
             if (m_DevCanvas != null)
                 m_DevCanvas.sortingOrder = settings.sortingOrder + 1;
+
+            if (settings.layout == DevConsoleLayout.MobilePortrait)
+            {
+                m_DevScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                m_DevScaler.referenceResolution = settings.ReferenceResolution;
+                m_DevScaler.matchWidthOrHeight = 1f;
+            }
+            else
+            {
+                m_DevScaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+                m_DevScaler.scaleFactor = DevConsoleUiUtil.LandscapeScaleFactor(settings);
+            }
         }
 
         void PlaceDevButtonInSafeArea()
@@ -531,6 +579,7 @@ namespace AmberScreen.Dev
                 screen == m_DevLastScreen)
                 return;
 
+            SyncDevScaler();
             PlaceDevButtonInSafeArea();
         }
 
@@ -565,89 +614,150 @@ namespace AmberScreen.Dev
             Canvas.ForceUpdateCanvases();
             var settings = DevConsoleHost.Settings;
             float font = DevConsoleUiUtil.FontSize(settings, m_Canvas);
-            float touch = DevConsoleUiUtil.MinTouch(settings, m_Canvas);
+            float titleH = DevConsoleUiUtil.TitleBarHeight(settings, m_Canvas);
             float pad = settings.layout == DevConsoleLayout.MobilePortrait
-                ? 12f * DevConsoleUiUtil.DpToCanvas(m_Canvas)
-                : 12f;
+                ? 8f * DevConsoleUiUtil.DpToCanvas(m_Canvas)
+                : 8f;
             int pi = Mathf.RoundToInt(pad);
 
             if (m_PanelVlg != null)
+            {
                 m_PanelVlg.padding = new RectOffset(pi, pi, pi, pi);
+                m_PanelVlg.spacing = settings.spacing;
+            }
+
             if (m_HeaderLe != null)
             {
-                m_HeaderLe.minHeight = touch * 0.9f;
-                m_HeaderLe.preferredHeight = touch * 0.9f;
+                m_HeaderLe.minHeight = titleH;
+                m_HeaderLe.preferredHeight = titleH;
             }
-            if (m_StatusLe != null)
-            {
-                m_StatusLe.minHeight = font + 6f;
-                m_StatusLe.preferredHeight = font + 6f;
-            }
-            if (m_CloseLe != null)
-            {
-                m_CloseLe.minHeight = touch;
-                m_CloseLe.preferredHeight = touch;
-            }
-            if (m_Title != null)
-                m_Title.fontSize = font;
-            if (m_Status != null)
-                m_Status.fontSize = font * 0.85f;
-            if (m_History != null)
-                m_History.fontSize = font * 0.75f;
 
+            if (m_Title != null)
+            {
+                m_Title.font = DevConsoleUiUtil.FontSemiBold;
+                m_Title.fontSize = font;
+                DevConsoleUiUtil.ApplyCrisp(m_Title);
+            }
+
+            if (m_Status != null)
+            {
+                m_Status.font = DevConsoleUiUtil.Font;
+                m_Status.fontSize = font * 0.85f;
+                DevConsoleUiUtil.ApplyCrisp(m_Status);
+            }
+
+            if (m_History != null)
+            {
+                m_History.font = DevConsoleUiUtil.Font;
+                m_History.fontSize = font * 0.75f;
+                DevConsoleUiUtil.ApplyCrisp(m_History);
+            }
+
+            UpdateHistoryLayout();
             m_ChromeSized = true;
+        }
+
+        void UpdateHistoryLayout()
+        {
+            if (m_HistoryLe == null || m_HistoryScroll == null)
+                return;
+
+            var settings = DevConsoleHost.Settings;
+            float font = DevConsoleUiUtil.FontSize(settings, m_Canvas);
+            if (m_HistoryToggleLabel != null)
+                m_HistoryToggleLabel.text = m_HistoryExpanded ? "v" : ">";
+
+            if (!m_HistoryExpanded)
+            {
+                m_HistoryScroll.gameObject.SetActive(false);
+                m_HistoryLe.minHeight = 0f;
+                m_HistoryLe.preferredHeight = 0f;
+                m_HistoryLe.flexibleHeight = 0f;
+                return;
+            }
+
+            m_HistoryScroll.gameObject.SetActive(true);
+            float line = Mathf.Max(font * 0.75f * 1.2f, 14f);
+            float h = line * 4f + 8f;
+            m_HistoryLe.minHeight = h;
+            m_HistoryLe.preferredHeight = h;
+            m_HistoryLe.flexibleHeight = 0f;
+
+            if (m_HistoryContent != null && m_History != null)
+            {
+                m_History.ForceMeshUpdate();
+                float contentH = Mathf.Min(Mathf.Max(m_History.preferredHeight + 8f, line), h);
+                m_HistoryContent.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, contentH);
+            }
         }
 
         void BuildPanel(DevConsoleSettings settings)
         {
-            // Placeholder sizes at boot; Finalize via EnsureChromeSizes after CanvasScaler updates.
             m_Panel = DevConsoleUiUtil.CreateRect("Panel", m_Root);
             DevConsoleUiUtil.AddImage(m_Panel, DevConsoleUiUtil.PanelBg);
             m_PanelVlg = m_Panel.gameObject.AddComponent<VerticalLayoutGroup>();
-            m_PanelVlg.padding = new RectOffset(12, 12, 12, 12);
+            m_PanelVlg.padding = new RectOffset(8, 8, 8, 8);
             m_PanelVlg.spacing = settings.spacing;
             m_PanelVlg.childAlignment = TextAnchor.UpperCenter;
             m_PanelVlg.childControlWidth = true;
             m_PanelVlg.childControlHeight = true;
             m_PanelVlg.childForceExpandWidth = true;
             m_PanelVlg.childForceExpandHeight = false;
-            var fitter = m_Panel.gameObject.AddComponent<ContentSizeFitter>();
-            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             var header = DevConsoleUiUtil.CreateRect("Header", m_Panel);
             m_HeaderLe = header.gameObject.AddComponent<LayoutElement>();
-            m_HeaderLe.minHeight = 40f;
-            m_HeaderLe.preferredHeight = 40f;
+            m_HeaderLe.minHeight = 32f;
+            m_HeaderLe.preferredHeight = 32f;
             var headerRow = header.gameObject.AddComponent<HorizontalLayoutGroup>();
             headerRow.childAlignment = TextAnchor.MiddleCenter;
-            headerRow.spacing = 8f;
+            headerRow.spacing = 6f;
             headerRow.childForceExpandWidth = false;
             headerRow.childForceExpandHeight = true;
+            headerRow.padding = new RectOffset(4, 4, 0, 0);
 
             var titleRt = DevConsoleUiUtil.CreateRect("Title", header);
             var titleLe = titleRt.gameObject.AddComponent<LayoutElement>();
-            titleLe.flexibleWidth = 1f;
+            titleLe.flexibleWidth = 1.2f;
+            titleLe.minWidth = 80f;
             m_Title = titleRt.gameObject.AddComponent<TextMeshProUGUI>();
-            var fontAsset = DevConsoleUiUtil.Font;
-            if (fontAsset != null)
-                m_Title.font = fontAsset;
-            m_Title.fontSize = 22f;
+            var semi = DevConsoleUiUtil.FontSemiBold;
+            if (semi != null)
+                m_Title.font = semi;
+            m_Title.fontSize = 16f;
             m_Title.color = DevConsoleUiUtil.Accent;
             m_Title.alignment = TextAlignmentOptions.MidlineLeft;
             m_Title.raycastTarget = false;
+            DevConsoleUiUtil.ApplyCrisp(m_Title);
 
-            m_CollapseButton = CreateTextButton(header, "Collapse", "-", 22f, 40f, () =>
+            var statusRt = DevConsoleUiUtil.CreateRect("Status", header);
+            var statusLe = statusRt.gameObject.AddComponent<LayoutElement>();
+            statusLe.flexibleWidth = 1f;
+            statusLe.minWidth = 40f;
+            m_Status = statusRt.gameObject.AddComponent<TextMeshProUGUI>();
+            var regular = DevConsoleUiUtil.Font;
+            if (regular != null)
+                m_Status.font = regular;
+            m_Status.fontSize = 14f;
+            m_Status.color = DevConsoleUiUtil.TextColor;
+            m_Status.alignment = TextAlignmentOptions.MidlineRight;
+            m_Status.raycastTarget = false;
+            DevConsoleUiUtil.ApplyCrisp(m_Status);
+
+            m_HistoryToggleButton = CreateTextButton(header, "HistToggle", "v", 14f, 28f, ToggleHistory);
+            m_HistoryToggleLabel = m_HistoryToggleButton.GetComponentInChildren<TextMeshProUGUI>();
+
+            m_CollapseButton = CreateTextButton(header, "Collapse", "-", 16f, 28f, () =>
             {
                 if (DevConsoleHost.Settings.layout == DevConsoleLayout.DockRight)
                     SetCollapsed(true);
             });
 
+            m_CloseButton = CreateTextButton(header, "Close", "X", 16f, 28f, DevConsole.Close);
+
             var scrollRt = DevConsoleUiUtil.CreateRect("Scroll", m_Panel);
-            var scrollLe = scrollRt.gameObject.AddComponent<LayoutElement>();
-            scrollLe.flexibleHeight = 1f;
-            scrollLe.minHeight = 120f;
-            scrollLe.preferredHeight = 420f;
+            m_ScrollLe = scrollRt.gameObject.AddComponent<LayoutElement>();
+            m_ScrollLe.flexibleHeight = 1f;
+            m_ScrollLe.minHeight = 80f;
             m_Scroll = scrollRt.gameObject.AddComponent<ScrollRect>();
             DevConsoleUiUtil.AddImage(scrollRt, new Color(0, 0, 0, 0.15f));
 
@@ -678,22 +788,10 @@ namespace AmberScreen.Dev
             m_Scroll.vertical = true;
             m_Scroll.movementType = ScrollRect.MovementType.Clamped;
 
-            var statusRt = DevConsoleUiUtil.CreateRect("Status", m_Panel);
-            m_StatusLe = statusRt.gameObject.AddComponent<LayoutElement>();
-            m_StatusLe.minHeight = 28f;
-            m_StatusLe.preferredHeight = 28f;
-            m_Status = statusRt.gameObject.AddComponent<TextMeshProUGUI>();
-            if (fontAsset != null)
-                m_Status.font = fontAsset;
-            m_Status.fontSize = 18f;
-            m_Status.color = DevConsoleUiUtil.TextColor;
-            m_Status.alignment = TextAlignmentOptions.MidlineLeft;
-            m_Status.raycastTarget = false;
-
             var histScroll = DevConsoleUiUtil.CreateRect("HistoryScroll", m_Panel);
-            var histLe = histScroll.gameObject.AddComponent<LayoutElement>();
-            histLe.minHeight = 72f;
-            histLe.preferredHeight = 96f;
+            m_HistoryLe = histScroll.gameObject.AddComponent<LayoutElement>();
+            m_HistoryLe.minHeight = 48f;
+            m_HistoryLe.preferredHeight = 48f;
             DevConsoleUiUtil.AddImage(histScroll, new Color(0, 0, 0, 0.25f));
             m_HistoryScroll = histScroll.gameObject.AddComponent<ScrollRect>();
 
@@ -709,19 +807,20 @@ namespace AmberScreen.Dev
             m_HistoryContent.sizeDelta = new Vector2(0, 40f);
 
             m_History = m_HistoryContent.gameObject.AddComponent<TextMeshProUGUI>();
-            if (fontAsset != null)
-                m_History.font = fontAsset;
-            m_History.fontSize = 16f;
+            if (regular != null)
+                m_History.font = regular;
+            m_History.fontSize = 12f;
             m_History.color = new Color(0.75f, 0.78f, 0.82f, 1f);
             m_History.alignment = TextAlignmentOptions.TopLeft;
             m_History.textWrappingMode = TextWrappingModes.Normal;
-            m_History.overflowMode = TextOverflowModes.Overflow;
+            m_History.overflowMode = TextOverflowModes.Ellipsis;
             m_History.raycastTarget = false;
+            DevConsoleUiUtil.ApplyCrisp(m_History);
             var histMargins = m_History.margin;
             histMargins.x = 6f;
             histMargins.z = 6f;
-            histMargins.y = 4f;
-            histMargins.w = 4f;
+            histMargins.y = 2f;
+            histMargins.w = 2f;
             m_History.margin = histMargins;
 
             m_HistoryScroll.content = m_HistoryContent;
@@ -729,28 +828,28 @@ namespace AmberScreen.Dev
             m_HistoryScroll.horizontal = false;
             m_HistoryScroll.vertical = true;
             m_HistoryScroll.movementType = ScrollRect.MovementType.Clamped;
+        }
 
-            var closeRow = DevConsoleUiUtil.CreateRect("CloseRow", m_Panel);
-            m_CloseLe = closeRow.gameObject.AddComponent<LayoutElement>();
-            m_CloseLe.minHeight = 44f;
-            m_CloseLe.preferredHeight = 44f;
-            m_CloseButton = CreateTextButton(closeRow, "Close", "Close", 22f, 0f, DevConsole.Close);
+        void ToggleHistory()
+        {
+            m_HistoryExpanded = !m_HistoryExpanded;
+            UpdateHistoryLayout();
         }
 
         void BuildCollapsedHeader(DevConsoleSettings settings)
         {
-            float font = 20f;
+            float font = settings.fontSize;
             m_CollapsedHeader = DevConsoleUiUtil.CreateRect("CollapsedHeader", m_Root);
             m_CollapsedHeader.anchorMin = new Vector2(1, 1);
             m_CollapsedHeader.anchorMax = new Vector2(1, 1);
             m_CollapsedHeader.pivot = new Vector2(1, 1);
-            m_CollapsedHeader.sizeDelta = new Vector2(200f, 56f);
+            m_CollapsedHeader.sizeDelta = new Vector2(180f, 40f);
             m_CollapsedHeader.anchoredPosition = new Vector2(-8f, -8f);
 
             m_CollapsedExpandButton = DevConsoleUiUtil.AddButton(m_CollapsedHeader, DevConsoleUiUtil.PanelBg);
             DevConsoleUiUtil.AddLabel(
-                m_CollapsedHeader, "Label", "Dev Console >", font * 0.9f,
-                TextAlignmentOptions.Midline);
+                m_CollapsedHeader, "Label", "Dev Console >", font,
+                TextAlignmentOptions.Midline, semiBold: true);
             m_CollapsedExpandButton.onClick.AddListener(() => SetCollapsed(false));
             m_CollapsedHeader.gameObject.SetActive(false);
         }
@@ -758,20 +857,7 @@ namespace AmberScreen.Dev
         void ApplyLayout()
         {
             var settings = DevConsoleHost.Settings;
-            float scale = settings.ResolvedScaleFactor;
-
-            if (m_Canvas != null)
-            {
-                m_Canvas.sortingOrder = settings.sortingOrder;
-                var scaler = m_Canvas.GetComponent<CanvasScaler>();
-                if (scaler != null)
-                {
-                    scaler.referenceResolution = settings.ReferenceResolution;
-                    scaler.matchWidthOrHeight =
-                        settings.layout == DevConsoleLayout.MobilePortrait ? 1f : 0.5f;
-                }
-            }
-
+            SyncCanvasScaler();
             SyncDevScaler();
 
             bool dockCollapsed = settings.layout == DevConsoleLayout.DockRight && m_Collapsed;
@@ -783,76 +869,74 @@ namespace AmberScreen.Dev
             if (m_CollapseButton != null)
                 m_CollapseButton.gameObject.SetActive(settings.layout == DevConsoleLayout.DockRight);
 
-            if (m_Panel == null)
+            if (m_Panel == null || m_Canvas == null)
                 return;
 
-            var fitter = m_Panel.GetComponent<ContentSizeFitter>();
-            float dockW = settings.dockRightWidth * scale;
-            float floatW = settings.floatingPanelWidth * scale;
+            float scale = Mathf.Max(m_Canvas.scaleFactor, 0.01f);
+            Rect safe = Screen.safeArea;
+            m_LastSafeArea = safe;
 
             switch (settings.layout)
             {
                 case DevConsoleLayout.DockRight:
+                {
+                    float fracW = safe.width * settings.dockRightScreenFraction / scale;
+                    float dockW = Mathf.Max(settings.dockRightWidth, fracW);
                     m_Panel.anchorMin = new Vector2(1, 0);
                     m_Panel.anchorMax = new Vector2(1, 1);
                     m_Panel.pivot = new Vector2(1, 0.5f);
                     m_Panel.anchoredPosition = Vector2.zero;
                     m_Panel.offsetMin = new Vector2(-dockW, 0f);
                     m_Panel.offsetMax = Vector2.zero;
-                    if (fitter != null)
-                    {
-                        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-                        fitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
-                    }
                     break;
+                }
 
                 case DevConsoleLayout.MobilePortrait:
-                    m_LastSafeArea = Screen.safeArea;
-                    float sx = m_LastSafeArea.x / Screen.width;
-                    float sy = m_LastSafeArea.y / Screen.height;
-                    float sw = m_LastSafeArea.width / Screen.width;
-                    float sh = m_LastSafeArea.height / Screen.height;
+                {
+                    float sx = safe.x / Screen.width;
+                    float sy = safe.y / Screen.height;
+                    float sw = safe.width / Screen.width;
+                    float sh = safe.height / Screen.height;
                     m_Panel.anchorMin = new Vector2(sx, sy);
                     m_Panel.anchorMax = new Vector2(sx + sw, sy + sh);
                     m_Panel.offsetMin = Vector2.zero;
                     m_Panel.offsetMax = Vector2.zero;
                     m_Panel.pivot = new Vector2(0.5f, 0.5f);
-                    if (fitter != null)
-                    {
-                        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-                        fitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
-                    }
                     break;
+                }
 
                 default:
-                    m_Panel.anchorMin = new Vector2(0.5f, 0.5f);
-                    m_Panel.anchorMax = new Vector2(0.5f, 0.5f);
+                {
+                    float sx = safe.x / Screen.width;
+                    float sy = safe.y / Screen.height;
+                    float sw = safe.width / Screen.width;
+                    float sh = safe.height / Screen.height;
+                    float fx = Mathf.Clamp01(settings.floatingScreenFraction.x);
+                    float fy = Mathf.Clamp01(settings.floatingScreenFraction.y);
+                    float insetX = sw * (1f - fx) * 0.5f;
+                    float insetY = sh * (1f - fy) * 0.5f;
+                    m_Panel.anchorMin = new Vector2(sx + insetX, sy + insetY);
+                    m_Panel.anchorMax = new Vector2(sx + sw - insetX, sy + sh - insetY);
+                    m_Panel.offsetMin = Vector2.zero;
+                    m_Panel.offsetMax = Vector2.zero;
                     m_Panel.pivot = new Vector2(0.5f, 0.5f);
                     m_Panel.anchoredPosition = Vector2.zero;
-                    float maxH = Screen.height * 0.8f / Mathf.Max(m_Canvas.scaleFactor, 0.01f);
-                    m_Panel.sizeDelta = new Vector2(floatW, 0f);
-                    if (fitter != null)
-                    {
-                        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-                        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-                    }
-                    var le = m_Panel.GetComponent<LayoutElement>();
-                    if (le == null)
-                        le = m_Panel.gameObject.AddComponent<LayoutElement>();
-                    le.preferredWidth = floatW;
-                    le.minWidth = floatW;
-                    // Cap via scroll preferred height inside panel.
-                    if (m_Scroll != null)
-                    {
-                        var scrollLe = m_Scroll.GetComponent<LayoutElement>();
-                        if (scrollLe != null)
-                            scrollLe.preferredHeight = Mathf.Min(420f * scale, maxH * 0.7f);
-                    }
+                    m_Panel.sizeDelta = Vector2.zero;
                     break;
+                }
             }
+
+            if (m_ScrollLe != null)
+            {
+                m_ScrollLe.flexibleHeight = 1f;
+                m_ScrollLe.minHeight = 80f;
+                m_ScrollLe.preferredHeight = -1f;
+            }
+
+            UpdateHistoryLayout();
         }
 
-        void BuildSection(DevConsoleSection section, DevConsoleSettings settings)
+        void BuildSection(DevConsoleSection section, DevConsoleSettings settings, float contentWidth)
         {
             float font = DevConsoleUiUtil.FontSize(settings, m_Canvas);
             bool expanded = m_SectionExpanded[section.Name];
@@ -865,8 +949,9 @@ namespace AmberScreen.Dev
             var headerBtn = DevConsoleUiUtil.AddButton(header, new Color(0.16f, 0.18f, 0.22f, 1f));
             string arrow = expanded ? "v" : ">";
             string title = string.IsNullOrEmpty(section.Name) ? "(default)" : section.Name;
-            DevConsoleUiUtil.AddLabel(header, "Label", $"{arrow} {title}", font,
-                TextAlignmentOptions.MidlineLeft);
+            DevConsoleUiUtil.AddLabel(
+                header, "Label", $"{arrow} {title}", font,
+                TextAlignmentOptions.MidlineLeft, semiBold: true);
             string sectionName = section.Name;
             headerBtn.onClick.AddListener(() =>
             {
@@ -883,25 +968,25 @@ namespace AmberScreen.Dev
             if (!expanded)
                 return;
 
-            int columns = settings.layout == DevConsoleLayout.MobilePortrait
-                ? 1
-                : Mathf.Max(1, settings.columns);
-            Transform entryParent = m_Content;
+            int cols = ResolveColumnCount(settings, contentWidth);
+            float cellH = DevConsoleUiUtil.MinTouch(settings, m_Canvas);
+            float cellW = cols <= 1
+                ? contentWidth
+                : (contentWidth - settings.spacing * (cols - 1)) / cols;
+            if (cellW < 1f)
+                cellW = Mathf.Max(settings.minEntryWidth, 80f);
 
-            if (columns > 1)
-            {
-                var gridRt = DevConsoleUiUtil.CreateRect("Grid_" + section.Name, m_Content);
-                var grid = gridRt.gameObject.AddComponent<GridLayoutGroup>();
-                float cellH = DevConsoleUiUtil.MinTouch(settings, m_Canvas);
-                grid.cellSize = new Vector2(200f, cellH);
-                grid.spacing = new Vector2(settings.spacing, settings.spacing);
-                grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-                grid.constraintCount = columns;
-                grid.childAlignment = TextAnchor.UpperLeft;
-                var gridLe = gridRt.gameObject.AddComponent<LayoutElement>();
-                gridLe.flexibleWidth = 1f;
-                entryParent = gridRt;
-            }
+            var gridRt = DevConsoleUiUtil.CreateRect("Grid_" + section.Name, m_Content);
+            var grid = gridRt.gameObject.AddComponent<GridLayoutGroup>();
+            grid.cellSize = new Vector2(cellW, cellH);
+            grid.spacing = new Vector2(settings.spacing, settings.spacing);
+            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            grid.constraintCount = cols;
+            grid.childAlignment = TextAnchor.UpperLeft;
+            grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
+            grid.startAxis = GridLayoutGroup.Axis.Horizontal;
+            var gridLe = gridRt.gameObject.AddComponent<LayoutElement>();
+            gridLe.flexibleWidth = 1f;
 
             for (int i = 0; i < section.Entries.Count; i++)
             {
@@ -913,7 +998,7 @@ namespace AmberScreen.Dev
                 {
                     case DevConsoleEntryKind.Button:
                     {
-                        var w = new DevConsoleButtonWidget(entryParent, entry, settings, m_Canvas);
+                        var w = new DevConsoleButtonWidget(gridRt, entry, settings, m_Canvas);
                         m_Buttons.Add(w);
                         m_Selectables.Add(new SelectableSlot
                         {
@@ -925,7 +1010,7 @@ namespace AmberScreen.Dev
                     }
                     case DevConsoleEntryKind.Toggle:
                     {
-                        var w = new DevConsoleToggleWidget(entryParent, entry, settings, m_Canvas);
+                        var w = new DevConsoleToggleWidget(gridRt, entry, settings, m_Canvas);
                         m_Toggles.Add(w);
                         m_Selectables.Add(new SelectableSlot
                         {
@@ -937,7 +1022,7 @@ namespace AmberScreen.Dev
                     }
                     case DevConsoleEntryKind.Dropdown:
                     {
-                        var w = new DevConsoleDropdownWidget(entryParent, entry, settings, m_Canvas);
+                        var w = new DevConsoleDropdownWidget(gridRt, entry, settings, m_Canvas);
                         m_Dropdowns.Add(w);
                         m_Selectables.Add(new SelectableSlot
                         {
@@ -949,7 +1034,7 @@ namespace AmberScreen.Dev
                     }
                     case DevConsoleEntryKind.Confirm:
                     {
-                        var w = new DevConsoleConfirmWidget(entryParent, entry, settings, m_Canvas);
+                        var w = new DevConsoleConfirmWidget(gridRt, entry, settings, m_Canvas);
                         m_Confirms.Add(w);
                         m_Selectables.Add(new SelectableSlot
                         {
@@ -961,12 +1046,24 @@ namespace AmberScreen.Dev
                     }
                     case DevConsoleEntryKind.Readout:
                     {
-                        var w = new DevConsoleReadoutWidget(entryParent, entry, settings, m_Canvas);
+                        var w = new DevConsoleReadoutWidget(gridRt, entry, settings, m_Canvas);
                         m_Readouts.Add(w);
                         break;
                     }
                 }
             }
+        }
+
+        static int ResolveColumnCount(DevConsoleSettings settings, float contentWidth)
+        {
+            if (settings.layout == DevConsoleLayout.MobilePortrait)
+                return DevConsoleUiUtil.SafeAreaWidthDp() >= 360f ? 2 : 1;
+
+            if (settings.autoColumns)
+                return DevConsoleUiUtil.ComputeAutoColumns(
+                    contentWidth, settings.minEntryWidth, settings.spacing);
+
+            return Mathf.Max(1, settings.columns);
         }
 
         static Button CreateTextButton(
