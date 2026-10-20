@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-20
 
+- **devconsole 0.4.0 fix3: HUD rail left, portrait top strip, collapse tab**
+- Save: n/a
+
 - **devconsole 0.4.0 fix2: TMP textWrappingMode (CS0619 enableWordWrapping)**
 - Save: n/a
 

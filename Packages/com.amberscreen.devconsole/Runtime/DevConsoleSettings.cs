@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
 namespace AmberScreen.Dev
 {
@@ -80,7 +81,8 @@ namespace AmberScreen.Dev
         [Range(0f, 1f)] public float hudOpacity = 0.55f;
         [Min(10f)] public float hudFontSize = 14f;
         [Range(1f, 30f)] public float hudUpdateHz = 6f;
-        [Range(0.15f, 1f)] public float hudPortraitMaxHeightFraction = 0.4f;
+        [FormerlySerializedAs("hudPortraitMaxHeightFraction")]
+        [Range(0.08f, 0.4f)] public float hudPortraitHeightFraction = 0.18f;
 
         [Header("Font")]
         [Tooltip("Optional TMP override. If set, used instead of bundled Inter.")]
@@ -162,7 +164,7 @@ namespace AmberScreen.Dev
             hudOpacity = 0.55f;
             hudFontSize = 14f;
             hudUpdateHz = 6f;
-            hudPortraitMaxHeightFraction = 0.4f;
+            hudPortraitHeightFraction = 0.18f;
         }
 
         internal static void ResetRuntimeDefault()

@@ -149,10 +149,10 @@ namespace AmberScreen.Dev
             m_RailTab.anchorMax = new Vector2(1f, 0.6f);
             m_RailTab.pivot = new Vector2(1f, 0.5f);
             m_RailTab.anchoredPosition = Vector2.zero;
-            m_RailTab.sizeDelta = new Vector2(44f, 22f);
+            m_RailTab.sizeDelta = new Vector2(56f, 26f);
             var tabBtn = DevConsoleUiUtil.AddChromeButton(
                 m_RailTab, DevConsoleUiUtil.ChromeButtonBg, DevConsoleUiUtil.ChromeButtonHighlight);
-            DevConsoleUiUtil.AddLabel(m_RailTab, "Label", "DEV", 12f, TextAlignmentOptions.Midline, true);
+            DevConsoleUiUtil.AddLabel(m_RailTab, "Label", "DEV", 13f, TextAlignmentOptions.Midline, true);
             tabBtn.onClick.AddListener(() => SetCollapsed(false));
             m_RailTab.gameObject.SetActive(false);
 
@@ -691,22 +691,22 @@ namespace AmberScreen.Dev
             float margin = settings.railEdgeMargin;
 
             float canvasW = safe.width / scale;
-            float hudReserve = DevHudLayout.HudReserveCanvasUnits(settings, scale);
+            float hudTop = DevHudLayout.HudTopReserveCanvasUnits(settings, scale);
             float width = Mathf.Clamp(canvasW * settings.railScreenFraction,
                 settings.railMinWidth, settings.railMaxWidth);
             if (portrait)
-                width = Mathf.Max(40f, canvasW - (safe.x / scale) - hudReserve);
+                width = Mathf.Max(40f, canvasW - (safe.x / scale));
             m_RailWidth = width;
 
             if (m_Rail != null)
             {
-                float top = (LayoutScreenHeight - (safe.y + safe.height)) / scale + margin;
+                float top = (LayoutScreenHeight - (safe.y + safe.height)) / scale + margin + hudTop;
                 float bot = safe.y / scale + margin;
-                float right = (LayoutScreenWidth - (safe.x + safe.width)) / scale + margin + hudReserve;
+                float right = (LayoutScreenWidth - (safe.x + safe.width)) / scale + margin;
                 m_Rail.anchorMin = new Vector2(1, 0);
                 m_Rail.anchorMax = new Vector2(1, 1);
                 m_Rail.pivot = new Vector2(1, 0.5f);
-                m_Rail.offsetMin = new Vector2(-(width + hudReserve), bot);
+                m_Rail.offsetMin = new Vector2(-width, bot);
                 m_Rail.offsetMax = new Vector2(-right, -top);
             }
 
@@ -715,8 +715,8 @@ namespace AmberScreen.Dev
                 m_RailTab.anchorMin = new Vector2(1, 0.6f);
                 m_RailTab.anchorMax = new Vector2(1, 0.6f);
                 m_RailTab.pivot = new Vector2(1, 0.5f);
-                m_RailTab.anchoredPosition = new Vector2(-(margin + hudReserve), 0f);
-                m_RailTab.sizeDelta = new Vector2(44f, 22f);
+                m_RailTab.anchoredPosition = new Vector2(-margin, 0f);
+                m_RailTab.sizeDelta = new Vector2(56f, 26f);
             }
 
             ApplySectionWindowRect();
@@ -743,14 +743,15 @@ namespace AmberScreen.Dev
             bool portrait = LayoutScreenHeight > LayoutScreenWidth;
             float margin = settings.railEdgeMargin;
             float canvasW = safe.width / scale;
-            float hudReserve = DevHudLayout.HudReserveCanvasUnits(settings, scale);
+            float hudLeft = DevHudLayout.HudLeftReserveCanvasUnits(settings, scale);
+            float hudTop = DevHudLayout.HudTopReserveCanvasUnits(settings, scale);
             float railW = m_RailWidth;
             if (railW <= 0f)
             {
                 railW = Mathf.Clamp(canvasW * settings.railScreenFraction,
                     settings.railMinWidth, settings.railMaxWidth);
                 if (portrait)
-                    railW = Mathf.Max(40f, canvasW - (safe.x / scale) - hudReserve);
+                    railW = Mathf.Max(40f, canvasW - (safe.x / scale));
             }
 
             float winMargin = canvasW < 900f ? 8f : settings.windowMargin;
@@ -761,13 +762,13 @@ namespace AmberScreen.Dev
                     safe.x / scale,
                     safe.y / scale);
                 m_SectionWindow.offsetMax = new Vector2(
-                    -((LayoutScreenWidth - (safe.x + safe.width)) / scale + hudReserve),
-                    -((LayoutScreenHeight - (safe.y + safe.height)) / scale));
+                    -((LayoutScreenWidth - (safe.x + safe.width)) / scale),
+                    -((LayoutScreenHeight - (safe.y + safe.height)) / scale + hudTop));
             }
             else
             {
-                float left = safe.x / scale + winMargin;
-                float rightGap = hudReserve + railW + margin + winMargin;
+                float left = safe.x / scale + hudLeft + winMargin;
+                float rightGap = railW + margin + winMargin;
                 m_SectionWindow.anchorMin = Vector2.zero;
                 m_SectionWindow.anchorMax = Vector2.one;
                 m_SectionWindow.pivot = new Vector2(0.5f, 0.5f);

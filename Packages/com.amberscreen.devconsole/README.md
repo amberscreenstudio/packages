@@ -16,7 +16,7 @@ Requires TextMeshPro Essential Resources (Window > TextMeshPro > Import TMP Esse
 
 ## Debug HUD rail
 
-Shared always-on translucent rail on the right edge. Games only register lines — no OnGUI, no per-game HUD canvas.
+Shared always-on translucent HUD on the **left** edge in landscape (or a **full-width top strip** in portrait). Games only register lines — no OnGUI, no per-game HUD canvas. The console rail stays on the right; section windows open between the two rails (or under the strip in portrait).
 
 ```csharp
 DevHud.SetLine("Vehicle", "Speed", () => speedKmh.ToString("0"));
@@ -25,9 +25,9 @@ DevHud.SetLine("Vehicle", "Gear", () => gearText, order: 1);
 ```
 
 - **Toggle:** F2 (`hudToggleKey`), also `DevHud.Toggle()` / `Visible`. No `#if` needed — API is a no-op when the define is stripped.
-- **Settings:** `hudShowOnStart`, `hudToggleKey`, `hudScreenFraction` / min / max width, `hudOpacity`, `hudFontSize`, `hudUpdateHz` (default 6), `hudPortraitMaxHeightFraction` (default 0.4). `rememberState` restores HUD visibility.
-- **16:9 rule:** at 16:9 or narrower the HUD overlays the game (full `DevHud.GameRect`). Wider than 16:9, `GameRect` is the centred 16:9 of the safe area and the HUD sits in the right margin when it fits (otherwise it overlaps by the difference). Console windows never paint over the HUD.
-- **Game UI:** during development, keep minimaps / gauges inside `DevHud.GameRect` so they stay clear of both rails on wide screens. At 16:9, rails drawing over game UI is accepted. Move UI back when shipping.
+- **Settings:** `hudShowOnStart`, `hudToggleKey`, `hudScreenFraction` / min / max width, `hudOpacity`, `hudFontSize`, `hudUpdateHz` (default 6), `hudPortraitHeightFraction` (default 0.18). `rememberState` restores HUD visibility.
+- **16:9 rule:** at 16:9 or narrower the HUD overlays the game (full `DevHud.GameRect`). Wider than 16:9, `GameRect` is the centred 16:9 of the safe area and the HUD sits in the left margin when it fits (otherwise it overlaps by the difference). Console windows never paint over the HUD.
+- **Game UI:** during development, keep minimaps / gauges inside `DevHud.GameRect` so they stay clear of both rails on wide screens. At 16:9 or narrower the rails may draw over game UI — accepted for development. Move UI back when shipping.
 - **Performance:** providers run only at `hudUpdateHz`; reuse cheap/cached strings. The HUD rebuilds TMP text only when the content changes.
 - **Migration:** move every per-game debug HUD onto `DevHud`, and delete OnGUI HUDs and custom HUD canvases (e.g. LWN sortingOrder 100 canvases). OnGUI always draws over the console.
 

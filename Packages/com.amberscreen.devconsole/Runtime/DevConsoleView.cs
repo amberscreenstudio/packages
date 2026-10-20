@@ -1026,10 +1026,10 @@ namespace AmberScreen.Dev
             float scale = Mathf.Max(m_Canvas.scaleFactor, 0.01f);
             Rect safe = Screen.safeArea;
             m_LastSafeArea = safe;
-            float hudReserve = DevHudLayout.HudReserveCanvasUnits(settings, scale);
-            float hudFrac = Screen.width > 0f
-                ? hudReserve * scale / Screen.width
-                : 0f;
+            float hudLeft = DevHudLayout.HudLeftReserveCanvasUnits(settings, scale);
+            float hudTop = DevHudLayout.HudTopReserveCanvasUnits(settings, scale);
+            float hudLeftFrac = Screen.width > 0f ? hudLeft * scale / Screen.width : 0f;
+            float hudTopFrac = Screen.height > 0f ? hudTop * scale / Screen.height : 0f;
 
             switch (settings.layout)
             {
@@ -1042,7 +1042,7 @@ namespace AmberScreen.Dev
                     m_Panel.pivot = new Vector2(1, 0.5f);
                     m_Panel.anchoredPosition = Vector2.zero;
                     m_Panel.offsetMin = new Vector2(-dockW, 0f);
-                    m_Panel.offsetMax = new Vector2(-hudReserve, 0f);
+                    m_Panel.offsetMax = Vector2.zero;
                     break;
                 }
 
@@ -1053,7 +1053,7 @@ namespace AmberScreen.Dev
                     float sw = safe.width / Screen.width;
                     float sh = safe.height / Screen.height;
                     m_Panel.anchorMin = new Vector2(sx, sy);
-                    m_Panel.anchorMax = new Vector2(sx + sw - hudFrac, sy + sh);
+                    m_Panel.anchorMax = new Vector2(sx + sw, sy + sh - hudTopFrac);
                     m_Panel.offsetMin = Vector2.zero;
                     m_Panel.offsetMax = Vector2.zero;
                     m_Panel.pivot = new Vector2(0.5f, 0.5f);
@@ -1070,11 +1070,12 @@ namespace AmberScreen.Dev
                     float fy = Mathf.Clamp01(settings.floatingScreenFraction.y);
                     float insetX = sw * (1f - fx) * 0.5f;
                     float insetY = sh * (1f - fy) * 0.5f;
-                    float maxX = sx + sw - insetX - hudFrac;
-                    if (maxX < sx + insetX + 0.05f)
-                        maxX = sx + insetX + 0.05f;
-                    m_Panel.anchorMin = new Vector2(sx + insetX, sy + insetY);
-                    m_Panel.anchorMax = new Vector2(maxX, sy + sh - insetY);
+                    float minX = sx + insetX + hudLeftFrac;
+                    float maxX = sx + sw - insetX;
+                    if (maxX < minX + 0.05f)
+                        maxX = minX + 0.05f;
+                    m_Panel.anchorMin = new Vector2(minX, sy + insetY);
+                    m_Panel.anchorMax = new Vector2(maxX, sy + sh - insetY - hudTopFrac);
                     m_Panel.offsetMin = Vector2.zero;
                     m_Panel.offsetMax = Vector2.zero;
                     m_Panel.pivot = new Vector2(0.5f, 0.5f);

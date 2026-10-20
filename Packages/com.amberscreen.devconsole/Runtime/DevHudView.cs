@@ -111,24 +111,24 @@ namespace AmberScreen.Dev
                 m_Canvas != null ? m_Canvas.scaleFactor : DevHudLayout.SharedUiScaleFactor(settings),
                 0.01f);
             Rect safe = DevHudLayout.LayoutSafeArea;
-            float widthCu = DevHudLayout.HudWidthCanvasUnits(settings, scale);
-            float widthPx = widthCu * scale;
             float marginPx = settings.railEdgeMargin * scale;
-            float rightInsetPx = (DevHudLayout.ScreenW - (safe.x + safe.width)) + marginPx;
-            float x = DevHudLayout.ScreenW - rightInsetPx - widthPx;
-            bool portrait = DevHudLayout.ScreenH > DevHudLayout.ScreenW;
+            bool portrait = DevHudLayout.IsPortrait;
             if (portrait)
             {
-                float hPx = safe.height * Mathf.Clamp01(settings.hudPortraitMaxHeightFraction);
+                float hPx = DevHudLayout.HudStripHeightCanvasUnits(settings, scale) * scale;
+                float left = safe.x + marginPx;
+                float widthPx = Mathf.Max(0f, safe.width - 2f * marginPx);
                 float topInsetPx = (DevHudLayout.ScreenH - (safe.y + safe.height)) + marginPx;
                 float y = DevHudLayout.ScreenH - topInsetPx - hPx;
-                return new Rect(x, y, widthPx, hPx);
+                return new Rect(left, y, widthPx, hPx);
             }
 
+            float widthPxL = DevHudLayout.HudWidthCanvasUnits(settings, scale) * scale;
+            float x = safe.x + marginPx;
             float bot = safe.y + marginPx;
             float top = DevHudLayout.ScreenH -
                         ((DevHudLayout.ScreenH - (safe.y + safe.height)) + marginPx);
-            return new Rect(x, bot, widthPx, Mathf.Max(0f, top - bot));
+            return new Rect(x, bot, widthPxL, Mathf.Max(0f, top - bot));
         }
 
         void Build()
@@ -210,33 +210,32 @@ namespace AmberScreen.Dev
             var settings = DevConsoleHost.Settings;
             float scale = Mathf.Max(m_Canvas != null ? m_Canvas.scaleFactor : 1f, 0.01f);
             Rect safe = DevHudLayout.LayoutSafeArea;
-            bool portrait = DevHudLayout.ScreenH > DevHudLayout.ScreenW;
+            bool portrait = DevHudLayout.IsPortrait;
             float margin = settings.railEdgeMargin;
             float width = DevHudLayout.HudWidthCanvasUnits(settings, scale);
             m_HudWidthCanvas = width;
 
             float top = (DevHudLayout.ScreenH - (safe.y + safe.height)) / scale + margin;
             float bot = safe.y / scale + margin;
+            float left = safe.x / scale + margin;
             float right = (DevHudLayout.ScreenW - (safe.x + safe.width)) / scale + margin;
-
-            m_Rail.anchorMin = new Vector2(1f, 1f);
-            m_Rail.anchorMax = new Vector2(1f, 1f);
-            m_Rail.pivot = new Vector2(1f, 1f);
 
             if (portrait)
             {
-                float canvasH = safe.height / scale;
-                float h = canvasH * Mathf.Clamp01(settings.hudPortraitMaxHeightFraction);
-                m_Rail.offsetMin = new Vector2(-width - right, -top - h);
+                float h = DevHudLayout.HudStripHeightCanvasUnits(settings, scale);
+                m_Rail.anchorMin = new Vector2(0f, 1f);
+                m_Rail.anchorMax = new Vector2(1f, 1f);
+                m_Rail.pivot = new Vector2(0.5f, 1f);
+                m_Rail.offsetMin = new Vector2(left, -top - h);
                 m_Rail.offsetMax = new Vector2(-right, -top);
             }
             else
             {
-                m_Rail.anchorMin = new Vector2(1f, 0f);
-                m_Rail.anchorMax = new Vector2(1f, 1f);
-                m_Rail.pivot = new Vector2(1f, 0.5f);
-                m_Rail.offsetMin = new Vector2(-width - right, bot);
-                m_Rail.offsetMax = new Vector2(-right, -top);
+                m_Rail.anchorMin = new Vector2(0f, 0f);
+                m_Rail.anchorMax = new Vector2(0f, 1f);
+                m_Rail.pivot = new Vector2(0f, 0.5f);
+                m_Rail.offsetMin = new Vector2(left, bot);
+                m_Rail.offsetMax = new Vector2(left + width, -top);
             }
         }
 

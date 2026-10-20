@@ -82,6 +82,7 @@ namespace AmberScreen.Dev
         }
 
         internal static DevHudView HudView => s_Instance != null ? s_Instance.m_HudView : null;
+        internal static DevConsoleView View => s_Instance != null ? s_Instance.m_View : null;
 
         internal static void NotifyHudVisibilityChanged()
         {

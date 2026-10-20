@@ -12,5 +12,5 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.devconsole
 
-- **0.4.0** pushed (not tagged; fix1 rail/margin/GC, fix2 TMP textWrappingMode). Shared `DevHud` Debug HUD rail; Fabio playtests Sandbox F1/F2 + wide/portrait, then tags `devconsole/0.4.0`.
-- Namespace is `AmberScreen.Dev`. Gate gameplay on `BlocksGame` / `IsPointerOverConsole`. Migrate per-game HUDs onto `DevHud`.
+- **0.4.0** pushed (not tagged; fix1–3). `DevHud` on left edge / portrait top strip; console rail on right; collapse shows "DEV" tab. Fabio playtests Sandbox (ultrawide + portrait), then tags `devconsole/0.4.0`.
+- Namespace is `AmberScreen.Dev`. Gate gameplay on `BlocksGame` / `IsPointerOverConsole`. Keep game UI inside `DevHud.GameRect` clear of both rails.

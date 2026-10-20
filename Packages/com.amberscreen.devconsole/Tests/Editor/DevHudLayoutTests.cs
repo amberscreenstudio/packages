@@ -56,30 +56,41 @@ namespace AmberScreen.Dev.Tests
             Assert.IsNotNull(window);
             ForceLayout(window);
             ForceLayout(hudRail);
-
-            Assert.IsFalse(RectsOverlapHorizontally(window, hudRail, 1f),
-                "SectionWindow overlaps DevHudRail");
-            Assert.IsFalse(RectsOverlapHorizontally(consoleRail, hudRail, 1f),
-                "console Rail overlaps DevHudRail");
-
             ForceLayout(consoleRail);
-            var railCorners = new Vector3[4];
-            consoleRail.GetWorldCorners(railCorners);
-            float railW = Mathf.Abs(railCorners[2].x - railCorners[0].x);
+
             bool portrait = height > width;
             if (portrait)
             {
+                Assert.IsFalse(RectsOverlapVertically(window, hudRail, 1f),
+                    "SectionWindow overlaps DevHudRail vertically");
+                Assert.IsFalse(RectsOverlapVertically(consoleRail, hudRail, 1f),
+                    "console Rail overlaps DevHudRail vertically");
+
+                Assert.GreaterOrEqual(RectMinY(hudRail), RectMaxY(window) - 1f,
+                    "HUD should sit above the section window");
+                Assert.GreaterOrEqual(RectMinY(hudRail), RectMaxY(consoleRail) - 1f,
+                    "HUD should sit above the console rail");
+
                 var canvas = FindNamedRect("DevConsoleCanvas");
                 Assert.IsNotNull(canvas);
-                var canvasCorners = new Vector3[4];
-                canvas.GetWorldCorners(canvasCorners);
-                float railLeft = Mathf.Min(railCorners[0].x, railCorners[1].x);
-                float canvasLeft = Mathf.Min(canvasCorners[0].x, canvasCorners[1].x);
-                Assert.That(railLeft, Is.EqualTo(canvasLeft).Within(2f),
+                Assert.That(RectMinX(consoleRail), Is.EqualTo(RectMinX(canvas)).Within(2f),
                     "portrait console rail left edge should match canvas left");
+                Assert.That(RectMaxX(consoleRail), Is.EqualTo(RectMaxX(canvas)).Within(2f),
+                    "portrait console rail right edge should match canvas right");
             }
             else
             {
+                Assert.IsFalse(RectsOverlapHorizontally(window, hudRail, 1f),
+                    "SectionWindow overlaps DevHudRail");
+                Assert.IsFalse(RectsOverlapHorizontally(consoleRail, hudRail, 1f),
+                    "console Rail overlaps DevHudRail");
+
+                Assert.LessOrEqual(RectMaxX(hudRail), RectMinX(window) + 1f,
+                    "HUD should sit left of the section window");
+                Assert.LessOrEqual(RectMaxX(window), RectMinX(consoleRail) + 1f,
+                    "section window should sit left of the console rail");
+
+                float railW = RectMaxX(consoleRail) - RectMinX(consoleRail);
                 Assert.GreaterOrEqual(
                     railW,
                     m_Settings.railMinWidth - m_Settings.railEdgeMargin - 1f,
@@ -126,8 +137,7 @@ namespace AmberScreen.Dev.Tests
             float scale = DevHudLayout.SharedUiScaleFactor(m_Settings);
             float hudW = DevHudLayout.HudWidthCanvasUnits(m_Settings, scale) * scale;
             var hud = DevHud.RailScreenRect;
-            // Margin is 320px; HUD should sit with left >= game.xMax - 1 when it fits.
-            Assert.GreaterOrEqual(hud.xMin, game.xMax - 1f);
+            Assert.LessOrEqual(hud.xMax, game.xMin + 1f);
             Assert.LessOrEqual(hudW, 320f + 1f);
         }
 
@@ -145,7 +155,7 @@ namespace AmberScreen.Dev.Tests
             Assert.That(game.x, Is.EqualTo((2200f - 1920f) * 0.5f).Within(1f));
 
             var hud = DevHud.RailScreenRect;
-            Assert.Less(hud.xMin, game.xMax - 1f, "HUD should overlap GameRect when margin is tight");
+            Assert.Greater(hud.xMax, game.xMin + 1f, "HUD should overlap GameRect when margin is tight");
         }
 
         [Test]
@@ -187,7 +197,7 @@ namespace AmberScreen.Dev.Tests
         }
 
         [Test]
-        public void Portrait_WindowWidthLeavesHudReserve()
+        public void Portrait_WindowHeightLeavesHudTopReserve()
         {
             DevConsoleView.SetLayoutScreenOverride(1080, 1920, 160f);
             DevHud.SetLine("Hud", "X", () => "1");
@@ -202,9 +212,33 @@ namespace AmberScreen.Dev.Tests
             var window = FindNamedRect("SectionWindow");
             ForceLayout(window);
             float scale = Mathf.Max(canvas.GetComponent<Canvas>().scaleFactor, 0.01f);
-            float reserve = DevHudLayout.HudReserveCanvasUnits(m_Settings, scale);
-            Assert.That(window.rect.width,
-                Is.EqualTo(canvas.rect.width - reserve).Within(2f));
+            float reserve = DevHudLayout.HudTopReserveCanvasUnits(m_Settings, scale);
+            Assert.That(window.rect.height,
+                Is.EqualTo(canvas.rect.height - reserve).Within(2f));
+        }
+
+        [Test]
+        public void Collapse_ShowsVisibleRailTab()
+        {
+            DevConsoleView.SetLayoutScreenOverride(1920, 1080, 160f);
+            DevConsole.Register("Sec", "One", () => { });
+            DevConsoleHost.EnsureExists();
+            DevConsole.Open();
+            DevConsoleHost.View?.SetCollapsed(true);
+
+            var railTab = FindNamedRect("RailTab");
+            var canvas = FindNamedRect("DevConsoleCanvas");
+            Assert.IsNotNull(railTab);
+            Assert.IsNotNull(canvas);
+            Assert.IsTrue(railTab.gameObject.activeInHierarchy, "RailTab should be active when collapsed");
+            ForceLayout(railTab);
+
+            Assert.Greater(railTab.rect.width, 0f);
+            Assert.Greater(railTab.rect.height, 0f);
+            Assert.GreaterOrEqual(RectMinX(railTab), RectMinX(canvas) - 1f);
+            Assert.LessOrEqual(RectMaxX(railTab), RectMaxX(canvas) + 1f);
+            Assert.GreaterOrEqual(RectMinY(railTab), RectMinY(canvas) - 1f);
+            Assert.LessOrEqual(RectMaxY(railTab), RectMaxY(canvas) + 1f);
         }
 
         static void ForceLayout(RectTransform rt)
@@ -219,17 +253,42 @@ namespace AmberScreen.Dev.Tests
             return go != null ? go.GetComponent<RectTransform>() : null;
         }
 
+        static float RectMinX(RectTransform rt)
+        {
+            var c = new Vector3[4];
+            rt.GetWorldCorners(c);
+            return Mathf.Min(c[0].x, c[1].x, c[2].x, c[3].x);
+        }
+
+        static float RectMaxX(RectTransform rt)
+        {
+            var c = new Vector3[4];
+            rt.GetWorldCorners(c);
+            return Mathf.Max(c[0].x, c[1].x, c[2].x, c[3].x);
+        }
+
+        static float RectMinY(RectTransform rt)
+        {
+            var c = new Vector3[4];
+            rt.GetWorldCorners(c);
+            return Mathf.Min(c[0].y, c[1].y, c[2].y, c[3].y);
+        }
+
+        static float RectMaxY(RectTransform rt)
+        {
+            var c = new Vector3[4];
+            rt.GetWorldCorners(c);
+            return Mathf.Max(c[0].y, c[1].y, c[2].y, c[3].y);
+        }
+
         static bool RectsOverlapHorizontally(RectTransform a, RectTransform b, float tol)
         {
-            var ac = new Vector3[4];
-            var bc = new Vector3[4];
-            a.GetWorldCorners(ac);
-            b.GetWorldCorners(bc);
-            float aMin = Mathf.Min(ac[0].x, ac[1].x, ac[2].x, ac[3].x);
-            float aMax = Mathf.Max(ac[0].x, ac[1].x, ac[2].x, ac[3].x);
-            float bMin = Mathf.Min(bc[0].x, bc[1].x, bc[2].x, bc[3].x);
-            float bMax = Mathf.Max(bc[0].x, bc[1].x, bc[2].x, bc[3].x);
-            return aMin < bMax - tol && bMin < aMax - tol;
+            return RectMinX(a) < RectMaxX(b) - tol && RectMinX(b) < RectMaxX(a) - tol;
+        }
+
+        static bool RectsOverlapVertically(RectTransform a, RectTransform b, float tol)
+        {
+            return RectMinY(a) < RectMaxY(b) - tol && RectMinY(b) < RectMaxY(a) - tol;
         }
     }
 }

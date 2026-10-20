@@ -43,7 +43,7 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 ### com.amberscreen.devconsole
 
 - **Owner:** Packages | **State:** in library, `devconsole/0.4.0` | **Users:** all five
-- **Includes:** right-edge rail (stays open without blocking), section windows (blocking), **Debug HUD rail** (`DevHud` — replaces per-game OnGUI / sortingOrder-100 HUD canvases), quick buttons, pinned readouts, buttons/toggles/dropdowns/confirms/readouts, filter, log window, saved state, portrait full-screen sheet with dpi scaling, open bindings (F1, F2 HUD, Select+Start, 3-finger tap, corner hold), release-build stripping, Inter font
+- **Includes:** right-edge console rail (stays open without blocking), section windows (blocking), **Debug HUD** (`DevHud` — left-edge rail or portrait top strip; replaces per-game OnGUI / sortingOrder-100 HUD canvases), quick buttons, pinned readouts, buttons/toggles/dropdowns/confirms/readouts, filter, log window, saved state, portrait full-screen sheet with dpi scaling, open bindings (F1, F2 HUD, Select+Start, 3-finger tap, corner hold), release-build stripping, Inter font
 - **Stays in games:** every game's own commands, sections, and HUD *line content* (FPS strings, vehicle readouts, …)
 - **Interfaces:** DevConsole static API, `DevHud` static API (`SetLine`, `GameRect`, …), `[DevButton]`, `IDevConsoleSectionProvider`, `BlocksGame`, `IsPointerOverConsole`, `ConsumedCloseThisFrame`
 - **Depends on:** TMP, uGUI, Input System
