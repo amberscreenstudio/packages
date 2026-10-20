@@ -2,17 +2,34 @@
 
 Runtime debug console. Namespace: `AmberScreen.Dev`. No render-pipeline code — works on URP, URP 2D, and HDRP.
 
-**Version:** 0.3.4  
+**Version:** 0.4.0  
 **Unity:** 6000.6+  
 **Package / asmdef name:** `com.amberscreen.devconsole` / `AmberScreen.DevConsole`
 
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.3.4
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.4.0
 ```
 
 Requires TextMeshPro Essential Resources (Window > TextMeshPro > Import TMP Essential Resources). Without them the console logs an error and stays off.
+
+## Debug HUD rail
+
+Shared always-on translucent rail on the right edge. Games only register lines — no OnGUI, no per-game HUD canvas.
+
+```csharp
+DevHud.SetLine("Vehicle", "Speed", () => speedKmh.ToString("0"));
+DevHud.SetLine("Vehicle", "Gear", () => gearText, order: 1);
+// in OnDestroy: DevHud.ClearSection("Vehicle");
+```
+
+- **Toggle:** F2 (`hudToggleKey`), also `DevHud.Toggle()` / `Visible`. No `#if` needed — API is a no-op when the define is stripped.
+- **Settings:** `hudShowOnStart`, `hudToggleKey`, `hudScreenFraction` / min / max width, `hudOpacity`, `hudFontSize`, `hudUpdateHz` (default 6), `hudPortraitMaxHeightFraction` (default 0.4). `rememberState` restores HUD visibility.
+- **16:9 rule:** at 16:9 or narrower the HUD overlays the game (full `DevHud.GameRect`). Wider than 16:9, `GameRect` is the centred 16:9 of the safe area and the HUD sits in the right margin when it fits (otherwise it overlaps by the difference). Console windows never paint over the HUD.
+- **Game UI:** during development, keep minimaps / gauges inside `DevHud.GameRect` so they stay clear of both rails on wide screens. At 16:9, rails drawing over game UI is accepted. Move UI back when shipping.
+- **Performance:** providers run only at `hudUpdateHz`; reuse cheap/cached strings. The HUD rebuilds TMP text only when the content changes.
+- **Migration:** move every per-game debug HUD onto `DevHud`, and delete OnGUI HUDs and custom HUD canvases (e.g. LWN sortingOrder 100 canvases). OnGUI always draws over the console.
 
 ## Rail layout (default for new settings)
 

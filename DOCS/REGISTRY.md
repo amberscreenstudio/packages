@@ -42,12 +42,12 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.devconsole
 
-- **Owner:** Packages | **State:** in library, `devconsole/0.3.3` | **Users:** all five
-- **Includes:** right-edge rail (stays open without blocking), section windows (blocking), quick buttons, pinned readouts, buttons/toggles/dropdowns/confirms/readouts, filter, log window, saved state, portrait full-screen sheet with dpi scaling, open bindings (F1, Select+Start, 3-finger tap, corner hold), release-build stripping, Inter font
-- **Stays in games:** every game's own commands and sections; HUD/debug overlays outside the console
-- **Interfaces:** DevConsole static API, `[DevButton]`, `IDevConsoleSectionProvider`, `BlocksGame`, `IsPointerOverConsole`, `ConsumedCloseThisFrame`
+- **Owner:** Packages | **State:** in library, `devconsole/0.4.0` | **Users:** all five
+- **Includes:** right-edge rail (stays open without blocking), section windows (blocking), **Debug HUD rail** (`DevHud` — replaces per-game OnGUI / sortingOrder-100 HUD canvases), quick buttons, pinned readouts, buttons/toggles/dropdowns/confirms/readouts, filter, log window, saved state, portrait full-screen sheet with dpi scaling, open bindings (F1, F2 HUD, Select+Start, 3-finger tap, corner hold), release-build stripping, Inter font
+- **Stays in games:** every game's own commands, sections, and HUD *line content* (FPS strings, vehicle readouts, …)
+- **Interfaces:** DevConsole static API, `DevHud` static API (`SetLine`, `GameRect`, …), `[DevButton]`, `IDevConsoleSectionProvider`, `BlocksGame`, `IsPointerOverConsole`, `ConsumedCloseThisFrame`
 - **Depends on:** TMP, uGUI, Input System
-- **Queued for 0.4.x:** confine to a RectTransform (Twin Ticks), optional always-on HUD strip (S&I)
+- **Queued:** confine console to a RectTransform (Twin Ticks)
 
 ### com.amberscreen.versioning
 

@@ -2,6 +2,11 @@
 
 Newest entries first.
 
+## 2026-10-20
+
+- **devconsole 0.4.0: shared Debug HUD rail (DevHud) + GameRect 16:9 rule**
+- Save: n/a
+
 ## 2026-10-19
 
 - **devconsole 0.3.4: InternalsVisibleTo Editor asmdef (CS0122 DevConsoleHost)**

@@ -71,6 +71,17 @@ namespace AmberScreen.Dev
         [Tooltip("Extra multiplier for portrait / phone UI scale (dpi-based ConstantPixelSize).")]
         [Range(0.75f, 2f)] public float portraitUiScale = 1f;
 
+        [Header("Debug HUD")]
+        public bool hudShowOnStart = true;
+        public Key hudToggleKey = Key.F2;
+        [Min(0.05f)] public float hudScreenFraction = 0.16f;
+        [Min(80f)] public float hudMinWidth = 200f;
+        [Min(80f)] public float hudMaxWidth = 320f;
+        [Range(0f, 1f)] public float hudOpacity = 0.55f;
+        [Min(10f)] public float hudFontSize = 14f;
+        [Range(1f, 30f)] public float hudUpdateHz = 6f;
+        [Range(0.15f, 1f)] public float hudPortraitMaxHeightFraction = 0.4f;
+
         [Header("Font")]
         [Tooltip("Optional TMP override. If set, used instead of bundled Inter.")]
         public TMP_FontAsset fontOverride;
@@ -143,6 +154,15 @@ namespace AmberScreen.Dev
             windowMargin = 24f;
             rememberState = true;
             portraitUiScale = 1f;
+            hudShowOnStart = true;
+            hudToggleKey = Key.F2;
+            hudScreenFraction = 0.16f;
+            hudMinWidth = 200f;
+            hudMaxWidth = 320f;
+            hudOpacity = 0.55f;
+            hudFontSize = 14f;
+            hudUpdateHz = 6f;
+            hudPortraitMaxHeightFraction = 0.4f;
         }
 
         internal static void ResetRuntimeDefault()

@@ -16,6 +16,8 @@ namespace AmberScreen.Sandbox
         Vector3 m_StartPos;
         Quaternion m_StartRot;
         Vector3 m_StartScale;
+        float m_FpsSmooth = 60f;
+        int m_FrameCount;
 
         void Awake()
         {
@@ -80,6 +82,8 @@ namespace AmberScreen.Sandbox
             DevConsole.RegisterQuick("Reset cube", ResetCube);
             DevConsole.RegisterQuick("Colour", () => ApplyColour(Random.Range(0, 4)));
 
+            DevConsole.Register("Sandbox", "Toggle HUD", () => DevHud.Toggle());
+
             for (int i = 1; i <= 40; i++)
             {
                 int n = i;
@@ -89,11 +93,29 @@ namespace AmberScreen.Sandbox
                     () => DevConsole.Note($"Filler {n:00}"));
             }
 
-            DevConsole.Note("Sandbox ready — press F1");
+            DevHud.SetSectionOrder("Sandbox");
+            DevHud.SetLine("Sandbox", "FPS", () =>
+            {
+                float dt = Time.unscaledDeltaTime;
+                if (dt > 0f)
+                    m_FpsSmooth = Mathf.Lerp(m_FpsSmooth, 1f / dt, 0.15f);
+                return m_FpsSmooth.ToString("0");
+            });
+            DevHud.SetLine("Sandbox", "Frames", () => m_FrameCount.ToString(), order: 1);
+            DevHud.SetLine("Sandbox", "Input", () =>
+                DevConsole.BlocksGame ? "blocked" : "live", order: 2);
+
+            DevConsole.Note("Sandbox ready — press F1 (console) / F2 (HUD)");
+        }
+
+        void OnDestroy()
+        {
+            DevHud.ClearSection("Sandbox");
         }
 
         void Update()
         {
+            m_FrameCount++;
             if (m_Spin && cube != null)
                 cube.Rotate(0f, 90f * Time.deltaTime, 0f, Space.Self);
         }

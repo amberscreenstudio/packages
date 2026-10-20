@@ -691,17 +691,18 @@ namespace AmberScreen.Dev
             float margin = settings.railEdgeMargin;
 
             float canvasW = safe.width / scale;
+            float hudReserve = DevHudLayout.HudReserveCanvasUnits(settings, scale);
             float width = Mathf.Clamp(canvasW * settings.railScreenFraction,
                 settings.railMinWidth, settings.railMaxWidth);
             if (portrait)
-                width = canvasW - (safe.x / scale);
+                width = Mathf.Max(40f, canvasW - (safe.x / scale) - hudReserve);
             m_RailWidth = width;
 
             if (m_Rail != null)
             {
                 float top = (LayoutScreenHeight - (safe.y + safe.height)) / scale + margin;
                 float bot = safe.y / scale + margin;
-                float right = (LayoutScreenWidth - (safe.x + safe.width)) / scale + margin;
+                float right = (LayoutScreenWidth - (safe.x + safe.width)) / scale + margin + hudReserve;
                 m_Rail.anchorMin = new Vector2(1, 0);
                 m_Rail.anchorMax = new Vector2(1, 1);
                 m_Rail.pivot = new Vector2(1, 0.5f);
@@ -714,7 +715,7 @@ namespace AmberScreen.Dev
                 m_RailTab.anchorMin = new Vector2(1, 0.6f);
                 m_RailTab.anchorMax = new Vector2(1, 0.6f);
                 m_RailTab.pivot = new Vector2(1, 0.5f);
-                m_RailTab.anchoredPosition = new Vector2(-margin, 0f);
+                m_RailTab.anchoredPosition = new Vector2(-(margin + hudReserve), 0f);
                 m_RailTab.sizeDelta = new Vector2(44f, 22f);
             }
 
@@ -742,13 +743,14 @@ namespace AmberScreen.Dev
             bool portrait = LayoutScreenHeight > LayoutScreenWidth;
             float margin = settings.railEdgeMargin;
             float canvasW = safe.width / scale;
+            float hudReserve = DevHudLayout.HudReserveCanvasUnits(settings, scale);
             float railW = m_RailWidth;
             if (railW <= 0f)
             {
                 railW = Mathf.Clamp(canvasW * settings.railScreenFraction,
                     settings.railMinWidth, settings.railMaxWidth);
                 if (portrait)
-                    railW = canvasW - (safe.x / scale);
+                    railW = Mathf.Max(40f, canvasW - (safe.x / scale) - hudReserve);
             }
 
             float winMargin = canvasW < 900f ? 8f : settings.windowMargin;
@@ -759,13 +761,13 @@ namespace AmberScreen.Dev
                     safe.x / scale,
                     safe.y / scale);
                 m_SectionWindow.offsetMax = new Vector2(
-                    -((LayoutScreenWidth - (safe.x + safe.width)) / scale),
+                    -((LayoutScreenWidth - (safe.x + safe.width)) / scale + hudReserve),
                     -((LayoutScreenHeight - (safe.y + safe.height)) / scale));
             }
             else
             {
                 float left = safe.x / scale + winMargin;
-                float rightGap = railW + margin + winMargin;
+                float rightGap = hudReserve + railW + margin + winMargin;
                 m_SectionWindow.anchorMin = Vector2.zero;
                 m_SectionWindow.anchorMax = Vector2.one;
                 m_SectionWindow.pivot = new Vector2(0.5f, 0.5f);

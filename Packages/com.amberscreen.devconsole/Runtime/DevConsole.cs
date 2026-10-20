@@ -43,6 +43,7 @@ namespace AmberScreen.Dev
             DevConsoleRegistry.Reset();
             DevConsoleSettings.ResetRuntimeDefault();
             DevConsoleUiUtil.ResetFontCache();
+            DevHud.ResetStatics();
             DevConsoleHost.ResetStatics();
         }
 

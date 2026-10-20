@@ -12,5 +12,5 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.devconsole
 
-- **0.3.4** pushed (not tagged). TMP missing guard + CS0104/CS0122 compile fixes; Fabio playtests Sandbox F1, then tags `devconsole/0.3.4`.
-- Namespace is `AmberScreen.Dev` (package/asmdef names unchanged). Gate gameplay on `BlocksGame` / `IsPointerOverConsole`.
+- **0.4.0** pushed (not tagged). Shared `DevHud` Debug HUD rail; Fabio playtests Sandbox F1/F2 + wide/portrait, then tags `devconsole/0.4.0`.
+- Namespace is `AmberScreen.Dev`. Gate gameplay on `BlocksGame` / `IsPointerOverConsole`. Migrate per-game HUDs onto `DevHud`.

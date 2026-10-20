@@ -2,6 +2,18 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.4.0] - 2026-10-20
+
+### Added
+
+- **Debug HUD rail** (`DevHud`): shared right-edge always-on HUD. Games register lines via `SetLine` / `ClearSection`; F2 toggles visibility. Own canvas under the console sorting order; throttled updates (`hudUpdateHz`); `GameRect` / `RailScreenRect` for layout.
+- Settings: `hudShowOnStart`, `hudToggleKey`, `hudScreenFraction`, `hudMinWidth`, `hudMaxWidth`, `hudOpacity`, `hudFontSize`, `hudUpdateHz`, `hudPortraitMaxHeightFraction`. `rememberState` also stores HUD visibility.
+
+### Changed
+
+- Console windows and rails keep clear of the HUD rail (landscape and portrait). Non-Rail layouts clamp their right edge the same way.
+- At 16:9 or narrower the HUD overlays the game; wider than 16:9 it prefers the right margin outside a centred 16:9 `DevHud.GameRect`.
+
 ## [0.3.4] - 2026-10-19
 
 ### Fixed

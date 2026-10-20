@@ -36,10 +36,12 @@ namespace AmberScreen.Dev
         static string s_RememberedSection;
         static bool s_RememberedOpen;
         static bool s_RememberedCollapsed;
+        static bool s_RememberedHudVisible = true;
         static bool s_StateLoaded;
         static bool s_LoggedTmpMissing;
 
         DevConsoleView m_View;
+        DevHudView m_HudView;
         GameObject m_OwnedEventSystem;
         static bool s_WarnedWrongSceneModule;
 
@@ -71,9 +73,28 @@ namespace AmberScreen.Dev
             s_RememberedSection = null;
             s_RememberedOpen = false;
             s_RememberedCollapsed = false;
+            s_RememberedHudVisible = true;
             s_StateLoaded = false;
             s_LoggedTmpMissing = false;
             TmpReady = DefaultTmpReady;
+        }
+
+        internal static DevHudView HudView => s_Instance != null ? s_Instance.m_HudView : null;
+
+        internal static void NotifyHudVisibilityChanged()
+        {
+            if (s_Instance == null)
+                return;
+            s_Instance.m_HudView?.OnSettingsOrVisibilityChanged();
+            s_Instance.m_View?.ApplyLayoutPublic();
+        }
+
+        internal static void NotifyHudStructureChanged()
+        {
+            // Structure dirty is handled inside DevHudView.Tick; still refresh console layout
+            // when line count crosses empty/non-empty (reserve changes).
+            if (s_Instance?.m_View != null)
+                s_Instance.m_View.ApplyLayoutPublic();
         }
 
         static bool DefaultTmpReady() => TMP_Settings.instance != null;
@@ -135,12 +156,15 @@ namespace AmberScreen.Dev
             if (DevConsole.IsOpen)
                 rail = DevConsole.IsCollapsed ? 2 : 1;
             string section = DevConsole.OpenSectionName ?? string.Empty;
-            string json = $"{{\"rail\":{rail},\"section\":\"{EscapeJson(section)}\"}}";
+            int hud = DevHud.Visible ? 1 : 0;
+            string json =
+                $"{{\"rail\":{rail},\"section\":\"{EscapeJson(section)}\",\"hud\":{hud}}}";
             PlayerPrefs.SetString(StatePrefsKey, json);
             PlayerPrefs.Save();
             s_RememberedOpen = rail != 0;
             s_RememberedCollapsed = rail == 2;
             s_RememberedSection = section;
+            s_RememberedHudVisible = hud != 0;
             s_StateLoaded = true;
         }
 
@@ -149,6 +173,7 @@ namespace AmberScreen.Dev
             if (s_StateLoaded)
                 return;
             s_StateLoaded = true;
+            s_RememberedHudVisible = Settings.hudShowOnStart;
             if (!PlayerPrefs.HasKey(StatePrefsKey))
                 return;
             string json = PlayerPrefs.GetString(StatePrefsKey, string.Empty);
@@ -159,6 +184,8 @@ namespace AmberScreen.Dev
             s_RememberedOpen = rail == 1 || rail == 2;
             s_RememberedCollapsed = rail == 2;
             s_RememberedSection = ExtractString(json, "section");
+            if (json.IndexOf("\"hud\":", System.StringComparison.Ordinal) >= 0)
+                s_RememberedHudVisible = ExtractInt(json, "hud") != 0;
         }
 
         static int ExtractInt(string json, string key)
@@ -265,20 +292,28 @@ namespace AmberScreen.Dev
             {
                 ReportTmpEssentialsMissing();
                 m_View = null;
+                m_HudView = null;
                 SceneManager.sceneLoaded += OnSceneLoaded;
                 SceneManager.activeSceneChanged += OnSceneChanged;
                 return;
             }
 
+            LoadState();
+            DevHud.ApplyRememberedVisible(
+                Settings.rememberState ? s_RememberedHudVisible : Settings.hudShowOnStart);
+
             try
             {
                 m_View = new DevConsoleView(transform);
                 m_View.SetVisible(false);
+                m_HudView = new DevHudView(transform);
             }
             catch (Exception e)
             {
                 Debug.LogException(e);
                 m_View = null;
+                m_HudView?.Dispose();
+                m_HudView = null;
                 DestroyHalfBuiltCanvases();
             }
 
@@ -302,6 +337,8 @@ namespace AmberScreen.Dev
             SceneManager.activeSceneChanged -= OnSceneChanged;
             m_View?.Dispose();
             m_View = null;
+            m_HudView?.Dispose();
+            m_HudView = null;
             DestroyOwnedEventSystem();
 
             if (s_Instance == this)
@@ -327,6 +364,9 @@ namespace AmberScreen.Dev
         void Update()
         {
             DevConsole.ConsumedCloseThisFrame = false;
+
+            // HUD ticks even when the console is closed.
+            m_HudView?.Tick(Time.unscaledDeltaTime);
 
             // Closed path: input only (+ cheap DEV-button safe-area compare, no allocations).
             PollOpenCloseInput();
@@ -361,6 +401,13 @@ namespace AmberScreen.Dev
             {
                 DevConsole.Toggle();
                 return;
+            }
+
+            if (keyboard != null &&
+                settings.hudToggleKey != settings.openKey &&
+                keyboard[settings.hudToggleKey].wasPressedThisFrame)
+            {
+                DevHud.Toggle();
             }
 
             if (settings.enableGamepadChord)
