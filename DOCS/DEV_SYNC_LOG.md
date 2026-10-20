@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-20
 
+- **devconsole 0.4.0 fix1: console rail width with HUD visible, wide margin rule, refresh GC**
+- Save: n/a
+
 - **devconsole 0.4.0: shared Debug HUD rail (DevHud) + GameRect 16:9 rule**
 - Save: n/a
 

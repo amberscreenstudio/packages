@@ -39,6 +39,7 @@ namespace AmberScreen.Dev
         static bool s_RememberedHudVisible = true;
         static bool s_StateLoaded;
         static bool s_LoggedTmpMissing;
+        static bool s_HudHadLines;
 
         DevConsoleView m_View;
         DevHudView m_HudView;
@@ -76,6 +77,7 @@ namespace AmberScreen.Dev
             s_RememberedHudVisible = true;
             s_StateLoaded = false;
             s_LoggedTmpMissing = false;
+            s_HudHadLines = false;
             TmpReady = DefaultTmpReady;
         }
 
@@ -91,8 +93,12 @@ namespace AmberScreen.Dev
 
         internal static void NotifyHudStructureChanged()
         {
-            // Structure dirty is handled inside DevHudView.Tick; still refresh console layout
-            // when line count crosses empty/non-empty (reserve changes).
+            // Structure dirty is handled inside DevHudView.Tick; only re-run console layout
+            // when the empty/non-empty reserve boundary flips.
+            bool hasLines = DevHudRegistry.TotalLineCount() > 0;
+            if (hasLines == s_HudHadLines)
+                return;
+            s_HudHadLines = hasLines;
             if (s_Instance?.m_View != null)
                 s_Instance.m_View.ApplyLayoutPublic();
         }

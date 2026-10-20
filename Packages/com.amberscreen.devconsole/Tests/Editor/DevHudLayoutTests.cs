@@ -61,6 +61,30 @@ namespace AmberScreen.Dev.Tests
                 "SectionWindow overlaps DevHudRail");
             Assert.IsFalse(RectsOverlapHorizontally(consoleRail, hudRail, 1f),
                 "console Rail overlaps DevHudRail");
+
+            ForceLayout(consoleRail);
+            var railCorners = new Vector3[4];
+            consoleRail.GetWorldCorners(railCorners);
+            float railW = Mathf.Abs(railCorners[2].x - railCorners[0].x);
+            bool portrait = height > width;
+            if (portrait)
+            {
+                var canvas = FindNamedRect("DevConsoleCanvas");
+                Assert.IsNotNull(canvas);
+                var canvasCorners = new Vector3[4];
+                canvas.GetWorldCorners(canvasCorners);
+                float railLeft = Mathf.Min(railCorners[0].x, railCorners[1].x);
+                float canvasLeft = Mathf.Min(canvasCorners[0].x, canvasCorners[1].x);
+                Assert.That(railLeft, Is.EqualTo(canvasLeft).Within(2f),
+                    "portrait console rail left edge should match canvas left");
+            }
+            else
+            {
+                Assert.GreaterOrEqual(
+                    railW,
+                    m_Settings.railMinWidth - m_Settings.railEdgeMargin - 1f,
+                    "landscape console rail collapsed to a sliver");
+            }
         }
 
         [TestCase(1920, 1080)]

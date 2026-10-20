@@ -292,7 +292,6 @@ namespace AmberScreen.Dev
             if (!DevHud.Visible || DevHudRegistry.TotalLineCount() == 0)
                 return;
 
-            DevHudRegistry.EnsureSorted();
             var sections = DevHudRegistry.Sections;
             if (m_SectionTexts.Count != sections.Count)
                 RebuildStructure();
@@ -322,10 +321,11 @@ namespace AmberScreen.Dev
                     m_Builder.Append(value);
                 }
 
-                string built = m_Builder.ToString();
-                if (s < m_CachedTexts.Count && TextsEqual(m_CachedTexts[s], built))
+                string cached = s < m_CachedTexts.Count ? m_CachedTexts[s] : null;
+                if (BuilderEquals(m_Builder, cached))
                     continue;
 
+                string built = m_Builder.ToString();
                 if (s < m_CachedTexts.Count)
                     m_CachedTexts[s] = built;
                 if (s < m_SectionTexts.Count && m_SectionTexts[s] != null)
@@ -339,17 +339,17 @@ namespace AmberScreen.Dev
                 m_Rail.gameObject.SetActive(true);
         }
 
-        static bool TextsEqual(string a, string b)
+        static bool BuilderEquals(StringBuilder sb, string s)
         {
-            if (ReferenceEquals(a, b))
-                return true;
-            if (a == null || b == null)
+            if (sb == null)
+                return s == null;
+            if (s == null)
                 return false;
-            if (a.Length != b.Length)
+            if (sb.Length != s.Length)
                 return false;
-            for (int i = 0; i < a.Length; i++)
+            for (int i = 0; i < sb.Length; i++)
             {
-                if (a[i] != b[i])
+                if (sb[i] != s[i])
                     return false;
             }
 

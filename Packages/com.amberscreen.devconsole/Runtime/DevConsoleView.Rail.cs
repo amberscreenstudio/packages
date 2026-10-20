@@ -706,7 +706,7 @@ namespace AmberScreen.Dev
                 m_Rail.anchorMin = new Vector2(1, 0);
                 m_Rail.anchorMax = new Vector2(1, 1);
                 m_Rail.pivot = new Vector2(1, 0.5f);
-                m_Rail.offsetMin = new Vector2(-width, bot);
+                m_Rail.offsetMin = new Vector2(-(width + hudReserve), bot);
                 m_Rail.offsetMax = new Vector2(-right, -top);
             }
 

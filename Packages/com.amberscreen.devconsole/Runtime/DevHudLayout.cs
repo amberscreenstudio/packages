@@ -34,10 +34,22 @@ namespace AmberScreen.Dev
             scale = Mathf.Max(scale, 0.01f);
             Rect safe = LayoutSafeArea;
             float canvasW = safe.width / scale;
-            return Mathf.Clamp(
+            float width = Mathf.Clamp(
                 canvasW * settings.hudScreenFraction,
                 settings.hudMinWidth,
                 settings.hudMaxWidth);
+
+            // Wider than 16:9: shrink into the right margin when it still fits hudMinWidth.
+            Rect game = ComputeGameRectPixels();
+            float aspect = safe.width / Mathf.Max(safe.height, 1f);
+            if (aspect > SixteenNine + 0.001f)
+            {
+                float marginCu = (safe.xMax - game.xMax) / scale - settings.railEdgeMargin;
+                if (marginCu >= settings.hudMinWidth)
+                    width = Mathf.Min(width, marginCu);
+            }
+
+            return width;
         }
 
         /// <summary>
