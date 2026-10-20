@@ -2,17 +2,35 @@
 
 Runtime debug console. Namespace: `AmberScreen.Dev`. No render-pipeline code — works on URP, URP 2D, and HDRP.
 
-**Version:** 0.4.0  
+**Version:** 0.4.1  
 **Unity:** 6000.6+  
 **Package / asmdef name:** `com.amberscreen.devconsole` / `AmberScreen.DevConsole`
 
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.4.0
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.4.1
 ```
 
 Requires TextMeshPro Essential Resources (Window > TextMeshPro > Import TMP Essential Resources). Without them the console logs an error and stays off.
+
+## Theme
+
+Shared UI must be skinnable so no game looks worse for hosting the console.
+
+1. **Create** Assets → Create → Amber Screen → Dev Console Theme.
+2. **Assign** the asset to `theme` on your `AmberScreenDevConsoleSettings` (or call `DevConsole.ApplyTheme(theme)` at runtime).
+3. Leave `theme` null to keep the built-in look (same pixels as 0.4.0).
+
+| Field group | What it skins |
+| --- | --- |
+| Surfaces (panel / rail / HUD / window / row) | Background colour, optional sprite, 9-slice |
+| Border | Colour + width (drawn when you add chrome) |
+| Fonts | TMP regular + bold (falls back to Inter / `fontOverride`) |
+| Text colours | Labels, values, warning, error, accent, muted |
+| Font sizes | Title, body, HUD |
+| Layout | Padding, spacing, row height; corner radius only applies when a sprite is set |
+| Buttons | Normal / hover / pressed / disabled / selected |
 
 ## Debug HUD rail
 
@@ -25,11 +43,17 @@ DevHud.SetLine("Vehicle", "Gear", () => gearText, order: 1);
 ```
 
 - **Toggle:** F2 (`hudToggleKey`), also `DevHud.Toggle()` / `Visible`. No `#if` needed — API is a no-op when the define is stripped.
+- **Empty lines:** a getter that returns `null` or `""` is not drawn; a section with no visible lines (including its header) is omitted.
+- **Key hints:** `DevHud.SetKeyHints(mode, (action, label)…)`, `SetMode(mode)`, `ClearKeyHints(mode)`. Draws a **Keys** section last for the active mode (binding display + label).
 - **Settings:** `hudShowOnStart`, `hudToggleKey`, `hudScreenFraction` / min / max width, `hudOpacity`, `hudFontSize`, `hudUpdateHz` (default 6), `hudPortraitHeightFraction` (default 0.18). `rememberState` restores HUD visibility.
 - **16:9 rule:** at 16:9 or narrower the HUD overlays the game (full `DevHud.GameRect`). Wider than 16:9, `GameRect` is the centred 16:9 of the safe area and the HUD sits in the left margin when it fits (otherwise it overlaps by the difference). Console windows never paint over the HUD.
 - **Game UI:** during development, keep minimaps / gauges inside `DevHud.GameRect` so they stay clear of both rails on wide screens. At 16:9 or narrower the rails may draw over game UI — accepted for development. Move UI back when shipping.
 - **Performance:** providers run only at `hudUpdateHz`; reuse cheap/cached strings. The HUD rebuilds TMP text only when the content changes.
 - **Migration:** move every per-game debug HUD onto `DevHud`, and delete OnGUI HUDs and custom HUD canvases (e.g. LWN sortingOrder 100 canvases). OnGUI always draws over the console.
+
+## Command line (optional)
+
+Off by default (`commandLine` on settings). When on, the section window shows a TMP input at the bottom. `DevConsole.RegisterCommand(name, help, args => …)` registers commands; Enter runs `name arg1 arg2` (quotes keep spaces); Up/Down walk history; built-in `help` lists commands; errors go through `DevConsole.Note`. While the field is focused, console hotkeys are ignored.
 
 ## Rail layout (default for new settings)
 

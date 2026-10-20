@@ -2,6 +2,11 @@
 
 Newest entries first.
 
+## 2026-10-21
+
+- **devconsole 0.4.1: theme, command line, empty HUD lines, key hints, collapse −**
+- Save: n/a
+
 ## 2026-10-20
 
 - **devconsole 0.4.0 fix3: HUD rail left, portrait top strip, collapse tab**

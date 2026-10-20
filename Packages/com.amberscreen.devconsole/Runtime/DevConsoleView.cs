@@ -111,6 +111,7 @@ namespace AmberScreen.Dev
             ApplyLayout();
             SyncDevScaler();
             UpdateDevButton();
+            SyncCommandLineVisibility();
         }
 
         public void SetCollapsed(bool collapsed)
@@ -153,6 +154,11 @@ namespace AmberScreen.Dev
                    (m_CollapsedHeader != null && m_CollapsedHeader.gameObject.activeInHierarchy &&
                     RectContainsScreenPoint(m_CollapsedHeader));
         }
+
+        public bool IsCommandLineFocused =>
+            m_CommandField != null &&
+            m_CommandField.isFocused &&
+            DevConsoleHost.Settings.commandLine;
 
         public void Rebuild()
         {
@@ -297,7 +303,10 @@ namespace AmberScreen.Dev
             }
 
             if (DevConsole.IsRailLayout())
+            {
                 TickPins(unscaledDeltaTime);
+                TickCommandLineHistory();
+            }
 
             FollowSelectionScroll();
             MaybeRepositionDevButton();
@@ -836,11 +845,14 @@ namespace AmberScreen.Dev
         {
             float titleH = DevConsoleUiUtil.TitleBarHeight(settings, m_Canvas);
 
+            var theme = DevConsoleHost.ActiveTheme;
             m_Panel = DevConsoleUiUtil.CreateRect("Panel", m_Root);
-            DevConsoleUiUtil.AddImage(m_Panel, DevConsoleUiUtil.PanelBg);
+            var panelImg = DevConsoleUiUtil.AddImage(m_Panel, DevConsoleUiUtil.PanelBg);
+            DevConsoleTheme.ApplySurface(panelImg, theme.panelBackground);
             m_PanelVlg = m_Panel.gameObject.AddComponent<VerticalLayoutGroup>();
-            m_PanelVlg.padding = new RectOffset(8, 8, 8, 8);
-            m_PanelVlg.spacing = settings.spacing;
+            int pad = Mathf.RoundToInt(theme.padding + 2f);
+            m_PanelVlg.padding = new RectOffset(pad, pad, pad, pad);
+            m_PanelVlg.spacing = theme.spacing > 0f ? theme.spacing : settings.spacing;
             m_PanelVlg.childAlignment = TextAnchor.UpperCenter;
             m_PanelVlg.childControlWidth = true;
             m_PanelVlg.childControlHeight = true;
@@ -892,15 +904,11 @@ namespace AmberScreen.Dev
             m_Status.raycastTarget = false;
 
             m_CollapseButton = CreateChromeButton(
-                header, "Collapse", "-", false, () =>
-                {
-                    if (DevConsoleHost.Settings.layout == DevConsoleLayout.DockRight)
-                        SetCollapsed(true);
-                },
+                header, "Collapse", "-", false, () => SetCollapsed(true),
                 out m_CollapseLe, out m_CollapseLabel);
 
             m_CloseButton = CreateChromeButton(
-                header, "Close", "X", true, DevConsole.Close,
+                header, "Close", "×", true, DevConsole.Close,
                 out m_CloseLe, out m_CloseLabel);
 
             var scrollRt = DevConsoleUiUtil.CreateRect("Scroll", m_Panel);
@@ -908,12 +916,13 @@ namespace AmberScreen.Dev
             m_ScrollLe.flexibleHeight = 1f;
             m_ScrollLe.minHeight = 80f;
             m_Scroll = scrollRt.gameObject.AddComponent<ScrollRect>();
-            DevConsoleUiUtil.AddImage(scrollRt, new Color(0, 0, 0, 0.15f));
+            DevConsoleUiUtil.AddImage(scrollRt, DevConsoleHost.ActiveTheme.scrollWell);
 
             var viewport = DevConsoleUiUtil.CreateRect("Viewport", scrollRt);
             DevConsoleUiUtil.Stretch(viewport);
             viewport.gameObject.AddComponent<RectMask2D>();
             var vpImg = viewport.gameObject.AddComponent<Image>();
+            // Near-invisible graphic so ScrollRect receives raycasts.
             vpImg.color = new Color(1, 1, 1, 0.01f);
 
             m_Content = DevConsoleUiUtil.CreateRect("Content", viewport);
@@ -941,7 +950,7 @@ namespace AmberScreen.Dev
             m_HistoryLe = histScroll.gameObject.AddComponent<LayoutElement>();
             m_HistoryLe.minHeight = 0f;
             m_HistoryLe.preferredHeight = 0f;
-            DevConsoleUiUtil.AddImage(histScroll, new Color(0, 0, 0, 0.25f));
+            DevConsoleUiUtil.AddImage(histScroll, DevConsoleHost.ActiveTheme.historyWell);
             m_HistoryScroll = histScroll.gameObject.AddComponent<ScrollRect>();
             histScroll.gameObject.SetActive(false);
 
@@ -958,7 +967,7 @@ namespace AmberScreen.Dev
             m_History = m_HistoryContent.gameObject.AddComponent<TextMeshProUGUI>();
             DevConsoleUiUtil.StyleLabel(m_History, false);
             m_History.fontSize = 12f;
-            m_History.color = new Color(0.75f, 0.78f, 0.82f, 1f);
+            m_History.color = DevConsoleHost.ActiveTheme.mutedColor;
             m_History.alignment = TextAlignmentOptions.TopLeft;
             m_History.textWrappingMode = TextWrappingModes.Normal;
             m_History.overflowMode = TextOverflowModes.Ellipsis;
@@ -1018,7 +1027,7 @@ namespace AmberScreen.Dev
                 m_Panel.gameObject.SetActive(!dockCollapsed);
 
             if (m_CollapseButton != null)
-                m_CollapseButton.gameObject.SetActive(settings.layout == DevConsoleLayout.DockRight);
+                m_CollapseButton.gameObject.SetActive(true);
 
             if (m_Panel == null || m_Canvas == null)
                 return;
@@ -1105,7 +1114,7 @@ namespace AmberScreen.Dev
             float h = DevConsoleUiUtil.MinTouch(settings, m_Canvas) * 0.9f;
             headerLe.minHeight = h;
             headerLe.preferredHeight = h;
-            var headerBtn = DevConsoleUiUtil.AddButton(header, new Color(0.16f, 0.18f, 0.22f, 1f));
+            var headerBtn = DevConsoleUiUtil.AddButton(header, DevConsoleHost.ActiveTheme.sectionHeader);
             string arrow = expanded ? "v" : ">";
             string title = string.IsNullOrEmpty(section.Name) ? "(default)" : section.Name;
             DevConsoleUiUtil.AddLabel(

@@ -34,12 +34,21 @@ namespace AmberScreen.Dev
 
         public static TMP_FontAsset FontSemiBold => ResolveSemiBold();
 
+        public static DevConsoleTheme Theme => DevConsoleHost.ActiveTheme;
+
         public static TMP_FontAsset ResolveRegular(DevConsoleSettings settings = null)
         {
             if (s_Regular != null)
                 return s_Regular;
 
             settings ??= DevConsoleSettings.LoadOrDefault();
+            var theme = Theme;
+            if (theme != null && theme.fontRegular != null)
+            {
+                s_Regular = theme.fontRegular;
+                s_FontLogLabel = "theme " + theme.fontRegular.name;
+                return s_Regular;
+            }
 
             if (settings.fontOverride != null)
             {
@@ -81,6 +90,12 @@ namespace AmberScreen.Dev
                 return s_SemiBold;
 
             settings ??= DevConsoleSettings.LoadOrDefault();
+            var theme = Theme;
+            if (theme != null && theme.fontBold != null)
+            {
+                s_SemiBold = theme.fontBold;
+                return s_SemiBold;
+            }
 
             if (settings.fontOverride != null)
             {
@@ -168,15 +183,19 @@ namespace AmberScreen.Dev
             return Mathf.Max(1, Mathf.FloorToInt(contentWidth / denom));
         }
 
-        public static Color PanelBg => new Color(0.08f, 0.09f, 0.11f, 0.94f);
-        public static Color RowBg => new Color(0.14f, 0.15f, 0.18f, 1f);
-        public static Color ButtonBg => new Color(0.22f, 0.35f, 0.55f, 1f);
-        public static Color ButtonDisabled => new Color(0.25f, 0.25f, 0.28f, 1f);
-        public static Color TextColor => new Color(0.95f, 0.95f, 0.97f, 1f);
-        public static Color Accent => new Color(0.95f, 0.75f, 0.25f, 1f);
-        public static Color ChromeButtonBg => new Color(1f, 1f, 1f, 0.06f);
-        public static Color ChromeButtonHighlight => new Color(1f, 1f, 1f, 0.14f);
-        public static Color ChromeCloseHover => new Color(0.85f, 0.25f, 0.25f, 1f);
+        public static Color PanelBg => Theme.panelBackground.color;
+        public static Color RailBg => Theme.railBackground.color;
+        public static Color WindowBg => Theme.windowBackground.color;
+        public static Color RowBg => Theme.rowBackground.color;
+        public static Color ButtonBg => Theme.buttonNormal;
+        public static Color ButtonDisabled => Theme.buttonDisabled;
+        public static Color TextColor => Theme.labelColor;
+        public static Color ValueColor => Theme.valueColor;
+        public static Color Accent => Theme.accentColor;
+        public static Color Muted => Theme.mutedColor;
+        public static Color ChromeButtonBg => Theme.chromeButtonBg;
+        public static Color ChromeButtonHighlight => Theme.chromeButtonHighlight;
+        public static Color ChromeCloseHover => Theme.chromeCloseHover;
 
         public static float DpToCanvas(Canvas canvas)
         {
@@ -311,16 +330,37 @@ namespace AmberScreen.Dev
 
             var btn = rt.gameObject.AddComponent<Button>();
             btn.targetGraphic = img;
-            var colors = btn.colors;
-            colors.normalColor = normal;
-            colors.highlightedColor = Color.Lerp(normal, Color.white, 0.15f);
-            colors.pressedColor = Color.Lerp(normal, Color.black, 0.15f);
-            colors.disabledColor = ButtonDisabled;
-            colors.selectedColor = Color.Lerp(normal, Accent, 0.35f);
-            btn.colors = colors;
+            ApplyButtonColors(btn, normal);
             btn.navigation = new Navigation { mode = Navigation.Mode.Automatic };
             return btn;
         }
+
+        public static void ApplyButtonColors(Button btn, Color normal)
+        {
+            if (btn == null)
+                return;
+            var theme = Theme;
+            var colors = btn.colors;
+            colors.normalColor = normal;
+            colors.highlightedColor = theme.buttonHover.a > 0.01f &&
+                                      AlmostEqual(normal, theme.buttonNormal)
+                ? theme.buttonHover
+                : Color.Lerp(normal, Color.white, 0.15f);
+            colors.pressedColor = AlmostEqual(normal, theme.buttonNormal)
+                ? theme.buttonPressed
+                : Color.Lerp(normal, Color.black, 0.15f);
+            colors.disabledColor = theme.buttonDisabled;
+            colors.selectedColor = AlmostEqual(normal, theme.buttonNormal)
+                ? theme.buttonSelected
+                : Color.Lerp(normal, theme.accentColor, 0.35f);
+            btn.colors = colors;
+        }
+
+        static bool AlmostEqual(Color a, Color b) =>
+            Mathf.Abs(a.r - b.r) < 0.02f &&
+            Mathf.Abs(a.g - b.g) < 0.02f &&
+            Mathf.Abs(a.b - b.b) < 0.02f &&
+            Mathf.Abs(a.a - b.a) < 0.02f;
 
         public static Button AddChromeButton(
             RectTransform rt,
@@ -360,7 +400,8 @@ namespace AmberScreen.Dev
 
         public static float MinTouch(DevConsoleSettings settings, Canvas canvas = null)
         {
-            float h = settings.buttonHeight * settings.ResolvedScaleFactor;
+            float row = Theme != null ? Theme.rowHeight : settings.buttonHeight;
+            float h = row * settings.ResolvedScaleFactor;
             if (!IsPortraitScaledLayout(settings))
                 return h;
 
@@ -378,7 +419,8 @@ namespace AmberScreen.Dev
 
         public static float FontSize(DevConsoleSettings settings, Canvas canvas = null)
         {
-            float size = settings.fontSize * settings.ResolvedScaleFactor;
+            float body = Theme != null ? Theme.bodyFontSize : settings.fontSize;
+            float size = body * settings.ResolvedScaleFactor;
             if (!IsPortraitScaledLayout(settings))
                 return size;
 

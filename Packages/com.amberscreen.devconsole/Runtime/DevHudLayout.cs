@@ -67,7 +67,7 @@ namespace AmberScreen.Dev
         /// </summary>
         public static float HudLeftReserveCanvasUnits(DevConsoleSettings settings, float scale)
         {
-            if (!DevHud.Visible || DevHudRegistry.TotalLineCount() == 0 || IsPortrait)
+            if (!DevHud.Visible || !HasHudContent() || IsPortrait)
                 return 0f;
             return HudWidthCanvasUnits(settings, scale) + settings.railEdgeMargin;
         }
@@ -77,10 +77,13 @@ namespace AmberScreen.Dev
         /// </summary>
         public static float HudTopReserveCanvasUnits(DevConsoleSettings settings, float scale)
         {
-            if (!DevHud.Visible || DevHudRegistry.TotalLineCount() == 0 || !IsPortrait)
+            if (!DevHud.Visible || !HasHudContent() || !IsPortrait)
                 return 0f;
             return HudStripHeightCanvasUnits(settings, scale) + settings.railEdgeMargin;
         }
+
+        static bool HasHudContent() =>
+            DevHudRegistry.TotalLineCount() > 0 || DevHudKeyHints.TryGetActiveHints(out _);
 
         public static float SharedUiScaleFactor(DevConsoleSettings settings)
         {

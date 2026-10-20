@@ -32,7 +32,7 @@ namespace AmberScreen.Dev
             le.preferredHeight = h;
             le.flexibleWidth = 1f;
 
-            m_Button = DevConsoleUiUtil.AddButton(root, new Color(0.55f, 0.2f, 0.2f, 1f));
+            m_Button = DevConsoleUiUtil.AddButton(root, DevConsoleHost.ActiveTheme.confirmButton);
             m_Label = DevConsoleUiUtil.AddLabel(
                 root, "Label", entry.Label, font, TextAlignmentOptions.Midline);
             m_Button.onClick.AddListener(OnClick);

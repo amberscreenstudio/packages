@@ -84,8 +84,16 @@ namespace AmberScreen.Dev
         [FormerlySerializedAs("hudPortraitMaxHeightFraction")]
         [Range(0.08f, 0.4f)] public float hudPortraitHeightFraction = 0.18f;
 
+        [Header("Theme")]
+        [Tooltip("Optional skin. Null uses the built-in 0.4.0 look.")]
+        public DevConsoleTheme theme;
+
+        [Header("Command line")]
+        [Tooltip("Show a command input at the bottom of the section window.")]
+        public bool commandLine = false;
+
         [Header("Font")]
-        [Tooltip("Optional TMP override. If set, used instead of bundled Inter.")]
+        [Tooltip("Optional TMP override. If set, used instead of bundled Inter / theme fonts.")]
         public TMP_FontAsset fontOverride;
 
         [Header("Open bindings")]
@@ -165,6 +173,8 @@ namespace AmberScreen.Dev
             hudFontSize = 14f;
             hudUpdateHz = 6f;
             hudPortraitHeightFraction = 0.18f;
+            commandLine = false;
+            theme = null;
         }
 
         internal static void ResetRuntimeDefault()

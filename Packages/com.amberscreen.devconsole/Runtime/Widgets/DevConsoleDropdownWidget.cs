@@ -61,7 +61,7 @@ namespace AmberScreen.Dev
             var dropLe = dropRt.gameObject.AddComponent<LayoutElement>();
             dropLe.flexibleWidth = 1f;
             dropLe.minWidth = 120f;
-            var dropBg = DevConsoleUiUtil.AddImage(dropRt, new Color(0.12f, 0.13f, 0.16f, 1f));
+            var dropBg = DevConsoleUiUtil.AddImage(dropRt, DevConsoleHost.ActiveTheme.dropdownBg);
 
             var captionRt = DevConsoleUiUtil.CreateRect("Label", dropRt);
             DevConsoleUiUtil.Stretch(captionRt);
@@ -103,13 +103,14 @@ namespace AmberScreen.Dev
             template.pivot = new Vector2(0.5f, 1f);
             template.anchoredPosition = Vector2.zero;
             template.sizeDelta = new Vector2(0, Mathf.Max(160f, itemH * 4f));
-            DevConsoleUiUtil.AddImage(template, new Color(0.1f, 0.1f, 0.12f, 0.98f));
+            DevConsoleUiUtil.AddImage(template, DevConsoleHost.ActiveTheme.dropdownTemplateBg);
 
             var scroll = template.gameObject.AddComponent<ScrollRect>();
             var viewport = DevConsoleUiUtil.CreateRect("Viewport", template);
             DevConsoleUiUtil.Stretch(viewport);
             viewport.gameObject.AddComponent<RectMask2D>();
             var viewportImg = viewport.gameObject.AddComponent<Image>();
+            // Near-invisible graphic so ScrollRect receives raycasts.
             viewportImg.color = new Color(1, 1, 1, 0.01f);
 
             var content = DevConsoleUiUtil.CreateRect("Content", viewport);
@@ -128,12 +129,12 @@ namespace AmberScreen.Dev
             itemLe.minHeight = itemH;
             itemLe.preferredHeight = itemH;
             var toggle = item.gameObject.AddComponent<Toggle>();
-            var itemBg = DevConsoleUiUtil.AddImage(item, new Color(0.18f, 0.2f, 0.24f, 1f));
+            var itemBg = DevConsoleUiUtil.AddImage(item, DevConsoleHost.ActiveTheme.dropdownItemBg);
             toggle.targetGraphic = itemBg;
 
             var checkRt = DevConsoleUiUtil.CreateRect("Item Checkmark", item);
             DevConsoleUiUtil.Stretch(checkRt);
-            var check = DevConsoleUiUtil.AddImage(checkRt, new Color(0.3f, 0.45f, 0.7f, 0.5f));
+            var check = DevConsoleUiUtil.AddImage(checkRt, DevConsoleHost.ActiveTheme.dropdownCheck);
             toggle.graphic = check;
 
             var itemLabelRt = DevConsoleUiUtil.CreateRect("Item Label", item);

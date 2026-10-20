@@ -40,6 +40,7 @@ namespace AmberScreen.Dev
         static bool s_StateLoaded;
         static bool s_LoggedTmpMissing;
         static bool s_HudHadLines;
+        static DevConsoleTheme s_ThemeOverride;
 
         DevConsoleView m_View;
         DevHudView m_HudView;
@@ -78,11 +79,32 @@ namespace AmberScreen.Dev
             s_StateLoaded = false;
             s_LoggedTmpMissing = false;
             s_HudHadLines = false;
+            s_ThemeOverride = null;
             TmpReady = DefaultTmpReady;
+            DevConsoleCommands.Reset();
+            DevHudKeyHints.Reset();
         }
 
         internal static DevHudView HudView => s_Instance != null ? s_Instance.m_HudView : null;
         internal static DevConsoleView View => s_Instance != null ? s_Instance.m_View : null;
+
+        internal static DevConsoleTheme ActiveTheme =>
+            s_ThemeOverride != null
+                ? s_ThemeOverride
+                : Settings.theme != null
+                    ? Settings.theme
+                    : DevConsoleTheme.BuiltinDefault;
+
+        internal static void ApplyTheme(DevConsoleTheme theme)
+        {
+            s_ThemeOverride = theme;
+            DevConsoleUiUtil.ResetFontCache();
+            if (s_Instance == null)
+                return;
+            s_Instance.m_View?.OnSettingsReloaded();
+            s_Instance.m_View?.Rebuild();
+            s_Instance.m_HudView?.OnSettingsOrVisibilityChanged();
+        }
 
         internal static void NotifyHudVisibilityChanged()
         {
@@ -96,7 +118,8 @@ namespace AmberScreen.Dev
         {
             // Structure dirty is handled inside DevHudView.Tick; only re-run console layout
             // when the empty/non-empty reserve boundary flips.
-            bool hasLines = DevHudRegistry.TotalLineCount() > 0;
+            bool hasLines = DevHudRegistry.TotalLineCount() > 0 ||
+                            DevHudKeyHints.TryGetActiveHints(out _);
             if (hasLines == s_HudHadLines)
                 return;
             s_HudHadLines = hasLines;
@@ -143,7 +166,7 @@ namespace AmberScreen.Dev
                 return;
             DevConsole.Open();
             if (s_RememberedCollapsed)
-                DevConsole.SetCollapsed(true);
+                View?.SetCollapsed(true);
         }
 
         internal static void ApplyRememberedSectionOnOpen()
@@ -401,6 +424,8 @@ namespace AmberScreen.Dev
         {
             if (!DevConsole.CanActivate())
                 return;
+            if (m_View != null && m_View.IsCommandLineFocused)
+                return;
 
             var settings = Settings;
             var keyboard = Keyboard.current;
@@ -430,6 +455,8 @@ namespace AmberScreen.Dev
         void PollCloseWhileOpen()
         {
             if (!DevConsole.IsOpen)
+                return;
+            if (m_View != null && m_View.IsCommandLineFocused)
                 return;
 
             var keyboard = Keyboard.current;

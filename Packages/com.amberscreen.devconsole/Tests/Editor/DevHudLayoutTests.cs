@@ -75,8 +75,9 @@ namespace AmberScreen.Dev.Tests
                 Assert.IsNotNull(canvas);
                 Assert.That(RectMinX(consoleRail), Is.EqualTo(RectMinX(canvas)).Within(2f),
                     "portrait console rail left edge should match canvas left");
-                Assert.That(RectMaxX(consoleRail), Is.EqualTo(RectMaxX(canvas)).Within(2f),
-                    "portrait console rail right edge should match canvas right");
+                Assert.That(RectMaxX(consoleRail),
+                    Is.EqualTo(RectMaxX(canvas) - m_Settings.railEdgeMargin).Within(2f),
+                    "portrait console rail right edge should sit inset by railEdgeMargin");
             }
             else
             {

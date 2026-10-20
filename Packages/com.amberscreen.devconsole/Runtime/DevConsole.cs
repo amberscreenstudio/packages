@@ -267,6 +267,20 @@ namespace AmberScreen.Dev
 #endif
         }
 
+        public static void RegisterCommand(string name, string help, Action<string[]> run)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevConsoleCommands.Register(name, help, run);
+#endif
+        }
+
+        public static void ApplyTheme(DevConsoleTheme theme)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevConsoleHost.ApplyTheme(theme);
+#endif
+        }
+
         public static void SetSectionOrder(params string[] sections)
         {
 #if AMBERSCREEN_DEVCONSOLE

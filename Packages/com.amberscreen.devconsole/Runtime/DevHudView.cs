@@ -17,11 +17,14 @@ namespace AmberScreen.Dev
         Image m_RailBg;
         readonly List<TextMeshProUGUI> m_SectionTexts = new List<TextMeshProUGUI>();
         readonly List<string> m_CachedTexts = new List<string>();
+        TextMeshProUGUI m_KeysText;
+        string m_CachedKeys = string.Empty;
         readonly StringBuilder m_Builder = new StringBuilder(256);
         float m_Accum;
         float m_HudWidthCanvas;
         Vector2Int m_LastScreen;
         Rect m_LastSafeArea;
+        string m_LastControlScheme = string.Empty;
 
         // Test hooks
         internal int ProviderInvokeCount { get; private set; }
@@ -44,6 +47,7 @@ namespace AmberScreen.Dev
             m_Rail = null;
             m_SectionTexts.Clear();
             m_CachedTexts.Clear();
+            m_KeysText = null;
         }
 
         public Canvas Canvas => m_Canvas;
@@ -57,7 +61,7 @@ namespace AmberScreen.Dev
 
             var settings = DevConsoleHost.Settings;
             bool show = DevHud.Visible && DevHudRegistry.TotalLineCount() > 0;
-            if (!show)
+            if (!show && !DevHudKeyHints.TryGetActiveHints(out _))
             {
                 if (m_Rail != null && m_Rail.gameObject.activeSelf)
                     m_Rail.gameObject.SetActive(false);
@@ -75,10 +79,16 @@ namespace AmberScreen.Dev
                 ApplyLayout();
             }
 
-            if (DevHudRegistry.IsDirty)
+            string scheme = CurrentControlScheme();
+            bool schemeChanged = !string.Equals(scheme, m_LastControlScheme, System.StringComparison.Ordinal);
+            if (schemeChanged)
+                m_LastControlScheme = scheme;
+
+            if (DevHudRegistry.IsDirty || DevHudKeyHints.IsDirty)
             {
                 RebuildStructure();
                 DevHudRegistry.ClearDirty();
+                DevHudKeyHints.ClearDirty();
                 ForceRefreshContent();
                 ApplyLayout();
                 return;
@@ -87,7 +97,7 @@ namespace AmberScreen.Dev
             float hz = Mathf.Max(1f, settings.hudUpdateHz);
             float interval = 1f / hz;
             m_Accum += unscaledDt;
-            if (m_Accum < interval)
+            if (m_Accum < interval && !schemeChanged)
                 return;
             m_Accum = 0f;
             RefreshContent();
@@ -97,13 +107,15 @@ namespace AmberScreen.Dev
         {
             SyncScaler();
             ApplyVisibilityAndLayout();
-            if (DevHud.Visible && DevHudRegistry.TotalLineCount() > 0)
+            if (DevHud.Visible &&
+                (DevHudRegistry.TotalLineCount() > 0 || DevHudKeyHints.TryGetActiveHints(out _)))
                 ForceRefreshContent();
         }
 
         public Rect GetRailScreenRect()
         {
-            if (m_Rail == null || !DevHud.Visible || DevHudRegistry.TotalLineCount() == 0)
+            if (m_Rail == null || !DevHud.Visible ||
+                (DevHudRegistry.TotalLineCount() == 0 && !DevHudKeyHints.TryGetActiveHints(out _)))
                 return Rect.zero;
 
             var settings = DevConsoleHost.Settings;
@@ -134,6 +146,7 @@ namespace AmberScreen.Dev
         void Build()
         {
             var settings = DevConsoleHost.Settings;
+            var theme = DevConsoleHost.ActiveTheme;
             var go = new GameObject("DevHudCanvas", typeof(RectTransform));
             go.transform.SetParent(m_Host, false);
             m_Canvas = go.AddComponent<Canvas>();
@@ -145,11 +158,13 @@ namespace AmberScreen.Dev
             DevConsoleUiUtil.Stretch(m_Root);
 
             m_Rail = DevConsoleUiUtil.CreateRect("DevHudRail", m_Root);
-            m_RailBg = DevConsoleUiUtil.AddImage(m_Rail, new Color(0.05f, 0.06f, 0.08f, settings.hudOpacity));
+            m_RailBg = DevConsoleUiUtil.AddImage(m_Rail, theme.hudBackground.color);
+            DevConsoleTheme.ApplySurface(m_RailBg, theme.hudBackground, settings.hudOpacity);
             m_RailBg.raycastTarget = false;
             var vlg = m_Rail.gameObject.AddComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(6, 6, 6, 6);
-            vlg.spacing = 4f;
+            int pad = Mathf.RoundToInt(theme.padding);
+            vlg.padding = new RectOffset(pad, pad, pad, pad);
+            vlg.spacing = theme.spacing;
             vlg.childControlWidth = true;
             vlg.childControlHeight = true;
             vlg.childForceExpandWidth = true;
@@ -192,15 +207,13 @@ namespace AmberScreen.Dev
         {
             SyncScaler();
             ApplyLayout();
-            bool show = DevHud.Visible && DevHudRegistry.TotalLineCount() > 0;
+            bool show = DevHud.Visible &&
+                        (DevHudRegistry.TotalLineCount() > 0 || DevHudKeyHints.TryGetActiveHints(out _));
             if (m_Rail != null)
                 m_Rail.gameObject.SetActive(show);
             if (m_RailBg != null)
-            {
-                var c = m_RailBg.color;
-                c.a = DevConsoleHost.Settings.hudOpacity;
-                m_RailBg.color = c;
-            }
+                DevConsoleTheme.ApplySurface(
+                    m_RailBg, DevConsoleHost.ActiveTheme.hudBackground, DevConsoleHost.Settings.hudOpacity);
         }
 
         void ApplyLayout()
@@ -244,6 +257,8 @@ namespace AmberScreen.Dev
             DevHudRegistry.EnsureSorted();
             var sections = DevHudRegistry.Sections;
             var settings = DevConsoleHost.Settings;
+            var theme = DevConsoleHost.ActiveTheme;
+            float hudFont = theme.hudFontSize > 0f ? theme.hudFontSize : settings.hudFontSize;
 
             while (m_SectionTexts.Count > sections.Count)
             {
@@ -262,8 +277,8 @@ namespace AmberScreen.Dev
                 le.flexibleWidth = 1f;
                 var tmp = rt.gameObject.AddComponent<TextMeshProUGUI>();
                 DevConsoleUiUtil.StyleLabel(tmp, false);
-                tmp.fontSize = settings.hudFontSize;
-                tmp.color = DevConsoleUiUtil.TextColor;
+                tmp.fontSize = hudFont;
+                tmp.color = theme.labelColor;
                 tmp.alignment = TextAlignmentOptions.TopLeft;
                 tmp.richText = false;
                 tmp.raycastTarget = false;
@@ -275,9 +290,30 @@ namespace AmberScreen.Dev
 
             for (int i = 0; i < m_SectionTexts.Count; i++)
             {
-                m_SectionTexts[i].fontSize = settings.hudFontSize;
+                m_SectionTexts[i].fontSize = hudFont;
+                m_SectionTexts[i].color = theme.labelColor;
                 m_CachedTexts[i] = string.Empty;
             }
+
+            if (m_KeysText == null)
+            {
+                var rt = DevConsoleUiUtil.CreateRect("HudKeys", m_Rail);
+                var le = rt.gameObject.AddComponent<LayoutElement>();
+                le.minHeight = 16f;
+                le.flexibleWidth = 1f;
+                m_KeysText = rt.gameObject.AddComponent<TextMeshProUGUI>();
+                DevConsoleUiUtil.StyleLabel(m_KeysText, false);
+                m_KeysText.alignment = TextAlignmentOptions.TopLeft;
+                m_KeysText.richText = false;
+                m_KeysText.raycastTarget = false;
+                m_KeysText.textWrappingMode = TextWrappingModes.Normal;
+                m_KeysText.overflowMode = TextOverflowModes.Overflow;
+            }
+
+            m_KeysText.fontSize = hudFont;
+            m_KeysText.color = theme.labelColor;
+            m_KeysText.transform.SetAsLastSibling();
+            m_CachedKeys = string.Empty;
         }
 
         void ForceRefreshContent()
@@ -288,54 +324,119 @@ namespace AmberScreen.Dev
 
         void RefreshContent()
         {
-            if (!DevHud.Visible || DevHudRegistry.TotalLineCount() == 0)
+            if (!DevHud.Visible)
+                return;
+            if (DevHudRegistry.TotalLineCount() == 0 && !DevHudKeyHints.TryGetActiveHints(out _))
                 return;
 
             var sections = DevHudRegistry.Sections;
             if (m_SectionTexts.Count != sections.Count)
                 RebuildStructure();
 
+            bool anyVisible = false;
             for (int s = 0; s < sections.Count; s++)
             {
                 var sec = sections[s];
                 m_Builder.Length = 0;
-                m_Builder.Append(sec.Name);
+                bool headerWritten = false;
                 var lines = sec.Lines;
                 for (int i = 0; i < lines.Count; i++)
                 {
-                    m_Builder.Append('\n');
-                    m_Builder.Append(lines[i].Label);
-                    m_Builder.Append(": ");
                     string value;
                     try
                     {
                         ProviderInvokeCount++;
-                        value = lines[i].Value?.Invoke() ?? "-";
+                        value = lines[i].Value?.Invoke();
                     }
                     catch
                     {
                         value = "err";
                     }
 
+                    if (string.IsNullOrEmpty(value))
+                        continue;
+
+                    if (!headerWritten)
+                    {
+                        m_Builder.Append(sec.Name);
+                        headerWritten = true;
+                    }
+
+                    m_Builder.Append('\n');
+                    m_Builder.Append(lines[i].Label);
+                    m_Builder.Append(": ");
                     m_Builder.Append(value);
                 }
 
-                string cached = s < m_CachedTexts.Count ? m_CachedTexts[s] : null;
-                if (BuilderEquals(m_Builder, cached))
-                    continue;
+                string built = headerWritten ? m_Builder.ToString() : string.Empty;
+                if (headerWritten)
+                    anyVisible = true;
 
-                string built = m_Builder.ToString();
-                if (s < m_CachedTexts.Count)
-                    m_CachedTexts[s] = built;
                 if (s < m_SectionTexts.Count && m_SectionTexts[s] != null)
                 {
+                    bool show = headerWritten;
+                    if (m_SectionTexts[s].gameObject.activeSelf != show)
+                        m_SectionTexts[s].gameObject.SetActive(show);
+                    if (!show)
+                        continue;
+
+                    string cached = s < m_CachedTexts.Count ? m_CachedTexts[s] : null;
+                    if (BuilderEquals(m_Builder, cached))
+                        continue;
+                    if (s < m_CachedTexts.Count)
+                        m_CachedTexts[s] = built;
                     m_SectionTexts[s].SetText(built);
                     SetTextCallCount++;
                 }
             }
 
-            if (m_Rail != null && !m_Rail.gameObject.activeSelf)
-                m_Rail.gameObject.SetActive(true);
+            RefreshKeysSection(ref anyVisible);
+
+            if (m_Rail != null)
+                m_Rail.gameObject.SetActive(anyVisible || DevHudKeyHints.TryGetActiveHints(out _));
+        }
+
+        void RefreshKeysSection(ref bool anyVisible)
+        {
+            if (m_KeysText == null)
+                return;
+
+            if (!DevHudKeyHints.TryGetActiveHints(out var hints))
+            {
+                if (m_KeysText.gameObject.activeSelf)
+                    m_KeysText.gameObject.SetActive(false);
+                m_CachedKeys = string.Empty;
+                return;
+            }
+
+            m_Builder.Length = 0;
+            m_Builder.Append("Keys");
+            for (int i = 0; i < hints.Count; i++)
+            {
+                m_Builder.Append('\n');
+                m_Builder.Append(DevHudKeyHints.FormatHint(hints[i]));
+            }
+
+            string built = m_Builder.ToString();
+            anyVisible = true;
+            if (!m_KeysText.gameObject.activeSelf)
+                m_KeysText.gameObject.SetActive(true);
+            if (string.Equals(built, m_CachedKeys, System.StringComparison.Ordinal))
+                return;
+            m_CachedKeys = built;
+            m_KeysText.SetText(built);
+            SetTextCallCount++;
+        }
+
+        static string CurrentControlScheme()
+        {
+            var pad = UnityEngine.InputSystem.Gamepad.current;
+            if (pad != null)
+                return "Gamepad:" + pad.deviceId;
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null)
+                return "Keyboard:" + kb.deviceId;
+            return string.Empty;
         }
 
         static bool BuilderEquals(StringBuilder sb, string s)

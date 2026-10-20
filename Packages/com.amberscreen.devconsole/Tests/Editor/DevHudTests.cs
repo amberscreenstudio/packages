@@ -1,6 +1,7 @@
 #if AMBERSCREEN_DEVCONSOLE
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace AmberScreen.Dev.Tests
 {
@@ -111,6 +112,65 @@ namespace AmberScreen.Dev.Tests
             var tmp = section.GetComponent<TMPro.TextMeshProUGUI>();
             Assert.IsNotNull(tmp);
             StringAssert.Contains("err", tmp.text);
+        }
+
+        [Test]
+        public void EmptyLine_NotDrawn_AndEmptySectionHidden()
+        {
+            DevHud.SetLine("Hide", "Gone", () => string.Empty);
+            DevHud.SetLine("Show", "Keep", () => "yes");
+            DevConsoleHost.EnsureExists();
+            var hud = DevConsoleHost.HudView;
+            Assert.IsNotNull(hud);
+            hud.Tick(1f);
+
+            var sections = GameObject.FindObjectsByType<TMPro.TextMeshProUGUI>(FindObjectsSortMode.None);
+            bool foundShow = false;
+            bool foundHideHeader = false;
+            for (int i = 0; i < sections.Length; i++)
+            {
+                var t = sections[i];
+                if (t == null || t.gameObject.name != "HudSection")
+                    continue;
+                if (!t.gameObject.activeSelf)
+                    continue;
+                if (t.text.Contains("Show") && t.text.Contains("Keep"))
+                    foundShow = true;
+                if (t.text.StartsWith("Hide"))
+                    foundHideHeader = true;
+            }
+
+            Assert.IsTrue(foundShow);
+            Assert.IsFalse(foundHideHeader, "section with only empty lines must not draw");
+        }
+
+        [Test]
+        public void KeyHints_DrawKeysSectionForActiveMode()
+        {
+            var action = new InputAction("Handbrake", InputActionType.Button, "<Keyboard>/space");
+            action.Enable();
+            try
+            {
+                DevHud.SetKeyHints("Drive", (action, "Handbrake"));
+                DevHud.SetMode("Drive");
+                DevConsoleHost.EnsureExists();
+                var hud = DevConsoleHost.HudView;
+                Assert.IsNotNull(hud);
+                hud.Tick(1f);
+
+                var keys = GameObject.Find("HudKeys");
+                Assert.IsNotNull(keys);
+                Assert.IsTrue(keys.activeInHierarchy);
+                var tmp = keys.GetComponent<TMPro.TextMeshProUGUI>();
+                Assert.IsNotNull(tmp);
+                StringAssert.Contains("Keys", tmp.text);
+                StringAssert.Contains("Handbrake", tmp.text);
+            }
+            finally
+            {
+                action.Disable();
+                action.Dispose();
+            }
         }
     }
 }

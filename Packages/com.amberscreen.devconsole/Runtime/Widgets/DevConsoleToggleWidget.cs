@@ -45,7 +45,7 @@ namespace AmberScreen.Dev
             boxLe.minHeight = h * 0.7f;
             boxLe.preferredWidth = h * 0.7f;
             boxLe.preferredHeight = h * 0.7f;
-            var bg = DevConsoleUiUtil.AddImage(boxRt, new Color(0.1f, 0.1f, 0.12f, 1f));
+            var bg = DevConsoleUiUtil.AddImage(boxRt, DevConsoleHost.ActiveTheme.toggleBox);
 
             var checkRt = DevConsoleUiUtil.CreateRect("Check", boxRt);
             DevConsoleUiUtil.Stretch(checkRt);

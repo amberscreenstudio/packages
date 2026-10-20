@@ -35,3 +35,5 @@ Games with an existing settings asset should run **Amber Screen → Reset DevCon
 **0.3.4:** TMP missing guard — if TextMeshPro Essential Resources are not imported, the console logs an error and stays off (no silent F1 failure).
 
 **0.4.0:** `DevHud` shared Debug HUD (left rail / portrait top strip) — register lines with `DevHud.SetLine`; F2 toggles; console windows keep clear of the HUD; migrate off OnGUI / custom HUD canvases.
+
+**0.4.1:** `DevConsoleTheme` skinning, optional command line (`RegisterCommand`), HUD empty-line skip + key hints (`SetKeyHints` / `SetMode`).

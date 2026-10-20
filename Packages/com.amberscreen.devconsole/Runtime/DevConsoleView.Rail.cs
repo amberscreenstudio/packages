@@ -33,6 +33,9 @@ namespace AmberScreen.Dev
         string m_FilterText = string.Empty;
         bool m_LogWindowOpen;
         float m_RailWidth;
+        TMP_InputField m_CommandField;
+        RectTransform m_CommandRow;
+        bool m_CommandLineBuilt;
 
         /// <summary>Edit-mode tests set these so layout does not depend on the Game view size.</summary>
         internal static int s_LayoutScreenWidth;
@@ -82,12 +85,15 @@ namespace AmberScreen.Dev
             blockerBtn.onClick.AddListener(() => DevConsole.CloseSection());
             m_Blocker.gameObject.SetActive(false);
 
+            var theme = DevConsoleHost.ActiveTheme;
             m_Rail = DevConsoleUiUtil.CreateRect("Rail", m_Root);
-            DevConsoleUiUtil.AddImage(m_Rail, new Color(0.08f, 0.09f, 0.11f, 0.88f));
+            var railImg = DevConsoleUiUtil.AddImage(m_Rail, theme.railBackground.color);
+            DevConsoleTheme.ApplySurface(railImg, theme.railBackground);
             m_Panel = m_Rail;
             m_PanelVlg = m_Rail.gameObject.AddComponent<VerticalLayoutGroup>();
-            m_PanelVlg.padding = new RectOffset(6, 6, 6, 6);
-            m_PanelVlg.spacing = settings.spacing;
+            int pad = Mathf.RoundToInt(theme.padding);
+            m_PanelVlg.padding = new RectOffset(pad, pad, pad, pad);
+            m_PanelVlg.spacing = theme.spacing > 0f ? theme.spacing : settings.spacing;
             m_PanelVlg.childControlWidth = true;
             m_PanelVlg.childControlHeight = true;
             m_PanelVlg.childForceExpandWidth = true;
@@ -113,7 +119,7 @@ namespace AmberScreen.Dev
             var sectionLe = sectionScrollRt.gameObject.AddComponent<LayoutElement>();
             sectionLe.flexibleHeight = 1f;
             sectionLe.minHeight = 80f;
-            DevConsoleUiUtil.AddImage(sectionScrollRt, new Color(0, 0, 0, 0.12f));
+            DevConsoleUiUtil.AddImage(sectionScrollRt, theme.scrollWell);
             var secVp = DevConsoleUiUtil.CreateRect("Viewport", sectionScrollRt);
             DevConsoleUiUtil.Stretch(secVp);
             secVp.gameObject.AddComponent<RectMask2D>();
@@ -139,9 +145,10 @@ namespace AmberScreen.Dev
             var statusLe = statusRt.gameObject.AddComponent<LayoutElement>();
             statusLe.minHeight = 22f;
             statusLe.preferredHeight = 22f;
-            m_RailStatusButton = DevConsoleUiUtil.AddButton(statusRt, new Color(0, 0, 0, 0.2f));
+            m_RailStatusButton = DevConsoleUiUtil.AddButton(statusRt, DevConsoleHost.ActiveTheme.statusWell);
             m_RailStatus = DevConsoleUiUtil.AddLabel(
-                statusRt, "Label", string.Empty, 14f, TextAlignmentOptions.MidlineLeft);
+                statusRt, "Label", string.Empty, DevConsoleHost.ActiveTheme.bodyFontSize * 0.85f,
+                TextAlignmentOptions.MidlineLeft);
             m_RailStatusButton.onClick.AddListener(OpenLogWindow);
 
             m_RailTab = DevConsoleUiUtil.CreateRect("RailTab", m_Root);
@@ -157,10 +164,14 @@ namespace AmberScreen.Dev
             m_RailTab.gameObject.SetActive(false);
 
             m_SectionWindow = DevConsoleUiUtil.CreateRect("SectionWindow", m_Root);
-            DevConsoleUiUtil.AddImage(m_SectionWindow, DevConsoleUiUtil.PanelBg);
+            var winImg = DevConsoleUiUtil.AddImage(m_SectionWindow, DevConsoleUiUtil.WindowBg);
+            DevConsoleTheme.ApplySurface(winImg, DevConsoleHost.ActiveTheme.windowBackground);
             var winV = m_SectionWindow.gameObject.AddComponent<VerticalLayoutGroup>();
-            winV.padding = new RectOffset(8, 8, 8, 8);
-            winV.spacing = settings.spacing;
+            int winPad = Mathf.RoundToInt(DevConsoleHost.ActiveTheme.padding + 2f);
+            winV.padding = new RectOffset(winPad, winPad, winPad, winPad);
+            winV.spacing = DevConsoleHost.ActiveTheme.spacing > 0f
+                ? DevConsoleHost.ActiveTheme.spacing
+                : settings.spacing;
             winV.childControlWidth = true;
             winV.childControlHeight = true;
             winV.childForceExpandWidth = true;
@@ -210,7 +221,7 @@ namespace AmberScreen.Dev
             m_Title = titleRt.gameObject.AddComponent<TextMeshProUGUI>();
             DevConsoleUiUtil.StyleLabel(m_Title, true);
             m_Title.color = DevConsoleUiUtil.Accent;
-            m_Title.fontSize = settings.fontSize;
+            m_Title.fontSize = DevConsoleHost.ActiveTheme.titleFontSize;
             m_Title.alignment = TextAlignmentOptions.MidlineLeft;
             m_Title.raycastTarget = false;
 
@@ -218,7 +229,7 @@ namespace AmberScreen.Dev
                 header, "Collapse", "-", false, () => SetCollapsed(true),
                 out m_CollapseLe, out m_CollapseLabel);
             m_CloseButton = CreateChromeButton(
-                header, "Close", "X", true, DevConsole.Close,
+                header, "Close", "×", true, DevConsole.Close,
                 out m_CloseLe, out m_CloseLabel);
         }
 
@@ -245,15 +256,16 @@ namespace AmberScreen.Dev
             titleLe.preferredHeight = titleH;
             m_WindowTitle = titleRt.gameObject.AddComponent<TextMeshProUGUI>();
             DevConsoleUiUtil.StyleLabel(m_WindowTitle, true);
-            m_WindowTitle.fontSize = settings.fontSize;
-            m_WindowTitle.color = DevConsoleUiUtil.Accent;
+            var theme = DevConsoleHost.ActiveTheme;
+            m_WindowTitle.fontSize = theme.titleFontSize;
+            m_WindowTitle.color = theme.accentColor;
             m_WindowTitle.alignment = TextAlignmentOptions.MidlineLeft;
 
             var filterRt = DevConsoleUiUtil.CreateRect("Filter", header);
             var filterLe = filterRt.gameObject.AddComponent<LayoutElement>();
             filterLe.flexibleWidth = 1f;
             filterLe.preferredHeight = titleH - 6f;
-            DevConsoleUiUtil.AddImage(filterRt, new Color(0, 0, 0, 0.35f));
+            DevConsoleUiUtil.AddImage(filterRt, theme.filterWell);
             m_FilterField = filterRt.gameObject.AddComponent<TMP_InputField>();
             var filterTextRt = DevConsoleUiUtil.CreateRect("Text", filterRt);
             DevConsoleUiUtil.Stretch(filterTextRt);
@@ -261,8 +273,8 @@ namespace AmberScreen.Dev
             filterTextRt.offsetMax = new Vector2(-6, -2);
             var filterText = filterTextRt.gameObject.AddComponent<TextMeshProUGUI>();
             DevConsoleUiUtil.StyleLabel(filterText, false);
-            filterText.fontSize = 14f;
-            filterText.color = DevConsoleUiUtil.TextColor;
+            filterText.fontSize = theme.bodyFontSize * 0.9f;
+            filterText.color = theme.labelColor;
             var placeholderRt = DevConsoleUiUtil.CreateRect("Placeholder", filterRt);
             DevConsoleUiUtil.Stretch(placeholderRt);
             placeholderRt.offsetMin = new Vector2(6, 2);
@@ -270,8 +282,8 @@ namespace AmberScreen.Dev
             var placeholder = placeholderRt.gameObject.AddComponent<TextMeshProUGUI>();
             DevConsoleUiUtil.StyleLabel(placeholder, false);
             placeholder.text = "Filter";
-            placeholder.fontSize = 14f;
-            placeholder.color = new Color(1, 1, 1, 0.35f);
+            placeholder.fontSize = theme.bodyFontSize * 0.9f;
+            placeholder.color = theme.placeholderColor;
             m_FilterField.textViewport = filterTextRt;
             m_FilterField.textComponent = filterText;
             m_FilterField.placeholder = placeholder;
@@ -296,7 +308,7 @@ namespace AmberScreen.Dev
             bodyLe.flexibleHeight = 1f;
             bodyLe.minHeight = 120f;
             m_WindowScroll = body.gameObject.AddComponent<ScrollRect>();
-            DevConsoleUiUtil.AddImage(body, new Color(0, 0, 0, 0.15f));
+            DevConsoleUiUtil.AddImage(body, theme.scrollWell);
             var vp = DevConsoleUiUtil.CreateRect("Viewport", body);
             DevConsoleUiUtil.Stretch(vp);
             vp.gameObject.AddComponent<RectMask2D>();
@@ -308,7 +320,8 @@ namespace AmberScreen.Dev
             var grid = m_WindowContent.gameObject.AddComponent<GridLayoutGroup>();
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             grid.constraintCount = 1;
-            grid.spacing = new Vector2(settings.spacing, settings.spacing);
+            float sp = theme.spacing > 0f ? theme.spacing : settings.spacing;
+            grid.spacing = new Vector2(sp, sp);
             grid.padding = new RectOffset(0, 0, 0, 0);
             m_WindowContent.gameObject.AddComponent<ContentSizeFitter>().verticalFit =
                 ContentSizeFitter.FitMode.PreferredSize;
@@ -316,6 +329,8 @@ namespace AmberScreen.Dev
             m_WindowScroll.viewport = vp;
             m_WindowScroll.horizontal = false;
             m_WindowScroll.vertical = true;
+
+            SyncCommandLineVisibility();
             m_Content = m_WindowContent;
             m_Scroll = m_WindowScroll;
         }
@@ -446,7 +461,7 @@ namespace AmberScreen.Dev
                 le.preferredHeight = settings.buttonHeight;
                 bool active = string.Equals(sec.Name, open, System.StringComparison.Ordinal);
                 Color bg = active
-                    ? Color.Lerp(DevConsoleUiUtil.ButtonBg, DevConsoleUiUtil.Accent, 0.35f)
+                    ? DevConsoleHost.ActiveTheme.buttonSelected
                     : DevConsoleUiUtil.ButtonBg;
                 var btn = DevConsoleUiUtil.AddButton(rt, bg);
                 var label = DevConsoleUiUtil.AddLabel(
@@ -779,6 +794,84 @@ namespace AmberScreen.Dev
                     -((LayoutScreenWidth - (safe.x + safe.width)) / scale + rightGap),
                     -((LayoutScreenHeight - (safe.y + safe.height)) / scale + winMargin));
             }
+        }
+
+        void EnsureCommandLineRow(DevConsoleSettings settings)
+        {
+            if (m_CommandLineBuilt || m_SectionWindow == null)
+                return;
+            m_CommandLineBuilt = true;
+            var theme = DevConsoleHost.ActiveTheme;
+            m_CommandRow = DevConsoleUiUtil.CreateRect("CommandLine", m_SectionWindow);
+            var le = m_CommandRow.gameObject.AddComponent<LayoutElement>();
+            le.minHeight = 28f;
+            le.preferredHeight = 28f;
+            le.flexibleHeight = 0f;
+            le.layoutPriority = 2;
+            DevConsoleUiUtil.AddImage(m_CommandRow, theme.filterWell);
+
+            m_CommandField = m_CommandRow.gameObject.AddComponent<TMP_InputField>();
+            var textRt = DevConsoleUiUtil.CreateRect("Text", m_CommandRow);
+            DevConsoleUiUtil.Stretch(textRt);
+            textRt.offsetMin = new Vector2(8, 2);
+            textRt.offsetMax = new Vector2(-8, -2);
+            var text = textRt.gameObject.AddComponent<TextMeshProUGUI>();
+            DevConsoleUiUtil.StyleLabel(text, false);
+            text.fontSize = theme.bodyFontSize * 0.9f;
+            text.color = theme.labelColor;
+
+            var phRt = DevConsoleUiUtil.CreateRect("Placeholder", m_CommandRow);
+            DevConsoleUiUtil.Stretch(phRt);
+            phRt.offsetMin = new Vector2(8, 2);
+            phRt.offsetMax = new Vector2(-8, -2);
+            var ph = phRt.gameObject.AddComponent<TextMeshProUGUI>();
+            DevConsoleUiUtil.StyleLabel(ph, false);
+            ph.text = "command…";
+            ph.fontSize = theme.bodyFontSize * 0.9f;
+            ph.color = theme.placeholderColor;
+
+            m_CommandField.textViewport = textRt;
+            m_CommandField.textComponent = text;
+            m_CommandField.placeholder = ph;
+            m_CommandField.lineType = TMP_InputField.LineType.SingleLine;
+            m_CommandField.onSubmit.AddListener(OnCommandSubmit);
+            SyncCommandLineVisibility();
+        }
+
+        void SyncCommandLineVisibility()
+        {
+            bool on = DevConsoleHost.Settings.commandLine;
+            if (on)
+                EnsureCommandLineRow(DevConsoleHost.Settings);
+            if (m_CommandRow != null)
+                m_CommandRow.gameObject.SetActive(on);
+        }
+
+        void OnCommandSubmit(string line)
+        {
+            if (!DevConsoleHost.Settings.commandLine)
+                return;
+            DevConsoleCommands.TryRun(line, out _);
+            if (m_CommandField != null)
+            {
+                m_CommandField.text = string.Empty;
+                m_CommandField.ActivateInputField();
+            }
+        }
+
+        void TickCommandLineHistory()
+        {
+            if (!DevConsoleHost.Settings.commandLine || m_CommandField == null)
+                return;
+            if (!m_CommandField.isFocused)
+                return;
+            var kb = Keyboard.current;
+            if (kb == null)
+                return;
+            if (kb.upArrowKey.wasPressedThisFrame)
+                m_CommandField.text = DevConsoleCommands.HistoryPrev(m_CommandField.text);
+            else if (kb.downArrowKey.wasPressedThisFrame)
+                m_CommandField.text = DevConsoleCommands.HistoryNext(m_CommandField.text);
         }
 
         void TickPins(float dt)

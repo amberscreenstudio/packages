@@ -2,6 +2,20 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.4.1] - 2026-10-21
+
+### Added
+
+- **Theme** (`DevConsoleTheme`): ScriptableObject skin for panel/rail/HUD/window colours, fonts, text colours, sizes, padding, and button states. Null theme keeps the built-in 0.4.0 look. `DevConsole.ApplyTheme(theme)` restyles the live UI.
+- **Command line** (settings `commandLine`, off by default): `DevConsole.RegisterCommand`, quoted args, history, built-in `help`.
+- **DevHud key hints:** `SetKeyHints` / `SetMode` / `ClearKeyHints` draw a Keys section for the active mode.
+- HUD skips lines whose getter returns null/empty and hides sections with no visible lines.
+
+### Fixed
+
+- **−** collapses the rail to the DEV tab; **×** closes. Remembered collapsed state restores via the view.
+- Portrait layout test: console rail right edge accounts for `railEdgeMargin`.
+
 ## [0.4.0] - 2026-10-20
 
 ### Added

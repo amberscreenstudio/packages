@@ -1,9 +1,10 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace AmberScreen.Dev
 {
     /// <summary>
-    /// Shared always-on Debug HUD rail (right edge). Games register lines; no OnGUI.
+    /// Shared always-on Debug HUD (left edge / portrait top strip). Games register lines; no OnGUI.
     /// When <c>AMBERSCREEN_DEVCONSOLE</c> is stripped, all members are no-ops / defaults.
     /// </summary>
     public static class DevHud
@@ -69,6 +70,30 @@ namespace AmberScreen.Dev
 #endif
         }
 
+        public static void SetKeyHints(string mode, params (InputAction action, string label)[] hints)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevHudKeyHints.SetKeyHints(mode, hints);
+            DevConsoleHost.NotifyHudStructureChanged();
+#endif
+        }
+
+        public static void SetMode(string mode)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevHudKeyHints.SetMode(mode);
+            DevConsoleHost.NotifyHudStructureChanged();
+#endif
+        }
+
+        public static void ClearKeyHints(string mode)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevHudKeyHints.ClearKeyHints(mode);
+            DevConsoleHost.NotifyHudStructureChanged();
+#endif
+        }
+
         /// <summary>
         /// Screen-pixel rect for game content. Full safe area at 16:9 or narrower;
         /// centred 16:9 of the safe area when wider. Full screen when the define is off.
@@ -99,6 +124,7 @@ namespace AmberScreen.Dev
         {
             s_Visible = true;
             DevHudRegistry.Reset();
+            DevHudKeyHints.Reset();
         }
 
         internal static void ApplyRememberedVisible(bool visible) => s_Visible = visible;
