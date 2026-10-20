@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-19
 
+- **devconsole 0.3.4: InternalsVisibleTo Editor asmdef (CS0122 DevConsoleHost)**
+- Save: n/a
+
 - **devconsole 0.3.4: CS0104 fix — qualify UnityEngine.Object after using System**
 - Save: n/a
 
