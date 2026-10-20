@@ -14,6 +14,7 @@ All notable changes to `com.amberscreen.devconsole` are documented here.
 - Console windows and rails keep clear of the HUD rail (landscape and portrait). Non-Rail layouts clamp their right edge the same way.
 - At 16:9 or narrower the HUD overlays the game; wider than 16:9 it prefers the right margin outside a centred 16:9 `DevHud.GameRect`.
 - Fix: console rail keeps full width when the HUD is visible; wide layouts shrink the HUD into the margin when it fits; HUD refresh avoids per-tick sort/`ToString` GC.
+- Fix: use `TMP_Text.textWrappingMode` instead of obsolete `enableWordWrapping` (CS0619).
 
 ## [0.3.4] - 2026-10-19
 

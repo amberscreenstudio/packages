@@ -268,7 +268,7 @@ namespace AmberScreen.Dev
                 tmp.alignment = TextAlignmentOptions.TopLeft;
                 tmp.richText = false;
                 tmp.raycastTarget = false;
-                tmp.enableWordWrapping = true;
+                tmp.textWrappingMode = TextWrappingModes.Normal;
                 tmp.overflowMode = TextOverflowModes.Overflow;
                 m_SectionTexts.Add(tmp);
                 m_CachedTexts.Add(string.Empty);
