@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-21
 
+- **devconsole 0.4.1 tagged (`devconsole/0.4.1` → 01de3af)**
+- Save: n/a
+
 - **devconsole 0.4.1 fix: reopen DEV button at rail edge (clear of HUD); command-line help Enter + log**
 - Save: n/a
 

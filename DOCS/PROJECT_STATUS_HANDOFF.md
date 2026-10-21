@@ -12,5 +12,5 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.devconsole
 
-- **0.4.1** pushed (not tagged). Reopen DEV button sits on the rail edge (not over HUD); command-line `help` submits on Enter and opens the log. Sandbox scene: `Assets/Scenes/DevConsoleSandbox.unity`. Tag after playtest.
+- **0.4.1** tagged (`devconsole/0.4.1` → 01de3af). Reopen DEV button sits on the rail edge (not over HUD); command-line `help` submits on Enter and opens the log. Sandbox scene: `Assets/Scenes/DevConsoleSandbox.unity`.
 - Namespace is `AmberScreen.Dev`. Gate gameplay on `BlocksGame` / `IsPointerOverConsole`. Keep game UI inside `DevHud.GameRect` clear of both rails.
