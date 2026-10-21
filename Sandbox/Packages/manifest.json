@@ -1,10 +1,12 @@
 {
   "testables": [
     "com.amberscreen.devconsole",
+    "com.amberscreen.economy",
     "com.amberscreen.meters"
   ],
   "dependencies": {
     "com.amberscreen.devconsole": "file:../../Packages/com.amberscreen.devconsole",
+    "com.amberscreen.economy": "file:../../Packages/com.amberscreen.economy",
     "com.amberscreen.meters": "file:../../Packages/com.amberscreen.meters",
     "com.unity.inputsystem": "1.20.0",
     "com.unity.render-pipelines.universal": "17.6.0",

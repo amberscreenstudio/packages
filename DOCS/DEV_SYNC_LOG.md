@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-21
 
+- **economy 0.1.0: new package lifted from LWN Shared/Economy (f5a5eeb); Sandbox EconomySandbox scene**
+- Save: n/a
+
 - **devconsole 0.4.1 tagged (`devconsole/0.4.1` → 01de3af)**
 - Save: n/a
 

@@ -1,6 +1,6 @@
 # Shared systems registry
 
-Last updated: 2026-10-19. Kept by Packages. Every registered module is a package with exactly ONE owner (Fabio, 2026-10-19).
+Last updated: 2026-10-21. Kept by Packages. Every registered module is a package with exactly ONE owner (Fabio, 2026-10-19).
 
 ## Rules
 
@@ -131,6 +131,14 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 - **Stays in games:** which meters exist and their numbers (stamina, breath, water, radiator), meter UI
 - **Interfaces:** Meter, meter events, save state
 - **Depends on:** nothing
+
+### com.amberscreen.economy
+
+- **Owner:** LWN | **State:** in library, `0.1.0` untagged | **Users:** LWN, Snorkel & Sail, Time & Tension, Sand & Ink
+- **Includes:** `Money` / `EconomyCurrencySettings`, `IWallet` / `Wallet` (Balance, Available, Add, TrySpend, holds, transaction log), `EarningsRecord` / `EarningsLineType`, `WalletSaveState`; temporary `TempSave` (`ISaveStateProvider`, `JsonSaveBackend`) until `com.amberscreen.save`
+- **Stays in games:** payout rules, job/auction calculators, currency assets, game-specific history
+- **Interfaces:** `IWallet`, `Money`, earnings record types, wallet save provider
+- **Depends on:** nothing (temp save is local to the package)
 
 ### com.amberscreen.interaction
 

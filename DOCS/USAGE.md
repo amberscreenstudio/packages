@@ -2,15 +2,22 @@
 
 ## Package versions per game
 
-| Game | Repo | com.amberscreen.devconsole | com.amberscreen.meters |
-| --- | --- | --- | --- |
-| Twin Ticks | amberscreenstudio/Twin-Ticks | `devconsole/0.3.1` (Twin Ticks 0.0.18), bumping to 0.3.3 | none |
-| Sand & Ink | amberscreenstudio/Sand-and-Ink | switching to `devconsole/0.3.3` (S&I 0.1.9) | adopting for drinking water |
-| Snorkel & Sail | (local) | not yet (own console) | switching from `Assets/Shared/Meters` |
-| LWN | (local) | not yet (own console) | none |
-| The Watchmaker Shop | local, `E:\Unity Projects\Time & Tension` | not yet (own console) | none |
+| Game | Repo | com.amberscreen.devconsole | com.amberscreen.meters | com.amberscreen.economy |
+| --- | --- | --- | --- | --- |
+| Twin Ticks | amberscreenstudio/Twin-Ticks | `devconsole/0.3.1` (Twin Ticks 0.0.18), bumping to 0.3.3 | none | none |
+| Sand & Ink | amberscreenstudio/Sand-and-Ink | switching to `devconsole/0.3.3` (S&I 0.1.9) | adopting for drinking water | planned |
+| Snorkel & Sail | (local) | not yet (own console) | switching from `Assets/Shared/Meters` | planned |
+| LWN | (local) | not yet (own console) | none | switching from `Assets/Shared/Economy` |
+| The Watchmaker Shop | local, `E:\Unity Projects\Time & Tension` | not yet (own console) | none | planned |
 
-Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3` or `#meters/0.1.0`. Always pin a tag, never `main`.
+Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3`, `#meters/0.1.0`, or `#economy/0.1.0` (once tagged). Always pin a tag, never `main`.
+
+## com.amberscreen.economy quick start
+
+1. Add the package (local Sandbox: `"com.amberscreen.economy": "file:../../Packages/com.amberscreen.economy"`).
+2. Create `Resources/EconomyCurrency` (`AmberScreen/Economy/Currency Settings`) or call `Money.Apply(settings)`.
+3. `var wallet = new Wallet();` then `wallet.Add` / `TrySpend` / `TryReserve` / `Release` / `Commit` (amounts in minor units).
+4. Optional: `var save = new WalletSaveState(wallet);` + `JsonSaveBackend` under `AmberScreen.Economy.TempSave` until `com.amberscreen.save`.
 
 ## com.amberscreen.devconsole settings (0.2.3+)
 

@@ -10,6 +10,10 @@ Short status per package. Newest notes win.
 
 - **0.1.0** tagged (`meters/0.1.0`). Lifted from Snorkel & Sail `1a12b5b` with original script GUIDs.
 
+## com.amberscreen.economy
+
+- **0.1.0** pushed (not tagged). Lifted from LWN `Assets/Shared/Economy` (`f5a5eeb`). Temp save under `AmberScreen.Economy.TempSave`. Sandbox scene: `Assets/Scenes/EconomySandbox.unity`.
+
 ## com.amberscreen.devconsole
 
 - **0.4.1** tagged (`devconsole/0.4.1` → 01de3af). Reopen DEV button sits on the rail edge (not over HUD); command-line `help` submits on Enter and opens the log. Sandbox scene: `Assets/Scenes/DevConsoleSandbox.unity`.
