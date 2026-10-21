@@ -201,9 +201,8 @@ namespace AmberScreen.Dev
         }
 
         /// <summary>
-        /// Runtime override for the command-line input (in addition to settings.commandLine).
-        /// Pass null behaviour by calling again after resetting via settings reload — this sets an
-        /// explicit on/off flag until the host is destroyed.
+        /// Turns the rail command-line input on or off at runtime, overriding the
+        /// <c>commandLine</c> setting until the host is destroyed (or tests reset).
         /// </summary>
         public static void SetCommandLineEnabled(bool enabled)
         {

@@ -52,6 +52,19 @@ namespace AmberScreen.Dev
         }
 
         /// <summary>
+        /// Adds or replaces a row by <paramref name="rowId"/>. Use this from OnEnable / scene reload
+        /// so repeated registration does not stack duplicates. Empty id falls back to append.
+        /// </summary>
+        public DevHudSectionHandle AddRow(string rowId, params DevHudCell[] cells)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevHudRegistry.AddRow(Resolve(), rowId, cells);
+            DevConsoleHost.NotifyHudStructureChanged();
+#endif
+            return this;
+        }
+
+        /// <summary>
         /// Adds a table: a header row of <paramref name="columns"/> and one data row per entry
         /// returned by <paramref name="rows"/> (polled at <c>hudUpdateHz</c>). Equal column widths.
         /// </summary>

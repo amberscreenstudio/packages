@@ -51,13 +51,16 @@ Games with an existing settings asset should run **Amber Screen → Reset DevCon
 
 ```csharp
 var status = DevHud.AddSection("status", "Status");
+status.Clear(); // wipe rows/tables if re-registering (keeps tint / collapse options)
 var fps = DevHudCell.Create("FPS", () => fpsText);
 fps.Pin(); // always-visible pinned strip
-status.AddRow(fps);
+status.AddRow("fps", fps); // row id → replaces on OnEnable / scene reload (no duplicates)
 status.AddRow(
+    "stats",
     DevHudCell.Create("A", () => a),
     DevHudCell.Create("B", () => b),
     DevHudCell.Create("C", () => c));
+// status.AddRow(cell); // no id → always appends
 
 DevHud.AddSection("wheels", "Wheels")
     .AddTable(new[] { "Wheel", "Temp" }, () => rows);
@@ -65,6 +68,11 @@ DevHud.AddSection("wheels", "Wheels")
 DevHud.AddSection("debug", "Debug", startCollapsed: true);
 DevHud.SetKeyHints("Play", ("F1", "Console"), ("F2", "HUD"));
 DevHud.SetMode("Play");
+
+// Ambiguous nulls — cast the null side:
+// DevHud.SetKeyHints("Play", ((InputAction)null, "x"));  // or ((string)null, "x")
+// DevHud.AddKeyHint("Play", (InputAction)null, "x");
+// Prefer SetKeyHints("Play") to clear, or pass only real keys/actions.
 
 // Legacy still works:
 DevHud.SetLine("Legacy", "HP", () => hp.ToString());

@@ -22,6 +22,9 @@ All notable changes to `com.amberscreen.devconsole` are documented here.
 
 - After a console command runs (e.g. locks the cursor / starts gameplay), the open console stays interactive (`KeepInteractiveWhileOpen`: EventSystem + cursor unlock).
 - Placeholder GUIDs on `DevConsoleSettingsEditor.cs.meta` and `DevConsoleReopenButtonTests.cs.meta`.
+- `AddRow(string rowId, …)` replaces an existing row (avoids duplicates on OnEnable / reload); `section.Clear()` documented.
+- Section window button flow rebuilds once after layout settles when the viewport width was not ready at build time.
+- Sandbox `DevConsoleSandbox.unity` tracked with its `.meta` and build-settings entry.
 
 ## [0.4.1] - 2026-10-21
 

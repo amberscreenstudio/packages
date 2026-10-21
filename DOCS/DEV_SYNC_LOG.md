@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-21
 
+- **devconsole 0.4.2 fix: track Sandbox scene; AddRow(rowId); flow rebuild; SetCommandLineEnabled docs**
+- Save: n/a
+
 - **devconsole 0.4.2: DevHud sections/rows/tables/pins; flowing buttons; SetVisible; SetCommandLineEnabled; GUID fixes**
 - Save: n/a
 

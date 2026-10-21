@@ -12,6 +12,8 @@ namespace AmberScreen.Dev
     sealed class DevHudRow
     {
         public string Label;
+        /// <summary>Optional id for AddRow(rowId, …) upserts. Null for anonymous append-only rows.</summary>
+        public string RowId;
         public int Order;
         public int RegistrationIndex;
         public readonly List<DevHudCell> Cells = new List<DevHudCell>();
@@ -193,12 +195,23 @@ namespace AmberScreen.Dev
             return sec;
         }
 
-        public static void AddRow(DevHudSection sec, DevHudCell[] cells)
+        public static void AddRow(DevHudSection sec, DevHudCell[] cells) =>
+            AddRow(sec, null, cells);
+
+        /// <summary>
+        /// Appends a row, or replaces the existing row with the same non-empty
+        /// <paramref name="rowId"/> (for OnEnable / scene-reload safe registration).
+        /// </summary>
+        public static void AddRow(DevHudSection sec, string rowId, DevHudCell[] cells)
         {
             if (sec == null || cells == null || string.IsNullOrEmpty(sec.Id))
                 return;
 
-            var row = new DevHudRow { RegistrationIndex = s_NextReg++ };
+            var row = new DevHudRow
+            {
+                RowId = string.IsNullOrEmpty(rowId) ? null : rowId,
+                RegistrationIndex = s_NextReg++
+            };
             for (int i = 0; i < cells.Length; i++)
             {
                 if (cells[i] != null)
@@ -207,6 +220,22 @@ namespace AmberScreen.Dev
 
             if (row.Cells.Count == 0)
                 return;
+
+            if (row.RowId != null)
+            {
+                for (int i = 0; i < sec.Rows.Count; i++)
+                {
+                    if (string.Equals(sec.Rows[i].RowId, row.RowId, StringComparison.Ordinal))
+                    {
+                        row.Order = sec.Rows[i].Order;
+                        row.RegistrationIndex = sec.Rows[i].RegistrationIndex;
+                        sec.Rows[i] = row;
+                        SortRows(sec);
+                        s_Dirty = true;
+                        return;
+                    }
+                }
+            }
 
             sec.Rows.Add(row);
             SortRows(sec);

@@ -16,5 +16,5 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.devconsole
 
-- **0.4.2** pushed (not tagged). DevHud sections/rows/tables/pins/collapse; flowing console buttons; `SetVisible` / `SetCommandLineEnabled`; post-command interactivity fix. Sandbox: `Assets/Scenes/DevConsoleSandbox.unity`. Prior tag: `devconsole/0.4.1` → 01de3af.
+- **0.4.2** pushed (not tagged). DevHud `AddRow(rowId)` upsert + `Clear()`; flowing buttons rebuild after layout; Sandbox scene tracked. Prior tag: `devconsole/0.4.1` → 01de3af.
 - Namespace is `AmberScreen.Dev`. Gate gameplay on `BlocksGame` / `IsPointerOverConsole`. Keep game UI inside `DevHud.GameRect` clear of both rails.

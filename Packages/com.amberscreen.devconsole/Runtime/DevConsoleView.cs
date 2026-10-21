@@ -330,10 +330,29 @@ namespace AmberScreen.Dev
             {
                 TickPins(unscaledDeltaTime);
                 TickCommandLineHistory();
+                FlushPendingFlowRebuild();
             }
 
             FollowSelectionScroll();
             MaybeRepositionDevButton();
+        }
+
+        void FlushPendingFlowRebuild()
+        {
+            if (!m_PendingFlowRebuild)
+                return;
+            if (string.IsNullOrEmpty(DevConsole.OpenSectionName) || m_LogWindowOpen)
+            {
+                m_PendingFlowRebuild = false;
+                return;
+            }
+
+            Canvas.ForceUpdateCanvases();
+            if (m_WindowScroll == null || m_WindowScroll.viewport.rect.width <= 80f)
+                return;
+
+            m_PendingFlowRebuild = false;
+            RebuildSectionWindowBody(DevConsole.OpenSectionName);
         }
 
         void RefreshAvailabilityAndToggles()

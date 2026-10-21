@@ -42,6 +42,8 @@ namespace AmberScreen.Dev
         TMP_InputField m_CommandField;
         RectTransform m_CommandRow;
         bool m_CommandLineBuilt;
+        /// <summary>True when the section window body was built before the viewport had a real width.</summary>
+        bool m_PendingFlowRebuild;
 
         /// <summary>Edit-mode tests set these so layout does not depend on the Game view size.</summary>
         internal static int s_LayoutScreenWidth;
@@ -602,7 +604,27 @@ namespace AmberScreen.Dev
             vlg.childForceExpandWidth = true;
             vlg.childForceExpandHeight = false;
 
-            float viewportWidth = Mathf.Max(80f, m_WindowScroll.viewport.rect.width);
+            float viewportWidth = m_WindowScroll != null ? m_WindowScroll.viewport.rect.width : 0f;
+            if (viewportWidth <= 80f)
+            {
+                Canvas.ForceUpdateCanvases();
+                if (m_SectionWindow != null)
+                    LayoutRebuilder.ForceRebuildLayoutImmediate(m_SectionWindow);
+                viewportWidth = m_WindowScroll != null ? m_WindowScroll.viewport.rect.width : 0f;
+            }
+
+            if (viewportWidth <= 80f)
+            {
+                // Layout not settled yet — build with a temporary width, rebuild next tick.
+                m_PendingFlowRebuild = true;
+                float fallback = m_SectionWindow != null ? m_SectionWindow.rect.width - 24f : 0f;
+                viewportWidth = Mathf.Max(320f, fallback);
+            }
+            else
+            {
+                m_PendingFlowRebuild = false;
+            }
+
             float cellH = DevConsoleUiUtil.MinTouch(settings, m_Canvas);
             float font = DevConsoleUiUtil.FontSize(settings, m_Canvas);
             string filter = m_FilterText ?? string.Empty;
