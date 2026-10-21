@@ -4,7 +4,7 @@ using UnityEngine;
 namespace AmberScreen.Dev.Editor
 {
     [CustomEditor(typeof(DevConsoleSettings))]
-    sealed class DevConsoleSettingsEditor : Editor
+    sealed class DevConsoleSettingsEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
