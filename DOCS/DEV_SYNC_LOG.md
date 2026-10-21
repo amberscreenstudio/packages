@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-21
 
+- **devconsole 0.4.1 fix: reopen DEV button at rail edge (clear of HUD); command-line help Enter + log**
+- Save: n/a
+
 - **devconsole 0.4.1 fix: qualify UnityEditor.Editor in settings custom editor (namespace clash)**
 - Save: n/a
 

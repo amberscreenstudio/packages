@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -1062,6 +1063,7 @@ namespace AmberScreen.Dev
             m_CommandField.textComponent = text;
             m_CommandField.placeholder = ph;
             m_CommandField.lineType = TMP_InputField.LineType.SingleLine;
+            // TMP + Input System often skips onSubmit; TickCommandLineHistory also handles Enter.
             m_CommandField.onSubmit.AddListener(OnCommandSubmit);
             // Keep at bottom of the rail / panel.
             m_CommandRow.SetAsLastSibling();
@@ -1085,23 +1087,52 @@ namespace AmberScreen.Dev
         {
             if (!DevConsoleHost.Settings.commandLine)
                 return;
-            DevConsoleCommands.TryRun(line, out _);
-            if (m_CommandField != null)
+
+            string trimmed = line != null ? line.Trim() : string.Empty;
+            if (string.IsNullOrEmpty(trimmed))
             {
-                m_CommandField.text = string.Empty;
-                m_CommandField.ActivateInputField();
+                ReactivateCommandField();
+                return;
             }
+
+            // Clear before run so a duplicate Enter (onSubmit + poll) is a no-op.
+            if (m_CommandField != null)
+                m_CommandField.SetTextWithoutNotify(string.Empty);
+
+            DevConsoleCommands.TryRun(trimmed, out _);
+            // Show output immediately: status line + open the log window.
+            RefreshRailNotes();
+            OpenLogWindow();
+            ReactivateCommandField();
+        }
+
+        void ReactivateCommandField()
+        {
+            if (m_CommandField == null || !m_CommandField.gameObject.activeInHierarchy)
+                return;
+            m_CommandField.ActivateInputField();
+            m_CommandField.Select();
+            if (EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(m_CommandField.gameObject);
         }
 
         void TickCommandLineHistory()
         {
             if (!DevConsoleHost.Settings.commandLine || m_CommandField == null)
                 return;
-            if (!m_CommandField.isFocused)
+            if (!IsCommandLineFocused)
                 return;
             var kb = Keyboard.current;
             if (kb == null)
                 return;
+
+            // Enter / keypad Enter — reliable path when TMP onSubmit does not fire under Input System.
+            if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame)
+            {
+                OnCommandSubmit(m_CommandField.text);
+                return;
+            }
+
             if (kb.upArrowKey.wasPressedThisFrame)
                 m_CommandField.text = DevConsoleCommands.HistoryPrev(m_CommandField.text);
             else if (kb.downArrowKey.wasPressedThisFrame)

@@ -155,10 +155,34 @@ namespace AmberScreen.Dev
                     RectContainsScreenPoint(m_CollapsedHeader));
         }
 
-        public bool IsCommandLineFocused =>
-            m_CommandField != null &&
-            m_CommandField.isFocused &&
-            DevConsoleHost.Settings.commandLine;
+        public bool IsCommandLineFocused
+        {
+            get
+            {
+                if (m_CommandField == null || !DevConsoleHost.Settings.commandLine)
+                    return false;
+                if (m_CommandField.isFocused)
+                    return true;
+                var es = EventSystem.current;
+                return es != null && es.currentSelectedGameObject == m_CommandField.gameObject;
+            }
+        }
+
+        /// <summary>Screen-pixel rect of the floating reopen DEV button, or zero when hidden.</summary>
+        public Rect GetDevButtonScreenRect()
+        {
+            if (m_DevButtonRt == null || !IsDevButtonVisible)
+                return Rect.zero;
+            var corners = new Vector3[4];
+            m_DevButtonRt.GetWorldCorners(corners);
+            float xMin = Mathf.Min(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
+            float xMax = Mathf.Max(corners[0].x, corners[1].x, corners[2].x, corners[3].x);
+            float yMin = Mathf.Min(corners[0].y, corners[1].y, corners[2].y, corners[3].y);
+            float yMax = Mathf.Max(corners[0].y, corners[1].y, corners[2].y, corners[3].y);
+            // Overlay / world UI corners are already in screen pixels for overlay; for world-space
+            // test canvases they match the layout override coordinates used by DevHud.
+            return new Rect(xMin, yMin, xMax - xMin, yMax - yMin);
+        }
 
         public void Rebuild()
         {
@@ -541,6 +565,7 @@ namespace AmberScreen.Dev
         void BuildDevButtonCanvas()
         {
             var settings = DevConsoleHost.Settings;
+            var theme = DevConsoleHost.ActiveTheme;
             var go = new GameObject("DevConsoleDevButtonCanvas", typeof(RectTransform));
             go.transform.SetParent(m_Host, false);
             m_DevCanvas = go.AddComponent<Canvas>();
@@ -554,10 +579,10 @@ namespace AmberScreen.Dev
             DevConsoleUiUtil.Stretch(root);
 
             m_DevButtonRt = DevConsoleUiUtil.CreateRect("DevButton", root);
-            m_DevButton = DevConsoleUiUtil.AddButton(m_DevButtonRt, DevConsoleUiUtil.Accent);
+            m_DevButton = DevConsoleUiUtil.AddButton(m_DevButtonRt, theme.buttonNormal);
             var label = DevConsoleUiUtil.AddLabel(
-                m_DevButtonRt, "Label", "DEV", 14f, TextAlignmentOptions.Midline);
-            label.color = Color.black;
+                m_DevButtonRt, "Label", "DEV", 14f, TextAlignmentOptions.Midline, true);
+            label.color = theme.labelColor;
             m_DevButton.onClick.AddListener(DevConsole.Toggle);
             m_DevCanvas.gameObject.SetActive(false);
             UpdateDevButton();
@@ -612,8 +637,29 @@ namespace AmberScreen.Dev
             m_DevScaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
             if (DevConsoleUiUtil.IsPortraitScaledLayout(settings))
                 m_DevScaler.scaleFactor = DevConsoleUiUtil.PortraitScaleFactor(settings);
+            else if (s_LayoutScreenWidth > 0)
+                m_DevScaler.scaleFactor = 1f;
             else
                 m_DevScaler.scaleFactor = DevConsoleUiUtil.LandscapeScaleFactor(settings);
+
+            ApplyDevButtonLayoutScreenCanvasSize();
+        }
+
+        void ApplyDevButtonLayoutScreenCanvasSize()
+        {
+            if (s_LayoutScreenWidth <= 0 || m_DevCanvas == null)
+                return;
+            var root = m_DevCanvas.transform as RectTransform;
+            if (root == null)
+                return;
+            float sf = m_DevScaler != null ? Mathf.Max(m_DevScaler.scaleFactor, 0.01f) : 1f;
+            m_DevCanvas.renderMode = RenderMode.WorldSpace;
+            root.anchorMin = new Vector2(0.5f, 0.5f);
+            root.anchorMax = new Vector2(0.5f, 0.5f);
+            root.pivot = new Vector2(0.5f, 0.5f);
+            root.anchoredPosition3D = Vector3.zero;
+            root.localScale = Vector3.one;
+            root.sizeDelta = new Vector2(s_LayoutScreenWidth / sf, s_LayoutScreenHeight / sf);
         }
 
         void PlaceDevButtonInSafeArea()
@@ -622,24 +668,105 @@ namespace AmberScreen.Dev
                 return;
 
             var settings = DevConsoleHost.Settings;
-            float dp = DevConsoleUiUtil.DpToCanvas(m_DevCanvas);
-            float size = Mathf.Max(48f * dp, DevConsoleUiUtil.MinTouch(settings, m_DevCanvas));
+            var theme = DevConsoleHost.ActiveTheme;
+            float scale = Mathf.Max(m_DevCanvas.scaleFactor, 0.01f);
+            float size = Mathf.Max(
+                36f,
+                Mathf.Min(settings.railCollapsedWidth, DevConsoleUiUtil.MinTouch(settings, m_DevCanvas)));
+            float margin = settings.railEdgeMargin;
 
-            Rect safe = Screen.safeArea;
-            float sx = Screen.width > 0 ? safe.x / Screen.width : 0f;
-            float sy = Screen.height > 0 ? (safe.y + safe.height) / Screen.height : 1f;
-            m_DevButtonRt.anchorMin = new Vector2(sx, sy);
-            m_DevButtonRt.anchorMax = new Vector2(sx, sy);
-            m_DevButtonRt.pivot = new Vector2(0f, 1f);
+            int sw = LayoutScreenWidth;
+            int sh = LayoutScreenHeight;
+            Rect safe = LayoutSafeArea;
+            bool portrait = sh > sw;
+
+            float safeL = safe.x / scale;
+            float safeB = safe.y / scale;
+            float safeR = (safe.x + safe.width) / scale;
+            float safeT = (safe.y + safe.height) / scale;
+
             m_DevButtonRt.sizeDelta = new Vector2(size, size);
-            m_DevButtonRt.anchoredPosition = new Vector2(8f * dp, -8f * dp);
+
+            if (portrait)
+            {
+                // Bottom-right of the safe area, inset by railEdgeMargin.
+                m_DevButtonRt.anchorMin = new Vector2(0f, 0f);
+                m_DevButtonRt.anchorMax = new Vector2(0f, 0f);
+                m_DevButtonRt.pivot = new Vector2(1f, 0f);
+                m_DevButtonRt.anchoredPosition = new Vector2(safeR - margin, safeB + margin);
+            }
+            else
+            {
+                // Right edge, top of the rail (top of safe − margin).
+                m_DevButtonRt.anchorMin = new Vector2(0f, 0f);
+                m_DevButtonRt.anchorMax = new Vector2(0f, 0f);
+                m_DevButtonRt.pivot = new Vector2(1f, 1f);
+                m_DevButtonRt.anchoredPosition = new Vector2(safeR - margin, safeT - margin);
+            }
+
+            // Never overlap the DevHud rect — nudge away if needed.
+            AvoidHudOverlap(size, margin, safeL, safeB, safeR, safeT, portrait);
 
             m_DevLastSafeArea = safe;
-            m_DevLastScreen = new Vector2Int(Screen.width, Screen.height);
+            m_DevLastScreen = new Vector2Int(sw, sh);
+
+            if (m_DevButton != null)
+            {
+                var img = m_DevButton.targetGraphic as Image;
+                if (img != null)
+                    img.color = theme.buttonNormal;
+                DevConsoleUiUtil.ApplyButtonColors(m_DevButton, theme.buttonNormal);
+            }
 
             var label = m_DevButtonRt.GetComponentInChildren<TextMeshProUGUI>();
             if (label != null)
+            {
                 label.fontSize = DevConsoleUiUtil.FontSize(settings, m_DevCanvas) * 0.8f;
+                label.color = theme.labelColor;
+            }
+        }
+
+        void AvoidHudOverlap(
+            float size, float margin,
+            float safeL, float safeB, float safeR, float safeT,
+            bool portrait)
+        {
+            Rect hud = DevHud.RailScreenRect;
+            if (hud.width <= 1f || hud.height <= 1f || m_DevButtonRt == null)
+                return;
+
+            float scale = Mathf.Max(m_DevCanvas != null ? m_DevCanvas.scaleFactor : 1f, 0.01f);
+            // DevHud rect is in screen pixels; convert to canvas units for comparison.
+            float hxMin = hud.xMin / scale;
+            float hxMax = hud.xMax / scale;
+            float hyMin = hud.yMin / scale;
+            float hyMax = hud.yMax / scale;
+
+            Vector2 pos = m_DevButtonRt.anchoredPosition;
+            // Button rect in canvas units from bottom-left (anchor 0,0).
+            float bxMax = pos.x;
+            float bxMin = pos.x - size;
+            float byMax = portrait ? pos.y + size : pos.y;
+            float byMin = portrait ? pos.y : pos.y - size;
+
+            bool overlap = bxMin < hxMax && hxMin < bxMax && byMin < hyMax && hyMin < byMax;
+            if (!overlap)
+                return;
+
+            if (portrait)
+            {
+                // HUD is a top strip — keep bottom-right; push down if somehow overlapping.
+                pos.y = Mathf.Min(pos.y, hyMin - margin - size);
+                pos.y = Mathf.Max(pos.y, safeB + margin);
+            }
+            else
+            {
+                // HUD is a left rail — stay on the right; push right of HUD if needed.
+                pos.x = Mathf.Max(pos.x, hxMax + margin + size);
+                pos.x = Mathf.Min(pos.x, safeR - margin);
+            }
+
+            m_DevButtonRt.anchoredPosition = pos;
         }
 
         internal void MaybeRepositionDevButton()
@@ -647,8 +774,8 @@ namespace AmberScreen.Dev
             if (!IsDevButtonVisible || m_DevButtonRt == null)
                 return;
 
-            Rect safe = Screen.safeArea;
-            var screen = new Vector2Int(Screen.width, Screen.height);
+            Rect safe = LayoutSafeArea;
+            var screen = new Vector2Int(LayoutScreenWidth, LayoutScreenHeight);
             if (safe.x == m_DevLastSafeArea.x && safe.y == m_DevLastSafeArea.y &&
                 safe.width == m_DevLastSafeArea.width && safe.height == m_DevLastSafeArea.height &&
                 screen == m_DevLastScreen)

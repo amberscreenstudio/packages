@@ -29,20 +29,14 @@ namespace AmberScreen.Dev
             s_HistoryIndex = -1;
             Register("help", "List registered commands.", args =>
             {
-                var sb = new StringBuilder();
-                sb.Append("Commands:");
+                DevConsole.Note("Commands:");
                 foreach (var kv in s_Commands)
                 {
-                    sb.Append('\n');
-                    sb.Append(kv.Value.Name);
+                    string line = kv.Value.Name;
                     if (!string.IsNullOrEmpty(kv.Value.Help))
-                    {
-                        sb.Append(" — ");
-                        sb.Append(kv.Value.Help);
-                    }
+                        line += " — " + kv.Value.Help;
+                    DevConsole.Note(line);
                 }
-
-                DevConsole.Note(sb.ToString());
             });
         }
 

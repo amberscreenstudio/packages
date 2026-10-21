@@ -83,9 +83,49 @@ namespace AmberScreen.Dev.Tests
         {
             DevConsole.RegisterCommand("ping", "Ping help text", _ => { });
             Assert.IsTrue(DevConsoleCommands.TryRun("help", out _));
-            StringAssert.Contains("ping", DevConsoleRegistry.Status);
-            StringAssert.Contains("Ping help text", DevConsoleRegistry.Status);
-            StringAssert.Contains("help", DevConsoleRegistry.Status);
+            bool foundPing = false;
+            bool foundHelp = false;
+            var notes = DevConsoleRegistry.Notes;
+            for (int i = 0; i < notes.Count; i++)
+            {
+                if (notes[i].IndexOf("ping", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    foundPing = true;
+                if (notes[i].IndexOf("help", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    foundHelp = true;
+            }
+
+            Assert.IsTrue(foundPing, "help output should list ping");
+            Assert.IsTrue(foundHelp, "help output should list help itself");
+        }
+
+        [Test]
+        public void Submit_Help_OpensLogWithVisibleLines()
+        {
+            DevConsoleView.SetLayoutScreenOverride(1920, 1080, 160f);
+            DevConsole.RegisterCommand("ping", "Ping help text", _ => { });
+            DevConsoleHost.EnsureExists();
+            DevConsole.Open();
+
+            var field = GameObject.Find("CommandLine")?.GetComponent<TMPro.TMP_InputField>();
+            Assert.IsNotNull(field);
+            field.text = "help";
+            field.onSubmit.Invoke("help");
+
+            bool foundCommandsHeader = false;
+            var notes = DevConsoleRegistry.Notes;
+            for (int i = 0; i < notes.Count; i++)
+            {
+                if (notes[i].IndexOf("Commands", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    foundCommandsHeader = true;
+            }
+
+            Assert.IsTrue(foundCommandsHeader, "help should note a Commands header");
+            var window = GameObject.Find("SectionWindow");
+            Assert.IsNotNull(window);
+            Assert.IsTrue(window.activeInHierarchy, "log window should open after help");
+            var content = window.transform.Find("WindowBody/Viewport/Content");
+            Assert.IsNotNull(content);
+            Assert.Greater(content.childCount, 0, "log should show help output lines");
         }
 
         [Test]

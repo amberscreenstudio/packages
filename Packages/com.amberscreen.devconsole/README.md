@@ -67,7 +67,7 @@ Modelled on the Lines of Mercy console: a slim **right-edge rail** that can stay
 | Portrait rail expanded | Yes — full-width sheet |
 | Portrait collapsed strip | No (unless a section window is open) |
 
-**−** shrinks the rail to a thin icon strip (`railCollapsedWidth`, default 36): one square button per section (sprite via `DevConsole.SetSectionIcon`, or the section’s first letter). Click an icon to open that section’s window beside the strip. **⟨** / **∨** expands back to the full rail. **×** closes the console. The floating **DEV** reopen button is controlled by `showReopenButton` (default **on** for mobile/touch builds, **off** on desktop; was `showOnScreenDevButton`).
+**−** shrinks the rail to a thin icon strip (`railCollapsedWidth`, default 36): one square button per section (sprite via `DevConsole.SetSectionIcon`, or the section’s first letter). Click an icon to open that section’s window beside the strip. **⟨** / **∨** expands back to the full rail. **×** closes the console. The floating **DEV** reopen button (`showReopenButton`, default on for mobile/touch, off on desktop) sits on the **console rail’s edge** (right / top of rail in landscape, bottom-right in portrait), themed from `DevConsoleTheme`, and never overlaps the DevHud.
 
 **Gate gameplay on `BlocksGame`, not `IsOpen`.** Skip world clicks / raycasts when `IsPointerOverConsole` is true (pointer over rail, strip, or window).
 
