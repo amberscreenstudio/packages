@@ -82,8 +82,7 @@ namespace AmberScreen.Dev
             return HudStripHeightCanvasUnits(settings, scale) + settings.railEdgeMargin;
         }
 
-        static bool HasHudContent() =>
-            DevHudRegistry.TotalLineCount() > 0 || DevHudKeyHints.TryGetActiveHints(out _);
+        static bool HasHudContent() => DevHudRegistry.HasHudContent();
 
         public static float SharedUiScaleFactor(DevConsoleSettings settings)
         {

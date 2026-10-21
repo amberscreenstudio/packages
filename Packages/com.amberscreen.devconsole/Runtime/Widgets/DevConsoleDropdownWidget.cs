@@ -31,24 +31,28 @@ namespace AmberScreen.Dev
             if (settings.layout == DevConsoleLayout.MobilePortrait)
                 itemH = Mathf.Max(h, 48f * DevConsoleUiUtil.DpToCanvas(canvas));
 
+            // Vertical stack: command name on its own row, then dropdown + Go — never clips the label.
             var root = DevConsoleUiUtil.CreateRect("Dropdown_" + entry.Label, parent);
             var le = root.gameObject.AddComponent<LayoutElement>();
-            le.minHeight = h;
-            le.preferredHeight = h;
+            le.minHeight = h * 2f + 4f;
+            le.preferredHeight = h * 2f + 4f;
             le.flexibleWidth = 1f;
             DevConsoleUiUtil.AddImage(root, DevConsoleUiUtil.RowBg);
 
-            var row = root.gameObject.AddComponent<HorizontalLayoutGroup>();
-            row.padding = new RectOffset(4, 4, 2, 2);
-            row.spacing = 6f;
-            row.childAlignment = TextAnchor.MiddleCenter;
-            row.childForceExpandHeight = true;
-            row.childForceExpandWidth = false;
+            var stack = root.gameObject.AddComponent<VerticalLayoutGroup>();
+            stack.padding = new RectOffset(4, 4, 2, 2);
+            stack.spacing = 4f;
+            stack.childAlignment = TextAnchor.UpperLeft;
+            stack.childForceExpandHeight = false;
+            stack.childForceExpandWidth = true;
+            stack.childControlHeight = true;
+            stack.childControlWidth = true;
 
             var labelRt = DevConsoleUiUtil.CreateRect("Label", root);
             var labelLe = labelRt.gameObject.AddComponent<LayoutElement>();
-            labelLe.preferredWidth = 100f;
-            labelLe.flexibleWidth = 0.3f;
+            labelLe.minHeight = h * 0.85f;
+            labelLe.preferredHeight = h * 0.85f;
+            labelLe.flexibleWidth = 1f;
             var label = labelRt.gameObject.AddComponent<TextMeshProUGUI>();
             DevConsoleUiUtil.StyleLabel(label, false);
             label.text = entry.Label;
@@ -56,8 +60,22 @@ namespace AmberScreen.Dev
             label.color = DevConsoleUiUtil.TextColor;
             label.alignment = TextAlignmentOptions.MidlineLeft;
             label.raycastTarget = false;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            label.overflowMode = TextOverflowModes.Overflow;
 
-            var dropRt = DevConsoleUiUtil.CreateRect("Dropdown", root);
+            var controls = DevConsoleUiUtil.CreateRect("Controls", root);
+            var controlsLe = controls.gameObject.AddComponent<LayoutElement>();
+            controlsLe.minHeight = h;
+            controlsLe.preferredHeight = h;
+            controlsLe.flexibleWidth = 1f;
+            var row = controls.gameObject.AddComponent<HorizontalLayoutGroup>();
+            row.spacing = 6f;
+            row.childAlignment = TextAnchor.MiddleCenter;
+            row.childForceExpandHeight = true;
+            row.childForceExpandWidth = false;
+            row.childControlWidth = true;
+
+            var dropRt = DevConsoleUiUtil.CreateRect("Dropdown", controls);
             var dropLe = dropRt.gameObject.AddComponent<LayoutElement>();
             dropLe.flexibleWidth = 1f;
             dropLe.minWidth = 120f;
@@ -73,6 +91,8 @@ namespace AmberScreen.Dev
             caption.color = DevConsoleUiUtil.TextColor;
             caption.alignment = TextAlignmentOptions.MidlineLeft;
             caption.raycastTarget = false;
+            caption.textWrappingMode = TextWrappingModes.NoWrap;
+            caption.overflowMode = TextOverflowModes.Ellipsis;
 
             var template = CreateDropdownTemplate(dropRt, font, itemH);
             m_Dropdown = dropRt.gameObject.AddComponent<TMP_Dropdown>();
@@ -83,7 +103,7 @@ namespace AmberScreen.Dev
                 .GetComponent<TextMeshProUGUI>();
             m_Dropdown.navigation = new Navigation { mode = Navigation.Mode.Automatic };
 
-            var goRt = DevConsoleUiUtil.CreateRect("Go", root);
+            var goRt = DevConsoleUiUtil.CreateRect("Go", controls);
             var goLe = goRt.gameObject.AddComponent<LayoutElement>();
             goLe.preferredWidth = Mathf.Max(72f, h * 1.5f);
             goLe.minHeight = h;
@@ -146,6 +166,8 @@ namespace AmberScreen.Dev
             itemLabel.fontSize = font * 0.8f;
             itemLabel.color = DevConsoleUiUtil.TextColor;
             itemLabel.alignment = TextAlignmentOptions.MidlineLeft;
+            itemLabel.textWrappingMode = TextWrappingModes.NoWrap;
+            itemLabel.overflowMode = TextOverflowModes.Overflow;
 
             scroll.content = content;
             scroll.viewport = viewport;
@@ -162,6 +184,10 @@ namespace AmberScreen.Dev
             {
                 Debug.LogException(e);
                 DevConsole.Note(e.Message);
+            }
+            finally
+            {
+                DevConsoleHost.KeepInteractiveWhileOpen();
             }
         }
 

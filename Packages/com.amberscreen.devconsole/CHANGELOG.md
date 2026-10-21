@@ -2,6 +2,27 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.4.2] - 2026-10-21
+
+### Added
+
+- **DevHud redesign:** `DevHud.AddSection(id, title, tint, icon, startCollapsed, rememberCollapsed)` returns a `DevHudSectionHandle` (`AddRow`, `AddTable`, `SetPinned`, `SetCollapsed`, `Clear`). Rows hold `DevHudCell`s (label, value getter, weight). Headers are clickable; collapse is remembered in PlayerPrefs `AmberScreen.DevHud.Collapsed.{id}`.
+- **Pinning:** `DevHudCell.Pin()` / `SectionHandle.SetPinned(true)` show items in an always-visible strip at the top of the HUD, even when sections are collapsed.
+- **Key hints:** string keys via `SetKeyHints(mode, (key, label)...)` and `AddKeyHint(mode, key, label)` (also an `InputAction` overload); mixable per mode. A null `InputAction` hint now logs one warning.
+- **Theme:** `hudPanelColor`, `hudSectionHeaderColor`, `hudLabelColor`, `hudValueColor`, `hudPinnedStripColor`, `hudOpacity`, `hudFont`, `hudHeaderFontSize`, `hudCellPadding`.
+- **Console:** `RegisterSubHeader`, `Section/Sub` paths on Register*, `SetVisible(entryId, bool)`, optional `Func<bool> visiblePredicate`, `DevConsole.SetCommandLineEnabled(bool)`.
+- Command buttons auto-size and flow left-to-right wrapping; dropdowns put the command name on its own row so labels/options are not clipped.
+
+### Changed
+
+- `SetLine` / `RemoveLine` / `ClearSection` / `SetSectionOrder` map onto sections (section name = id). The HUD canvas raycasts (headers are buttons) and keeps an EventSystem alive while collapsible headers are shown.
+- `DevHud.Visible = false` hides everything, including pins and key hints.
+
+### Fixed
+
+- After a console command runs (e.g. locks the cursor / starts gameplay), the open console stays interactive (`KeepInteractiveWhileOpen`: EventSystem + cursor unlock).
+- Placeholder GUIDs on `DevConsoleSettingsEditor.cs.meta` and `DevConsoleReopenButtonTests.cs.meta`.
+
 ## [0.4.1] - 2026-10-21
 
 ### Added

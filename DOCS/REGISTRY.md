@@ -42,10 +42,10 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.devconsole
 
-- **Owner:** Packages | **State:** in library, `devconsole/0.4.1` (untagged until playtest) | **Users:** all five
-- **Includes:** right-edge console rail (stays open without blocking), section windows (blocking), **Debug HUD** (`DevHud` — left-edge rail or portrait top strip; replaces per-game OnGUI / sortingOrder-100 HUD canvases), **Theme** (`DevConsoleTheme`), optional command line, key hints, quick buttons, pinned readouts, buttons/toggles/dropdowns/confirms/readouts, filter, log window, saved state, portrait full-screen sheet with dpi scaling, open bindings (F1, F2 HUD, Select+Start, 3-finger tap, corner hold), release-build stripping, Inter font
-- **Stays in games:** every game's own commands, sections, HUD *line content*, theme assets, and command registrations
-- **Interfaces:** DevConsole static API (`ApplyTheme`, `RegisterCommand`, …), `DevHud` static API (`SetLine`, `SetKeyHints`, `GameRect`, …), `[DevButton]`, `IDevConsoleSectionProvider`, `BlocksGame`, `IsPointerOverConsole`, `ConsumedCloseThisFrame`
+- **Owner:** Packages | **State:** in library, `0.4.2` untagged | **Users:** all five
+- **Includes:** right-edge console rail (stays open without blocking), section windows (blocking), **Debug HUD** (`DevHud` — sections/rows/tables/pins/collapse; left-edge rail or portrait top strip), **Theme** (`DevConsoleTheme` + HUD colours/fonts), optional command line (`SetCommandLineEnabled`), key hints (InputAction + plain string), flowing auto-sized buttons, sub-headers, entry visibility predicates, quick buttons, pinned readouts, buttons/toggles/dropdowns/confirms/readouts, filter, log window, saved state, portrait full-screen sheet with dpi scaling, open bindings (F1, F2 HUD, Select+Start, 3-finger tap, corner hold), release-build stripping, Inter font
+- **Stays in games:** every game's own commands, sections, HUD *content*, theme assets, and command registrations
+- **Interfaces:** DevConsole static API (`ApplyTheme`, `RegisterCommand`, `RegisterSubHeader`, `SetVisible`, `SetCommandLineEnabled`, …), `DevHud` static API (`AddSection`, `SetLine`, `SetKeyHints`, `GameRect`, …), `[DevButton]`, `IDevConsoleSectionProvider`, `BlocksGame`, `IsPointerOverConsole`, `ConsumedCloseThisFrame`
 - **Depends on:** TMP, uGUI, Input System
 - **Queued:** confine console to a RectTransform (Twin Ticks)
 

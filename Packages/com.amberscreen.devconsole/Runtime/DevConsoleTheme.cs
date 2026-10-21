@@ -101,6 +101,22 @@ namespace AmberScreen.Dev
         public Color statusWell = new Color(0, 0, 0, 0.2f);
         public Color placeholderColor = new Color(1, 1, 1, 0.35f);
 
+        [Header("Debug HUD")]
+        [Tooltip("HUD panel fill. Defaults match hudBackground.color. The sprite still comes from hudBackground.")]
+        public Color hudPanelColor = new Color(0.05f, 0.06f, 0.08f, 1f);
+        [Tooltip("Section header bar. Defaults match sectionHeader. A section tint is blended on top.")]
+        public Color hudSectionHeaderColor = new Color(0.16f, 0.18f, 0.22f, 1f);
+        public Color hudLabelColor = new Color(0.95f, 0.95f, 0.97f, 1f);
+        public Color hudValueColor = new Color(0.95f, 0.95f, 0.97f, 1f);
+        [Tooltip("Always-visible pinned strip at the top of the HUD (slightly brighter than the panel).")]
+        public Color hudPinnedStripColor = new Color(0.09f, 0.10f, 0.13f, 1f);
+        [Tooltip("Multiplied with DevConsoleSettings.hudOpacity.")]
+        [Range(0f, 1f)] public float hudOpacity = 1f;
+        [Tooltip("Null uses fontRegular.")]
+        public TMP_FontAsset hudFont;
+        [Min(8f)] public float hudHeaderFontSize = 14f;
+        [Min(0f)] public float hudCellPadding = 4f;
+
         /// <summary>Built-in theme matching the 0.4.0 look exactly.</summary>
         public static DevConsoleTheme BuiltinDefault
         {
@@ -135,6 +151,10 @@ namespace AmberScreen.Dev
         void Reset()
         {
             // Keep inspector defaults aligned with BuiltinDefault field initializers.
+            hudPanelColor = hudBackground.color;
+            hudSectionHeaderColor = sectionHeader;
+            hudLabelColor = labelColor;
+            hudValueColor = valueColor;
         }
 #endif
     }

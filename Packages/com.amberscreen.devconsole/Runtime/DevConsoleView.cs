@@ -159,7 +159,7 @@ namespace AmberScreen.Dev
         {
             get
             {
-                if (m_CommandField == null || !DevConsoleHost.Settings.commandLine)
+                if (m_CommandField == null || !DevConsoleHost.IsCommandLineEnabled)
                     return false;
                 if (m_CommandField.isFocused)
                     return true;
@@ -1287,11 +1287,14 @@ namespace AmberScreen.Dev
             for (int i = 0; i < section.Entries.Count; i++)
             {
                 var entry = section.Entries[i];
-                if (!entry.Visible)
+                if (!DevConsoleRegistry.IsEffectivelyVisible(entry))
                     continue;
 
                 switch (entry.Kind)
                 {
+                    case DevConsoleEntryKind.SubHeader:
+                        // Classic grid layouts ignore sub-headers (Rail window draws them).
+                        break;
                     case DevConsoleEntryKind.Button:
                     {
                         var w = new DevConsoleButtonWidget(gridRt, entry, settings, m_Canvas);

@@ -572,6 +572,7 @@ namespace AmberScreen.Dev
             m_Selectables.Clear();
 
             var settings = DevConsoleHost.Settings;
+            var theme = DevConsoleHost.ActiveTheme;
             DevConsoleSection section = null;
             var sections = DevConsoleRegistry.GetOrderedSections();
             for (int i = 0; i < sections.Count; i++)
@@ -586,35 +587,96 @@ namespace AmberScreen.Dev
             if (section == null)
                 return;
 
-            float viewportWidth = m_WindowScroll.viewport.rect.width;
-            int cols = DevConsoleUiUtil.ComputeAutoColumns(
-                viewportWidth, settings.minEntryWidth, settings.spacing);
-            float cellH = DevConsoleUiUtil.MinTouch(settings, m_Canvas);
-            float cellW = cols <= 1
-                ? viewportWidth
-                : (viewportWidth - settings.spacing * (cols - 1)) / cols;
+            // Prefer vertical flow over fixed grid so buttons auto-size and wrap.
             var grid = m_WindowContent.GetComponent<GridLayoutGroup>();
-            grid.padding = new RectOffset(0, 0, 0, 0);
-            grid.cellSize = new Vector2(Mathf.Max(80f, cellW), cellH);
-            grid.spacing = new Vector2(settings.spacing, settings.spacing);
-            grid.constraintCount = cols;
+            if (grid != null)
+                Object.DestroyImmediate(grid);
+            var vlg = m_WindowContent.GetComponent<VerticalLayoutGroup>();
+            if (vlg == null)
+                vlg = m_WindowContent.gameObject.AddComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(0, 0, 0, 0);
+            vlg.spacing = settings.spacing;
+            vlg.childAlignment = TextAnchor.UpperLeft;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = true;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
 
+            float viewportWidth = Mathf.Max(80f, m_WindowScroll.viewport.rect.width);
+            float cellH = DevConsoleUiUtil.MinTouch(settings, m_Canvas);
+            float font = DevConsoleUiUtil.FontSize(settings, m_Canvas);
             string filter = m_FilterText ?? string.Empty;
+
+            RectTransform flowRow = null;
+            float flowUsed = 0f;
+
+            void EndFlowRow()
+            {
+                flowRow = null;
+                flowUsed = 0f;
+            }
+
+            RectTransform EnsureFlowRow()
+            {
+                if (flowRow != null)
+                    return flowRow;
+                flowRow = DevConsoleUiUtil.CreateRect("FlowRow", m_WindowContent);
+                var le = flowRow.gameObject.AddComponent<LayoutElement>();
+                le.minHeight = cellH;
+                le.preferredHeight = cellH;
+                le.flexibleWidth = 1f;
+                var hlg = flowRow.gameObject.AddComponent<HorizontalLayoutGroup>();
+                hlg.spacing = settings.spacing;
+                hlg.childAlignment = TextAnchor.MiddleLeft;
+                hlg.childControlWidth = true;
+                hlg.childControlHeight = true;
+                hlg.childForceExpandWidth = false;
+                hlg.childForceExpandHeight = true;
+                flowUsed = 0f;
+                return flowRow;
+            }
+
+            float EstimateButtonWidth(DevConsoleEntry e)
+            {
+                string text = string.IsNullOrEmpty(e.Caption) ? e.Label : e.Caption;
+                float pad = Mathf.Max(16f, settings.spacing * 4f);
+                return Mathf.Max(cellH, font * 0.55f * (text?.Length ?? 0) + pad);
+            }
+
             for (int i = 0; i < section.Entries.Count; i++)
             {
                 var entry = section.Entries[i];
-                if (!entry.Visible)
+                if (!DevConsoleRegistry.IsEffectivelyVisible(entry))
                     continue;
                 if (filter.Length > 0 &&
+                    entry.Kind != DevConsoleEntryKind.SubHeader &&
                     (entry.Label == null ||
                      entry.Label.IndexOf(filter, System.StringComparison.OrdinalIgnoreCase) < 0))
                     continue;
 
                 switch (entry.Kind)
                 {
+                    case DevConsoleEntryKind.SubHeader:
+                    {
+                        EndFlowRow();
+                        var rt = DevConsoleUiUtil.CreateRect("SubHeader_" + entry.Label, m_WindowContent);
+                        var le = rt.gameObject.AddComponent<LayoutElement>();
+                        le.minHeight = cellH * 0.85f;
+                        le.preferredHeight = cellH * 0.85f;
+                        le.flexibleWidth = 1f;
+                        DevConsoleUiUtil.AddImage(rt, theme.sectionHeader);
+                        var tmp = DevConsoleUiUtil.AddLabel(
+                            rt, "Label", entry.Label, font * 0.95f, TextAlignmentOptions.MidlineLeft);
+                        tmp.color = theme.accentColor;
+                        break;
+                    }
                     case DevConsoleEntryKind.Button:
                     {
-                        var w = new DevConsoleButtonWidget(m_WindowContent, entry, settings, m_Canvas);
+                        float need = EstimateButtonWidth(entry);
+                        if (flowRow != null && flowUsed + need > viewportWidth && flowUsed > 0f)
+                            EndFlowRow();
+                        var row = EnsureFlowRow();
+                        var w = new DevConsoleButtonWidget(row, entry, settings, m_Canvas, flowSized: true);
                         m_Buttons.Add(w);
                         m_Selectables.Add(new SelectableSlot
                         {
@@ -622,10 +684,12 @@ namespace AmberScreen.Dev
                             Label = entry.Label,
                             Selectable = w.Selectable
                         });
+                        flowUsed += need + settings.spacing;
                         break;
                     }
                     case DevConsoleEntryKind.Toggle:
                     {
+                        EndFlowRow();
                         var w = new DevConsoleToggleWidget(m_WindowContent, entry, settings, m_Canvas);
                         m_Toggles.Add(w);
                         m_Selectables.Add(new SelectableSlot
@@ -638,6 +702,7 @@ namespace AmberScreen.Dev
                     }
                     case DevConsoleEntryKind.Dropdown:
                     {
+                        EndFlowRow();
                         var w = new DevConsoleDropdownWidget(m_WindowContent, entry, settings, m_Canvas);
                         m_Dropdowns.Add(w);
                         m_Selectables.Add(new SelectableSlot
@@ -650,6 +715,7 @@ namespace AmberScreen.Dev
                     }
                     case DevConsoleEntryKind.Confirm:
                     {
+                        EndFlowRow();
                         var w = new DevConsoleConfirmWidget(m_WindowContent, entry, settings, m_Canvas);
                         m_Confirms.Add(w);
                         m_Selectables.Add(new SelectableSlot
@@ -661,10 +727,13 @@ namespace AmberScreen.Dev
                         break;
                     }
                     case DevConsoleEntryKind.Readout:
+                        EndFlowRow();
                         m_Readouts.Add(new DevConsoleReadoutWidget(m_WindowContent, entry, settings, m_Canvas));
                         break;
                 }
             }
+
+            EndFlowRow();
         }
 
         void RebuildLogWindowBody()
@@ -1072,7 +1141,7 @@ namespace AmberScreen.Dev
 
         void SyncCommandLineVisibility()
         {
-            bool on = DevConsoleHost.Settings.commandLine;
+            bool on = DevConsoleHost.IsCommandLineEnabled;
             if (on)
                 EnsureCommandLineRow(DevConsoleHost.Settings);
             if (m_CommandRow != null)
@@ -1085,7 +1154,7 @@ namespace AmberScreen.Dev
 
         void OnCommandSubmit(string line)
         {
-            if (!DevConsoleHost.Settings.commandLine)
+            if (!DevConsoleHost.IsCommandLineEnabled)
                 return;
 
             string trimmed = line != null ? line.Trim() : string.Empty;
@@ -1118,7 +1187,7 @@ namespace AmberScreen.Dev
 
         void TickCommandLineHistory()
         {
-            if (!DevConsoleHost.Settings.commandLine || m_CommandField == null)
+            if (!DevConsoleHost.IsCommandLineEnabled || m_CommandField == null)
                 return;
             if (!IsCommandLineFocused)
                 return;

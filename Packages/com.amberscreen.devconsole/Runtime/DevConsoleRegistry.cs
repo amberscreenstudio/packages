@@ -10,7 +10,8 @@ namespace AmberScreen.Dev
         Toggle,
         Dropdown,
         Confirm,
-        Readout
+        Readout,
+        SubHeader
     }
 
     sealed class DevConsoleEntry
@@ -20,6 +21,7 @@ namespace AmberScreen.Dev
         public string Caption;
         public DevConsoleEntryKind Kind;
         public bool Visible = true;
+        public Func<bool> VisiblePredicate;
         public Func<bool> Available;
         public Action Action;
         public Func<bool> ToggleGet;
@@ -29,6 +31,8 @@ namespace AmberScreen.Dev
         public Func<string> ReadoutValue;
         public float ReadoutRefreshSeconds = 0.5f;
         public int RegistrationOrder;
+
+        public string EntryId => Section + "/" + Label;
     }
 
     sealed class DevConsoleSection
@@ -172,25 +176,44 @@ namespace AmberScreen.Dev
             s_Pins.Add(new DevConsolePinnedReadout { Section = section, Label = label });
         }
 
+        /// <summary>
+        /// Splits <c>Section/Sub</c> paths. Returns the console section name and optional sub-header
+        /// title (null when no slash).
+        /// </summary>
+        public static void ParseSectionPath(string path, out string section, out string subHeader)
+        {
+            section = path ?? string.Empty;
+            subHeader = null;
+            int slash = section.IndexOf('/');
+            if (slash <= 0 || slash >= section.Length - 1)
+                return;
+            subHeader = section.Substring(slash + 1);
+            section = section.Substring(0, slash);
+        }
+
         public static DevConsoleEntry Upsert(
             string section,
             string label,
             DevConsoleEntryKind kind,
             bool visible,
-            Func<bool> available)
+            Func<bool> available,
+            Func<bool> visiblePredicate = null)
         {
-            section = section ?? string.Empty;
+            ParseSectionPath(section, out string realSection, out string subHeader);
             label = label ?? string.Empty;
 
-            if (!s_Sections.TryGetValue(section, out var sec))
+            if (!s_Sections.TryGetValue(realSection, out var sec))
             {
                 sec = new DevConsoleSection
                 {
-                    Name = section,
+                    Name = realSection,
                     FirstRegistrationOrder = s_NextOrder++
                 };
-                s_Sections[section] = sec;
+                s_Sections[realSection] = sec;
             }
+
+            if (!string.IsNullOrEmpty(subHeader) && kind != DevConsoleEntryKind.SubHeader)
+                EnsureSubHeader(sec, subHeader);
 
             for (int i = 0; i < sec.Entries.Count; i++)
             {
@@ -200,6 +223,8 @@ namespace AmberScreen.Dev
                     existing.Kind = kind;
                     existing.Visible = visible;
                     existing.Available = available;
+                    if (visiblePredicate != null)
+                        existing.VisiblePredicate = visiblePredicate;
                     existing.Caption = label;
                     ClearKindFields(existing);
                     return existing;
@@ -208,16 +233,63 @@ namespace AmberScreen.Dev
 
             var entry = new DevConsoleEntry
             {
-                Section = section,
+                Section = realSection,
                 Label = label,
                 Caption = label,
                 Kind = kind,
                 Visible = visible,
                 Available = available,
+                VisiblePredicate = visiblePredicate,
                 RegistrationOrder = s_NextOrder++
             };
             sec.Entries.Add(entry);
             return entry;
+        }
+
+        static void EnsureSubHeader(DevConsoleSection sec, string title)
+        {
+            for (int i = 0; i < sec.Entries.Count; i++)
+            {
+                if (sec.Entries[i].Kind == DevConsoleEntryKind.SubHeader &&
+                    string.Equals(sec.Entries[i].Label, title, StringComparison.Ordinal))
+                    return;
+            }
+
+            sec.Entries.Add(new DevConsoleEntry
+            {
+                Section = sec.Name,
+                Label = title,
+                Caption = title,
+                Kind = DevConsoleEntryKind.SubHeader,
+                Visible = true,
+                RegistrationOrder = s_NextOrder++
+            });
+        }
+
+        public static bool SetVisible(string entryId, bool visible)
+        {
+            if (string.IsNullOrEmpty(entryId))
+                return false;
+            int slash = entryId.IndexOf('/');
+            if (slash <= 0 || slash >= entryId.Length - 1)
+                return false;
+            string section = entryId.Substring(0, slash);
+            string label = entryId.Substring(slash + 1);
+            var entry = Find(section, label);
+            if (entry == null)
+                return false;
+            entry.Visible = visible;
+            return true;
+        }
+
+        public static bool IsEffectivelyVisible(DevConsoleEntry entry)
+        {
+            if (entry == null || !entry.Visible)
+                return false;
+            if (entry.VisiblePredicate == null)
+                return true;
+            try { return entry.VisiblePredicate(); }
+            catch { return false; }
         }
 
         static void ClearKindFields(DevConsoleEntry e)
@@ -242,7 +314,8 @@ namespace AmberScreen.Dev
 
         public static bool Unregister(string section, string label)
         {
-            if (!s_Sections.TryGetValue(section ?? string.Empty, out var sec))
+            ParseSectionPath(section, out string realSection, out _);
+            if (!s_Sections.TryGetValue(realSection, out var sec))
                 return false;
             for (int i = 0; i < sec.Entries.Count; i++)
             {
@@ -265,7 +338,8 @@ namespace AmberScreen.Dev
 
         public static DevConsoleEntry Find(string section, string label)
         {
-            if (!s_Sections.TryGetValue(section ?? string.Empty, out var sec))
+            ParseSectionPath(section, out string realSection, out _);
+            if (!s_Sections.TryGetValue(realSection, out var sec))
                 return null;
             for (int i = 0; i < sec.Entries.Count; i++)
             {
@@ -309,7 +383,8 @@ namespace AmberScreen.Dev
             int n = 0;
             for (int i = 0; i < section.Entries.Count; i++)
             {
-                if (section.Entries[i].Visible)
+                if (IsEffectivelyVisible(section.Entries[i]) &&
+                    section.Entries[i].Kind != DevConsoleEntryKind.SubHeader)
                     n++;
             }
 

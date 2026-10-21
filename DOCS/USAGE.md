@@ -44,3 +44,38 @@ Games with an existing settings asset should run **Amber Screen → Reset DevCon
 **0.4.0:** `DevHud` shared Debug HUD (left rail / portrait top strip) — register lines with `DevHud.SetLine`; F2 toggles; console windows keep clear of the HUD; migrate off OnGUI / custom HUD canvases.
 
 **0.4.1:** `DevConsoleTheme` skinning, optional command line (`RegisterCommand`), HUD empty-line skip + key hints (`SetKeyHints` / `SetMode`).
+
+**0.4.2:** DevHud sections (`AddSection` / rows / tables / pin / collapse), plain-string key hints, flowing command buttons, `RegisterSubHeader` + `Section/Sub` paths, `SetVisible` / visibility predicates, `SetCommandLineEnabled`.
+
+### DevHud 0.4.2 quick start
+
+```csharp
+var status = DevHud.AddSection("status", "Status");
+var fps = DevHudCell.Create("FPS", () => fpsText);
+fps.Pin(); // always-visible pinned strip
+status.AddRow(fps);
+status.AddRow(
+    DevHudCell.Create("A", () => a),
+    DevHudCell.Create("B", () => b),
+    DevHudCell.Create("C", () => c));
+
+DevHud.AddSection("wheels", "Wheels")
+    .AddTable(new[] { "Wheel", "Temp" }, () => rows);
+
+DevHud.AddSection("debug", "Debug", startCollapsed: true);
+DevHud.SetKeyHints("Play", ("F1", "Console"), ("F2", "HUD"));
+DevHud.SetMode("Play");
+
+// Legacy still works:
+DevHud.SetLine("Legacy", "HP", () => hp.ToString());
+```
+
+### Console layout 0.4.2
+
+```csharp
+DevConsole.RegisterSubHeader("Combat", "Weapons");
+DevConsole.Register("Combat/Weapons", "Fire", OnFire); // path auto-creates sub-header
+DevConsole.SetVisible("Combat/Fire", false);
+DevConsole.Register("UI", "Extra", OnExtra, visible: true, available: null, visiblePredicate: () => showExtra);
+DevConsole.SetCommandLineEnabled(true);
+```

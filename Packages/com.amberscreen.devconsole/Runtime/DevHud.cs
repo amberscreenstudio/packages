@@ -70,10 +70,69 @@ namespace AmberScreen.Dev
 #endif
         }
 
+        /// <summary>
+        /// Creates (or updates) a collapsible HUD section and returns a handle for adding rows /
+        /// tables. Collapse state is stored in PlayerPrefs under
+        /// <c>AmberScreen.DevHud.Collapsed.{id}</c> when <paramref name="rememberCollapsed"/> is true.
+        /// Returns a no-op handle when <c>AMBERSCREEN_DEVCONSOLE</c> is stripped.
+        /// </summary>
+        public static DevHudSectionHandle AddSection(
+            string id,
+            string title,
+            Color? tint = null,
+            Sprite icon = null,
+            bool startCollapsed = false,
+            bool rememberCollapsed = true)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            var section = DevHudRegistry.AddSection(id, title, tint, icon, startCollapsed, rememberCollapsed);
+            DevConsoleHost.NotifyHudStructureChanged();
+            return new DevHudSectionHandle(section);
+#else
+            return new DevHudSectionHandle(id, title);
+#endif
+        }
+
+        /// <summary>Replaces the hints of <paramref name="mode"/> with none (shows nothing for the mode).</summary>
+        public static void SetKeyHints(string mode)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevHudKeyHints.SetKeyHints(mode, System.Array.Empty<(InputAction action, string label)>());
+            DevConsoleHost.NotifyHudStructureChanged();
+#endif
+        }
+
         public static void SetKeyHints(string mode, params (InputAction action, string label)[] hints)
         {
 #if AMBERSCREEN_DEVCONSOLE
             DevHudKeyHints.SetKeyHints(mode, hints);
+            DevConsoleHost.NotifyHudStructureChanged();
+#endif
+        }
+
+        /// <summary>Replaces the hints of <paramref name="mode"/> with fixed key strings (e.g. "Space").</summary>
+        public static void SetKeyHints(string mode, params (string key, string label)[] hints)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevHudKeyHints.SetKeyHints(mode, hints);
+            DevConsoleHost.NotifyHudStructureChanged();
+#endif
+        }
+
+        /// <summary>Appends a fixed-string hint to <paramref name="mode"/>; mixable with InputAction hints.</summary>
+        public static void AddKeyHint(string mode, string key, string label)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevHudKeyHints.AddKeyHint(mode, key, label);
+            DevConsoleHost.NotifyHudStructureChanged();
+#endif
+        }
+
+        /// <summary>Appends an InputAction hint to <paramref name="mode"/>; mixable with string hints.</summary>
+        public static void AddKeyHint(string mode, InputAction action, string label)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevHudKeyHints.AddKeyHint(mode, action, label);
             DevConsoleHost.NotifyHudStructureChanged();
 #endif
         }

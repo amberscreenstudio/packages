@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-21
 
+- **devconsole 0.4.2: DevHud sections/rows/tables/pins; flowing buttons; SetVisible; SetCommandLineEnabled; GUID fixes**
+- Save: n/a
+
 - **economy 0.1.0: new package lifted from LWN Shared/Economy (f5a5eeb); Sandbox EconomySandbox scene**
 - Save: n/a
 

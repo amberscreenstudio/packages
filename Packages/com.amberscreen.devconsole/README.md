@@ -2,15 +2,16 @@
 
 Runtime debug console. Namespace: `AmberScreen.Dev`. No render-pipeline code — works on URP, URP 2D, and HDRP.
 
-**Version:** 0.4.1  
+**Version:** 0.4.2  
 **Unity:** 6000.6+  
 **Package / asmdef name:** `com.amberscreen.devconsole` / `AmberScreen.DevConsole`
 
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.4.1
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.4.2
 ```
+(Pin the tag once published; until then use a commit hash or local `file:` reference.)
 
 Requires TextMeshPro Essential Resources (Window > TextMeshPro > Import TMP Essential Resources). Without them the console logs an error and stays off.
 
@@ -37,8 +38,13 @@ Shared UI must be skinnable so no game looks worse for hosting the console.
 Shared always-on translucent HUD on the **left** edge in landscape (or a **full-width top strip** in portrait). Games only register lines — no OnGUI, no per-game HUD canvas. The console rail stays on the right; section windows open between the two rails (or under the strip in portrait).
 
 ```csharp
+// 0.4.2 — sections / rows / pins (preferred)
+var hud = DevHud.AddSection("vehicle", "Vehicle");
+hud.AddRow(DevHudCell.Create("Speed", () => speedKmh.ToString("0")).Pin());
+hud.AddRow(DevHudCell.Create("Gear", () => gearText));
+
+// Legacy one-liners still work
 DevHud.SetLine("Vehicle", "Speed", () => speedKmh.ToString("0"));
-DevHud.SetLine("Vehicle", "Gear", () => gearText, order: 1);
 // in OnDestroy: DevHud.ClearSection("Vehicle");
 ```
 

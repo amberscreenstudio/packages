@@ -45,12 +45,16 @@ namespace AmberScreen.Dev
             {
                 m_ConfirmUntil = -1f;
                 m_Label.text = m_Entry.Label;
-                try { m_Entry.Action?.Invoke(); }
-                catch (System.Exception e)
-                {
-                    Debug.LogException(e);
-                    DevConsole.Note(e.Message);
-                }
+            try { m_Entry.Action?.Invoke(); }
+            catch (System.Exception e)
+            {
+                Debug.LogException(e);
+                DevConsole.Note(e.Message);
+            }
+            finally
+            {
+                DevConsoleHost.KeepInteractiveWhileOpen();
+            }
                 return;
             }
 

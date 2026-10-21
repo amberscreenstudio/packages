@@ -156,6 +156,62 @@ namespace AmberScreen.Dev
 #endif
         }
 
+        /// <summary>
+        /// Same as <see cref="Register(string,string,Action,bool,Func{bool})"/> with a live visibility
+        /// predicate. Hidden entries take no layout space. Re-evaluated on open and each refresh.
+        /// </summary>
+        public static void Register(
+            string section,
+            string label,
+            Action action,
+            bool visible,
+            Func<bool> available,
+            Func<bool> visiblePredicate)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            var entry = DevConsoleRegistry.Upsert(
+                section, label, DevConsoleEntryKind.Button, visible, available, visiblePredicate);
+            entry.Action = action;
+            DevConsoleHost.NotifyRegistryChanged();
+#endif
+        }
+
+        /// <summary>Inserts a non-interactive sub-header inside <paramref name="section"/>.</summary>
+        public static void RegisterSubHeader(string section, string title)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevConsoleRegistry.Upsert(section, title, DevConsoleEntryKind.SubHeader, true, null);
+            DevConsoleHost.NotifyRegistryChanged();
+#endif
+        }
+
+        /// <summary>
+        /// Shows or hides an entry by id (<c>section/label</c>). Returns false if not found.
+        /// </summary>
+        public static bool SetVisible(string entryId, bool visible)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            bool ok = DevConsoleRegistry.SetVisible(entryId, visible);
+            if (ok)
+                DevConsoleHost.NotifyRegistryChanged();
+            return ok;
+#else
+            return false;
+#endif
+        }
+
+        /// <summary>
+        /// Runtime override for the command-line input (in addition to settings.commandLine).
+        /// Pass null behaviour by calling again after resetting via settings reload — this sets an
+        /// explicit on/off flag until the host is destroyed.
+        /// </summary>
+        public static void SetCommandLineEnabled(bool enabled)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevConsoleHost.SetCommandLineEnabled(enabled);
+#endif
+        }
+
         public static void RegisterQuick(string label, Action action, Func<bool> available = null)
         {
 #if AMBERSCREEN_DEVCONSOLE
@@ -478,6 +534,28 @@ namespace AmberScreen.Dev
             s_SavedLock = Cursor.lockState;
             s_SavedCursorVisible = Cursor.visible;
             s_HasSavedCursor = true;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+
+        /// <summary>
+        /// Re-unlock the cursor while the console stays open (commands that start gameplay often
+        /// re-lock it). Does not overwrite the saved pre-open cursor state.
+        /// </summary>
+        internal static void ReapplyCursorWhileOpen()
+        {
+            if (!s_IsOpen)
+                return;
+            var settings = DevConsoleSettings.LoadOrDefault();
+            if (!settings.showCursorWhileOpen)
+                return;
+            if (!s_HasSavedCursor)
+            {
+                s_SavedLock = Cursor.lockState;
+                s_SavedCursorVisible = Cursor.visible;
+                s_HasSavedCursor = true;
+            }
+
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }

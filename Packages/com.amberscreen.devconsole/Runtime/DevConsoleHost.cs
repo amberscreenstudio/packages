@@ -80,6 +80,7 @@ namespace AmberScreen.Dev
             s_LoggedTmpMissing = false;
             s_HudHadLines = false;
             s_ThemeOverride = null;
+            s_CommandLineOverride = null;
             TmpReady = DefaultTmpReady;
             DevConsoleCommands.Reset();
             DevHudKeyHints.Reset();
@@ -114,12 +115,52 @@ namespace AmberScreen.Dev
             s_Instance.m_View?.ApplyLayoutPublic();
         }
 
+        /// <summary>HUD section headers are clickable, so the HUD canvas needs an EventSystem.</summary>
+        internal static void EnsureEventSystemForHud()
+        {
+            if (s_Instance != null)
+                s_Instance.EnsureEventSystem();
+        }
+
+        static bool? s_CommandLineOverride;
+
+        /// <summary>Settings.commandLine unless overridden by <see cref="SetCommandLineEnabled"/>.</summary>
+        internal static bool IsCommandLineEnabled =>
+            s_CommandLineOverride ?? (Settings != null && Settings.commandLine);
+
+        internal static void SetCommandLineEnabled(bool enabled)
+        {
+            s_CommandLineOverride = enabled;
+            if (s_Instance?.m_View != null)
+                s_Instance.m_View.OnSettingsReloaded();
+        }
+
+        /// <summary>
+        /// After a console command runs (e.g. starts gameplay / locks the cursor), keep the open
+        /// console clickable: unlock cursor, ensure EventSystem, clear a destroyed selection.
+        /// </summary>
+        internal static void KeepInteractiveWhileOpen()
+        {
+            if (!DevConsole.IsOpen)
+                return;
+            EnsureExists();
+            if (s_Instance == null)
+                return;
+            s_Instance.EnsureEventSystem();
+            DevConsole.ReapplyCursorWhileOpen();
+            var es = EventSystem.current;
+            if (es != null && es.currentSelectedGameObject == null)
+                return;
+            if (es != null && es.currentSelectedGameObject != null &&
+                !es.currentSelectedGameObject.activeInHierarchy)
+                es.SetSelectedGameObject(null);
+        }
+
         internal static void NotifyHudStructureChanged()
         {
             // Structure dirty is handled inside DevHudView.Tick; only re-run console layout
             // when the empty/non-empty reserve boundary flips.
-            bool hasLines = DevHudRegistry.TotalLineCount() > 0 ||
-                            DevHudKeyHints.TryGetActiveHints(out _);
+            bool hasLines = DevHudRegistry.HasHudContent();
             if (hasLines == s_HudHadLines)
                 return;
             s_HudHadLines = hasLines;
@@ -733,7 +774,8 @@ namespace AmberScreen.Dev
 
             bool needEs = DevConsole.IsOpen ||
                           (Settings.showReopenButton && !DevConsole.IsOpen &&
-                           m_View != null && m_View.IsDevButtonVisible);
+                           m_View != null && m_View.IsDevButtonVisible) ||
+                          (DevHud.Visible && m_HudView != null && m_HudView.WantsEventSystem);
             if (!needEs)
                 DestroyOwnedEventSystem();
         }
