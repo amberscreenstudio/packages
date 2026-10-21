@@ -27,7 +27,7 @@ namespace AmberScreen.Dev
     {
         public const string ResourcesName = "AmberScreenDevConsoleSettings";
 
-        [Header("Compile / discovery")]
+        [Header("General")]
         [Tooltip("Editor: add AMBERSCREEN_DEVCONSOLE to the active build target if missing.")]
         public bool autoAddDefine = true;
 
@@ -36,6 +36,26 @@ namespace AmberScreen.Dev
 
         public bool enableAttributeDiscovery = true;
         public bool enableProviderDiscovery = true;
+
+        [Tooltip("Show a floating DEV button to reopen the console after × closes it. Default: on for touch / mobile, off on desktop.")]
+        [FormerlySerializedAs("showOnScreenDevButton")]
+        public bool showReopenButton =
+#if UNITY_ANDROID || UNITY_IOS || UNITY_WSA
+            true;
+#else
+            false;
+#endif
+
+        public bool showCursorWhileOpen = true;
+        [Tooltip("For Rail: pauses only while a section window is open. For other layouts: while the console is open and expanded.")]
+        public bool pauseTimescaleWhileOpen = false;
+
+        public Key openKey = Key.F1;
+        public bool enableGamepadChord = true;
+        public bool enableThreeFingerTap = true;
+        public bool enableCornerHold = true;
+        [Tooltip("Editor only: allow mouse left-button for the top-left corner hold. Off by default.")]
+        public bool cornerHoldWithMouseInEditor = false;
 
         [Header("Layout")]
         public DevConsoleLayout layout = DevConsoleLayout.Rail;
@@ -61,6 +81,9 @@ namespace AmberScreen.Dev
         [Tooltip("Minimum DockRight width (canvas units).")]
         [Min(120f)] public float dockRightWidth = 320f;
 
+        [Tooltip("Extra multiplier for portrait / phone UI scale (dpi-based ConstantPixelSize).")]
+        [Range(0.75f, 2f)] public float portraitUiScale = 1f;
+
         [Header("Rail")]
         [Min(0.05f)] public float railScreenFraction = 0.17f;
         [Min(80f)] public float railMinWidth = 220f;
@@ -70,9 +93,6 @@ namespace AmberScreen.Dev
         [Min(24f)] public float railCollapsedWidth = 36f;
         [Min(0f)] public float windowMargin = 24f;
         public bool rememberState = true;
-
-        [Tooltip("Extra multiplier for portrait / phone UI scale (dpi-based ConstantPixelSize).")]
-        [Range(0.75f, 2f)] public float portraitUiScale = 1f;
 
         [Header("Debug HUD")]
         public bool hudShowOnStart = true;
@@ -86,31 +106,16 @@ namespace AmberScreen.Dev
         [FormerlySerializedAs("hudPortraitMaxHeightFraction")]
         [Range(0.08f, 0.4f)] public float hudPortraitHeightFraction = 0.18f;
 
+        [Header("Command line")]
+        [Tooltip("Show a command input at the bottom of the rail / console panel.")]
+        public bool commandLine = false;
+
         [Header("Theme")]
         [Tooltip("Optional skin. Null uses the built-in 0.4.0 look.")]
         public DevConsoleTheme theme;
 
-        [Header("Command line")]
-        [Tooltip("Show a command input at the bottom of the section window.")]
-        public bool commandLine = false;
-
-        [Header("Font")]
         [Tooltip("Optional TMP override. If set, used instead of bundled Inter / theme fonts.")]
         public TMP_FontAsset fontOverride;
-
-        [Header("Open bindings")]
-        public Key openKey = Key.F1;
-        public bool enableGamepadChord = true;
-        public bool enableThreeFingerTap = true;
-        public bool enableCornerHold = true;
-        [Tooltip("Editor only: allow mouse left-button for the top-left corner hold. Off by default.")]
-        public bool cornerHoldWithMouseInEditor = false;
-        public bool showOnScreenDevButton = false;
-
-        [Header("While open")]
-        public bool showCursorWhileOpen = true;
-        [Tooltip("For Rail: pauses only while a section window is open. For other layouts: while the console is open and expanded.")]
-        public bool pauseTimescaleWhileOpen = false;
 
         static DevConsoleSettings s_RuntimeDefault;
 
@@ -178,6 +183,7 @@ namespace AmberScreen.Dev
             hudPortraitHeightFraction = 0.18f;
             commandLine = false;
             theme = null;
+            showReopenButton = Application.isMobilePlatform;
         }
 
         internal static void ResetRuntimeDefault()

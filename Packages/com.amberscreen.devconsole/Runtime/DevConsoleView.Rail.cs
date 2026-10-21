@@ -175,6 +175,7 @@ namespace AmberScreen.Dev
             m_SectionWindow.gameObject.SetActive(false);
 
             ApplyRailDrawOrder();
+            SyncCommandLineVisibility();
         }
 
         void ApplyRailDrawOrder()
@@ -353,9 +354,9 @@ namespace AmberScreen.Dev
             m_WindowScroll.horizontal = false;
             m_WindowScroll.vertical = true;
 
-            SyncCommandLineVisibility();
             m_Content = m_WindowContent;
             m_Scroll = m_WindowScroll;
+            SyncCommandLineVisibility();
         }
 
         void RebuildRail()
@@ -718,6 +719,7 @@ namespace AmberScreen.Dev
                 ApplyRailStripLayout();
             }
 
+            SyncCommandLineVisibility();
             RefreshRailSectionWindow();
         }
 
@@ -1022,11 +1024,13 @@ namespace AmberScreen.Dev
 
         void EnsureCommandLineRow(DevConsoleSettings settings)
         {
-            if (m_CommandLineBuilt || m_SectionWindow == null)
+            // Prefer the expanded rail; fall back to the floating/dock panel.
+            Transform parent = m_Rail != null ? m_Rail : (Transform)m_Panel;
+            if (m_CommandLineBuilt || parent == null)
                 return;
             m_CommandLineBuilt = true;
             var theme = DevConsoleHost.ActiveTheme;
-            m_CommandRow = DevConsoleUiUtil.CreateRect("CommandLine", m_SectionWindow);
+            m_CommandRow = DevConsoleUiUtil.CreateRect("CommandLine", parent);
             var le = m_CommandRow.gameObject.AddComponent<LayoutElement>();
             le.minHeight = 28f;
             le.preferredHeight = 28f;
@@ -1059,6 +1063,8 @@ namespace AmberScreen.Dev
             m_CommandField.placeholder = ph;
             m_CommandField.lineType = TMP_InputField.LineType.SingleLine;
             m_CommandField.onSubmit.AddListener(OnCommandSubmit);
+            // Keep at bottom of the rail / panel.
+            m_CommandRow.SetAsLastSibling();
             SyncCommandLineVisibility();
         }
 
@@ -1068,7 +1074,11 @@ namespace AmberScreen.Dev
             if (on)
                 EnsureCommandLineRow(DevConsoleHost.Settings);
             if (m_CommandRow != null)
-                m_CommandRow.gameObject.SetActive(on);
+            {
+                m_CommandRow.gameObject.SetActive(on && !m_Collapsed && DevConsole.IsOpen);
+                if (on)
+                    m_CommandRow.SetAsLastSibling();
+            }
         }
 
         void OnCommandSubmit(string line)

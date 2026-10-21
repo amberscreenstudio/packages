@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-21
 
+- **devconsole 0.4.1 fix: settings inspector, showReopenButton, command line on rail**
+- Save: n/a
+
 - **devconsole 0.4.1 fix: − collapses to icon strip (not DEV RailTab); SetSectionIcon**
 - Save: n/a
 

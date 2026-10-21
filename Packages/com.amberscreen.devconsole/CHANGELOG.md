@@ -16,6 +16,9 @@ All notable changes to `com.amberscreen.devconsole` are documented here.
 
 - **−** no longer looks like close: folds to the icon strip (not the old DEV RailTab). Remembered collapsed state restores via the view.
 - Portrait layout test: console rail right edge accounts for `railEdgeMargin`.
+- Settings Inspector shows all fields (custom editor: General / Layout / Rail / Command line / Theme).
+- Command line input sits on the rail when `commandLine` is on; `help` lists commands.
+- `showReopenButton` (was `showOnScreenDevButton`) gates the floating DEV button after ×.
 
 ## [0.4.0] - 2026-10-20
 

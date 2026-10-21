@@ -53,7 +53,7 @@ DevHud.SetLine("Vehicle", "Gear", () => gearText, order: 1);
 
 ## Command line (optional)
 
-Off by default (`commandLine` on settings). When on, the section window shows a TMP input at the bottom. `DevConsole.RegisterCommand(name, help, args => …)` registers commands; Enter runs `name arg1 arg2` (quotes keep spaces); Up/Down walk history; built-in `help` lists commands; errors go through `DevConsole.Note`. While the field is focused, console hotkeys are ignored.
+Off by default (`commandLine` on settings). When on, a TMP input appears at the **bottom of the rail** (or floating/dock panel). `DevConsole.RegisterCommand(name, help, args => …)` registers commands; Enter runs `name arg1 arg2` (quotes keep spaces); Up/Down walk history; built-in `help` lists commands; errors go through `DevConsole.Note`. While the field is focused, console hotkeys are ignored.
 
 ## Rail layout (default for new settings)
 
@@ -67,7 +67,7 @@ Modelled on the Lines of Mercy console: a slim **right-edge rail** that can stay
 | Portrait rail expanded | Yes — full-width sheet |
 | Portrait collapsed strip | No (unless a section window is open) |
 
-**−** shrinks the rail to a thin icon strip (`railCollapsedWidth`, default 36): one square button per section (sprite via `DevConsole.SetSectionIcon`, or the section’s first letter). Click an icon to open that section’s window beside the strip. **⟨** / **∨** expands back to the full rail. **×** closes the console and leaves the floating DEV button.
+**−** shrinks the rail to a thin icon strip (`railCollapsedWidth`, default 36): one square button per section (sprite via `DevConsole.SetSectionIcon`, or the section’s first letter). Click an icon to open that section’s window beside the strip. **⟨** / **∨** expands back to the full rail. **×** closes the console. The floating **DEV** reopen button is controlled by `showReopenButton` (default **on** for mobile/touch builds, **off** on desktop; was `showOnScreenDevButton`).
 
 **Gate gameplay on `BlocksGame`, not `IsOpen`.** Skip world clicks / raycasts when `IsPointerOverConsole` is true (pointer over rail, strip, or window).
 

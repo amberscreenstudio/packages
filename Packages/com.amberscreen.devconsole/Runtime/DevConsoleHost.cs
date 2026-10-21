@@ -732,7 +732,7 @@ namespace AmberScreen.Dev
             ReconcileOwnedEventSystem();
 
             bool needEs = DevConsole.IsOpen ||
-                          (Settings.showOnScreenDevButton && !DevConsole.IsOpen &&
+                          (Settings.showReopenButton && !DevConsole.IsOpen &&
                            m_View != null && m_View.IsDevButtonVisible);
             if (!needEs)
                 DestroyOwnedEventSystem();

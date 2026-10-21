@@ -664,7 +664,7 @@ namespace AmberScreen.Dev
                 return;
 
             var settings = DevConsoleHost.Settings;
-            bool show = settings.showOnScreenDevButton && !DevConsole.IsOpen;
+            bool show = settings.showReopenButton && !DevConsole.IsOpen;
             bool wasShown = m_DevCanvas.gameObject.activeSelf;
             m_DevCanvas.gameObject.SetActive(show);
 
@@ -1004,6 +1004,7 @@ namespace AmberScreen.Dev
             DevConsoleUiUtil.StyleLabel(label, true);
             m_CollapsedExpandButton.onClick.AddListener(() => SetCollapsed(false));
             m_CollapsedHeader.gameObject.SetActive(false);
+            SyncCommandLineVisibility();
         }
 
         internal void ApplyLayoutPublic() => ApplyLayout();
