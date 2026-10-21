@@ -25,6 +25,11 @@ namespace AmberScreen.Dev.Tests
         [TearDown]
         public void TearDown()
         {
+            if (DevConsole.IsOpen)
+                DevConsole.Close();
+            if (DevConsoleHost.Instance != null)
+                Object.DestroyImmediate(DevConsoleHost.Instance.gameObject);
+
             if (m_Host != null)
                 Object.DestroyImmediate(m_Host);
             m_Host = null;
@@ -117,6 +122,37 @@ namespace AmberScreen.Dev.Tests
             var root = m_Host.transform.Find("DevConsoleCanvas");
             Assert.IsNotNull(root);
             Assert.IsFalse(root.gameObject.activeSelf);
+        }
+
+        [Test]
+        public void CollapsedStrip_SectionWindowDoesNotOverlapStrip()
+        {
+            m_Settings.layout = DevConsoleLayout.Rail;
+            m_Settings.rememberState = false;
+            DevConsoleHost.ReloadCachedSettings(m_Settings);
+            DevConsoleView.SetLayoutScreenOverride(1920, 1080, 160f);
+            DevConsole.Register("Alpha", "One", () => { });
+            DevConsoleHost.EnsureExists();
+            DevConsole.Open();
+            DevConsoleHost.View?.SetCollapsed(true);
+            DevConsole.OpenSection("Alpha");
+
+            var strip = GameObject.Find("RailStrip")?.GetComponent<RectTransform>();
+            var window = GameObject.Find("SectionWindow")?.GetComponent<RectTransform>();
+            Assert.IsNotNull(strip);
+            Assert.IsNotNull(window);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(strip);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(window);
+            Canvas.ForceUpdateCanvases();
+
+            var sc = new Vector3[4];
+            var wc = new Vector3[4];
+            strip.GetWorldCorners(sc);
+            window.GetWorldCorners(wc);
+            float stripMinX = Mathf.Min(sc[0].x, sc[1].x, sc[2].x, sc[3].x);
+            float winMaxX = Mathf.Max(wc[0].x, wc[1].x, wc[2].x, wc[3].x);
+            Assert.LessOrEqual(winMaxX, stripMinX + 1f,
+                "section window must sit left of the collapsed strip");
         }
     }
 }

@@ -63,19 +63,23 @@ Modelled on the Lines of Mercy console: a slim **right-edge rail** that can stay
 | --- | --- |
 | Rail open (landscape) | No |
 | Section window open | Yes (`BlocksGame == true`) |
-| Rail collapsed to DEV tab | No |
-| Portrait rail (taller than wide) | Yes — full-width sheet |
+| Rail collapsed to icon strip | No (unless a section window is open) |
+| Portrait rail expanded | Yes — full-width sheet |
+| Portrait collapsed strip | No (unless a section window is open) |
 
-**Gate gameplay on `BlocksGame`, not `IsOpen`.** Skip world clicks / raycasts when `IsPointerOverConsole` is true (pointer over rail, tab, or window).
+**−** shrinks the rail to a thin icon strip (`railCollapsedWidth`, default 36): one square button per section (sprite via `DevConsole.SetSectionIcon`, or the section’s first letter). Click an icon to open that section’s window beside the strip. **⟨** / **∨** expands back to the full rail. **×** closes the console and leaves the floating DEV button.
+
+**Gate gameplay on `BlocksGame`, not `IsOpen`.** Skip world clicks / raycasts when `IsPointerOverConsole` is true (pointer over rail, strip, or window).
 
 ```csharp
 DevConsole.RegisterQuick("God mode", () => ToggleGod());
 DevConsole.PinReadout("Perf", "FPS");
+DevConsole.SetSectionIcon("Economy", economySprite);
 DevConsole.OpenSection("Economy"); // opens rail if needed + window
 // [DevButton("Bench", "Reset", Quick = true)]
 ```
 
-Esc closes the window first, then the rail. `ConsumedCloseThisFrame` is set both times. `rememberState` restores rail/window via PlayerPrefs.
+Esc closes the window first, then the rail. `ConsumedCloseThisFrame` is set both times. `rememberState` restores rail collapsed/expanded via PlayerPrefs.
 
 ### Migration
 

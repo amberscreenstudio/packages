@@ -12,5 +12,5 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.devconsole
 
-- **0.4.1** pushed (not tagged). Theme asset, optional command line, empty HUD lines, key hints; − folds to DEV tab. Playtest Sandbox theme/commandLine, then tag `devconsole/0.4.1` (0.4.0 left untagged).
+- **0.4.1** pushed (not tagged). Theme, command line, key hints; **−** folds to a thin section-icon strip (`railCollapsedWidth` / `SetSectionIcon`); **×** closes. Playtest Sandbox strip + expand, then tag `devconsole/0.4.1`.
 - Namespace is `AmberScreen.Dev`. Gate gameplay on `BlocksGame` / `IsPointerOverConsole`. Keep game UI inside `DevHud.GameRect` clear of both rails.

@@ -281,6 +281,14 @@ namespace AmberScreen.Dev
 #endif
         }
 
+        public static void SetSectionIcon(string section, Sprite icon)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevConsoleRegistry.SetSectionIcon(section, icon);
+            DevConsoleHost.NotifyRegistryChanged();
+#endif
+        }
+
         public static void SetSectionOrder(params string[] sections)
         {
 #if AMBERSCREEN_DEVCONSOLE
@@ -363,9 +371,13 @@ namespace AmberScreen.Dev
 
             if (IsRailLayout())
             {
-                if (IsPortraitRail())
-                    return !s_Collapsed;
-                return !string.IsNullOrEmpty(s_OpenSectionName);
+                // Section / log window always blocks. Expanded portrait sheet still blocks;
+                // the collapsed icon strip does not.
+                if (!string.IsNullOrEmpty(s_OpenSectionName))
+                    return true;
+                if (IsPortraitRail() && !s_Collapsed)
+                    return true;
+                return false;
             }
 
             return !s_Collapsed;

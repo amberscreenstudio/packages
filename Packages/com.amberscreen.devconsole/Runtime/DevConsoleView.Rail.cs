@@ -10,7 +10,12 @@ namespace AmberScreen.Dev
     sealed partial class DevConsoleView
     {
         RectTransform m_Rail;
-        RectTransform m_RailTab;
+        RectTransform m_RailStrip;
+        RectTransform m_RailStripIcons;
+        Button m_RailStripExpand;
+        TextMeshProUGUI m_RailStripExpandLabel;
+        readonly List<Button> m_StripSectionButtons = new List<Button>();
+        bool m_StripPortraitLayout;
         RectTransform m_Blocker;
         RectTransform m_SectionWindow;
         RectTransform m_QuickRoot;
@@ -75,7 +80,7 @@ namespace AmberScreen.Dev
 
         void BuildRailUi(DevConsoleSettings settings)
         {
-            // Draw order (bottom → top): Blocker, Rail, RailTab, SectionWindow.
+            // Draw order (bottom → top): Blocker, Rail, RailStrip, SectionWindow.
             m_Blocker = DevConsoleUiUtil.CreateRect("Blocker", m_Root);
             DevConsoleUiUtil.Stretch(m_Blocker);
             var blockerImg = DevConsoleUiUtil.AddImage(m_Blocker, new Color(0, 0, 0, 0f));
@@ -151,17 +156,7 @@ namespace AmberScreen.Dev
                 TextAlignmentOptions.MidlineLeft);
             m_RailStatusButton.onClick.AddListener(OpenLogWindow);
 
-            m_RailTab = DevConsoleUiUtil.CreateRect("RailTab", m_Root);
-            m_RailTab.anchorMin = new Vector2(1f, 0.6f);
-            m_RailTab.anchorMax = new Vector2(1f, 0.6f);
-            m_RailTab.pivot = new Vector2(1f, 0.5f);
-            m_RailTab.anchoredPosition = Vector2.zero;
-            m_RailTab.sizeDelta = new Vector2(56f, 26f);
-            var tabBtn = DevConsoleUiUtil.AddChromeButton(
-                m_RailTab, DevConsoleUiUtil.ChromeButtonBg, DevConsoleUiUtil.ChromeButtonHighlight);
-            DevConsoleUiUtil.AddLabel(m_RailTab, "Label", "DEV", 13f, TextAlignmentOptions.Midline, true);
-            tabBtn.onClick.AddListener(() => SetCollapsed(false));
-            m_RailTab.gameObject.SetActive(false);
+            BuildRailStrip(settings);
 
             m_SectionWindow = DevConsoleUiUtil.CreateRect("SectionWindow", m_Root);
             var winImg = DevConsoleUiUtil.AddImage(m_SectionWindow, DevConsoleUiUtil.WindowBg);
@@ -188,10 +183,38 @@ namespace AmberScreen.Dev
                 m_Blocker.SetAsFirstSibling();
             if (m_Rail != null)
                 m_Rail.SetSiblingIndex(m_Blocker != null ? 1 : 0);
-            if (m_RailTab != null)
-                m_RailTab.SetSiblingIndex(m_Rail != null ? m_Rail.GetSiblingIndex() + 1 : 1);
+            if (m_RailStrip != null)
+                m_RailStrip.SetSiblingIndex(m_Rail != null ? m_Rail.GetSiblingIndex() + 1 : 1);
             if (m_SectionWindow != null)
                 m_SectionWindow.SetAsLastSibling();
+        }
+
+        void BuildRailStrip(DevConsoleSettings settings)
+        {
+            var theme = DevConsoleHost.ActiveTheme;
+            m_RailStrip = DevConsoleUiUtil.CreateRect("RailStrip", m_Root);
+            var stripImg = DevConsoleUiUtil.AddImage(m_RailStrip, theme.railBackground.color);
+            DevConsoleTheme.ApplySurface(stripImg, theme.railBackground);
+
+            m_RailStripIcons = DevConsoleUiUtil.CreateRect("Icons", m_RailStrip);
+            var iconsLe = m_RailStripIcons.gameObject.AddComponent<LayoutElement>();
+            iconsLe.flexibleWidth = 1f;
+            iconsLe.flexibleHeight = 1f;
+
+            var expandRt = DevConsoleUiUtil.CreateRect("Expand", m_RailStrip);
+            var expandLe = expandRt.gameObject.AddComponent<LayoutElement>();
+            expandLe.minWidth = settings.railCollapsedWidth - 4f;
+            expandLe.minHeight = settings.railCollapsedWidth - 4f;
+            expandLe.preferredWidth = settings.railCollapsedWidth - 4f;
+            expandLe.preferredHeight = settings.railCollapsedWidth - 4f;
+            expandLe.flexibleWidth = 0f;
+            expandLe.flexibleHeight = 0f;
+            m_RailStripExpand = DevConsoleUiUtil.AddButton(expandRt, theme.buttonNormal);
+            m_RailStripExpandLabel = DevConsoleUiUtil.AddLabel(
+                expandRt, "Label", "⟨", theme.bodyFontSize, TextAlignmentOptions.Midline, true);
+            m_RailStripExpand.onClick.AddListener(() => SetCollapsed(false));
+
+            m_RailStrip.gameObject.SetActive(false);
         }
 
         void BuildRailTitleBar(DevConsoleSettings settings)
@@ -504,6 +527,8 @@ namespace AmberScreen.Dev
             if (!show)
             {
                 RebuildSectionButtons();
+                if (m_Collapsed)
+                    RebuildRailStripIcons();
                 return;
             }
 
@@ -519,6 +544,8 @@ namespace AmberScreen.Dev
                     m_WindowCloseLabel.text = LayoutScreenHeight > LayoutScreenWidth ? "<" : "X";
                 RebuildLogWindowBody();
                 RebuildSectionButtons();
+                if (m_Collapsed)
+                    RebuildRailStripIcons();
                 return;
             }
 
@@ -527,6 +554,8 @@ namespace AmberScreen.Dev
                 m_WindowCloseLabel.text = LayoutScreenHeight > LayoutScreenWidth ? "<" : "X";
             RebuildSectionWindowBody(section);
             RebuildSectionButtons();
+            if (m_Collapsed)
+                RebuildRailStripIcons();
         }
 
         void RebuildSectionWindowBody(string sectionName)
@@ -678,21 +707,35 @@ namespace AmberScreen.Dev
         void RefreshRailChrome()
         {
             bool collapsed = m_Collapsed;
+            bool open = DevConsole.IsOpen;
             if (m_Rail != null)
-                m_Rail.gameObject.SetActive(!collapsed && DevConsole.IsOpen);
-            if (m_RailTab != null)
-                m_RailTab.gameObject.SetActive(collapsed && DevConsole.IsOpen);
-            if (collapsed)
+                m_Rail.gameObject.SetActive(!collapsed && open);
+            if (m_RailStrip != null)
+                m_RailStrip.gameObject.SetActive(collapsed && open);
+            if (collapsed && open)
             {
-                if (m_SectionWindow != null)
-                    m_SectionWindow.gameObject.SetActive(false);
-                if (m_Blocker != null)
-                    m_Blocker.gameObject.SetActive(false);
+                RebuildRailStripIcons();
+                ApplyRailStripLayout();
             }
-            else
+
+            RefreshRailSectionWindow();
+        }
+
+        float EffectiveRailReserveWidth(DevConsoleSettings settings, float canvasW, bool portrait)
+        {
+            if (m_Collapsed)
+                return Mathf.Max(24f, settings.railCollapsedWidth);
+            float width = m_RailWidth;
+            if (width <= 0f)
             {
-                RefreshRailSectionWindow();
+                width = Mathf.Clamp(canvasW * settings.railScreenFraction,
+                    settings.railMinWidth, settings.railMaxWidth);
+                if (portrait)
+                    width = Mathf.Max(40f, canvasW - (LayoutSafeArea.x / Mathf.Max(
+                        m_Canvas != null ? m_Canvas.scaleFactor : 1f, 0.01f)));
             }
+
+            return width;
         }
 
         void ApplyRailLayout()
@@ -725,15 +768,7 @@ namespace AmberScreen.Dev
                 m_Rail.offsetMax = new Vector2(-right, -top);
             }
 
-            if (m_RailTab != null)
-            {
-                m_RailTab.anchorMin = new Vector2(1, 0.6f);
-                m_RailTab.anchorMax = new Vector2(1, 0.6f);
-                m_RailTab.pivot = new Vector2(1, 0.5f);
-                m_RailTab.anchoredPosition = new Vector2(-margin, 0f);
-                m_RailTab.sizeDelta = new Vector2(56f, 26f);
-            }
-
+            ApplyRailStripLayout();
             ApplySectionWindowRect();
 
             if (m_HeaderLe != null)
@@ -743,8 +778,192 @@ namespace AmberScreen.Dev
             }
 
             RefreshRailChrome();
-            if (m_Rail != null)
+            if (m_Rail != null && m_Rail.gameObject.activeSelf)
                 LayoutRebuilder.ForceRebuildLayoutImmediate(m_Rail);
+            if (m_RailStrip != null && m_RailStrip.gameObject.activeSelf)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(m_RailStrip);
+        }
+
+        void ApplyRailStripLayout()
+        {
+            if (m_RailStrip == null)
+                return;
+
+            var settings = DevConsoleHost.Settings;
+            float scale = Mathf.Max(m_Canvas != null ? m_Canvas.scaleFactor : 1f, 0.01f);
+            Rect safe = LayoutSafeArea;
+            bool portrait = LayoutScreenHeight > LayoutScreenWidth;
+            float margin = settings.railEdgeMargin;
+            float strip = Mathf.Max(24f, settings.railCollapsedWidth);
+            float hudTop = DevHudLayout.HudTopReserveCanvasUnits(settings, scale);
+            float top = (LayoutScreenHeight - (safe.y + safe.height)) / scale + margin + hudTop;
+            float bot = safe.y / scale + margin;
+            float left = safe.x / scale + margin;
+            float right = (LayoutScreenWidth - (safe.x + safe.width)) / scale + margin;
+
+            if (portrait != m_StripPortraitLayout ||
+                m_RailStrip.GetComponent<HorizontalOrVerticalLayoutGroup>() == null)
+            {
+                m_StripPortraitLayout = portrait;
+                EnsureRailStripLayoutGroups(portrait);
+            }
+
+            if (portrait)
+            {
+                m_RailStrip.anchorMin = new Vector2(0f, 1f);
+                m_RailStrip.anchorMax = new Vector2(1f, 1f);
+                m_RailStrip.pivot = new Vector2(0.5f, 1f);
+                m_RailStrip.offsetMin = new Vector2(left, -top - strip);
+                m_RailStrip.offsetMax = new Vector2(-right, -top);
+                if (m_RailStripExpandLabel != null)
+                    m_RailStripExpandLabel.text = "∨";
+            }
+            else
+            {
+                m_RailStrip.anchorMin = new Vector2(1f, 0f);
+                m_RailStrip.anchorMax = new Vector2(1f, 1f);
+                m_RailStrip.pivot = new Vector2(1f, 0.5f);
+                m_RailStrip.offsetMin = new Vector2(-strip, bot);
+                m_RailStrip.offsetMax = new Vector2(-right, -top);
+                if (m_RailStripExpandLabel != null)
+                    m_RailStripExpandLabel.text = "⟨";
+            }
+
+            if (m_RailStripExpand != null)
+                m_RailStripExpand.transform.SetAsLastSibling();
+        }
+
+        void EnsureRailStripLayoutGroups(bool portrait)
+        {
+            var stripLg = m_RailStrip.GetComponent<HorizontalOrVerticalLayoutGroup>();
+            if (stripLg != null)
+                Object.DestroyImmediate(stripLg);
+            if (m_RailStripIcons != null)
+            {
+                var iconsLg = m_RailStripIcons.GetComponent<HorizontalOrVerticalLayoutGroup>();
+                if (iconsLg != null)
+                    Object.DestroyImmediate(iconsLg);
+            }
+
+            int pad = Mathf.RoundToInt(DevConsoleHost.ActiveTheme.padding * 0.5f);
+            if (portrait)
+            {
+                var row = m_RailStrip.gameObject.AddComponent<HorizontalLayoutGroup>();
+                row.padding = new RectOffset(pad, pad, pad, pad);
+                row.spacing = 2f;
+                row.childAlignment = TextAnchor.MiddleLeft;
+                row.childControlWidth = true;
+                row.childControlHeight = true;
+                row.childForceExpandWidth = false;
+                row.childForceExpandHeight = true;
+
+                if (m_RailStripIcons != null)
+                {
+                    var iconsLe = m_RailStripIcons.GetComponent<LayoutElement>();
+                    if (iconsLe != null)
+                    {
+                        iconsLe.flexibleWidth = 1f;
+                        iconsLe.flexibleHeight = 1f;
+                    }
+
+                    var iconsRow = m_RailStripIcons.gameObject.AddComponent<HorizontalLayoutGroup>();
+                    iconsRow.spacing = 2f;
+                    iconsRow.childAlignment = TextAnchor.MiddleLeft;
+                    iconsRow.childControlWidth = true;
+                    iconsRow.childControlHeight = true;
+                    iconsRow.childForceExpandWidth = false;
+                    iconsRow.childForceExpandHeight = true;
+                }
+            }
+            else
+            {
+                var col = m_RailStrip.gameObject.AddComponent<VerticalLayoutGroup>();
+                col.padding = new RectOffset(pad, pad, pad, pad);
+                col.spacing = 2f;
+                col.childAlignment = TextAnchor.UpperCenter;
+                col.childControlWidth = true;
+                col.childControlHeight = true;
+                col.childForceExpandWidth = true;
+                col.childForceExpandHeight = false;
+
+                if (m_RailStripIcons != null)
+                {
+                    var iconsLe = m_RailStripIcons.GetComponent<LayoutElement>();
+                    if (iconsLe != null)
+                    {
+                        iconsLe.flexibleHeight = 1f;
+                        iconsLe.flexibleWidth = 1f;
+                    }
+
+                    var iconsCol = m_RailStripIcons.gameObject.AddComponent<VerticalLayoutGroup>();
+                    iconsCol.spacing = 2f;
+                    iconsCol.childAlignment = TextAnchor.UpperCenter;
+                    iconsCol.childControlWidth = true;
+                    iconsCol.childControlHeight = true;
+                    iconsCol.childForceExpandWidth = true;
+                    iconsCol.childForceExpandHeight = false;
+                }
+            }
+        }
+
+        void RebuildRailStripIcons()
+        {
+            if (m_RailStripIcons == null)
+                return;
+
+            for (int i = m_RailStripIcons.childCount - 1; i >= 0; i--)
+                Object.Destroy(m_RailStripIcons.GetChild(i).gameObject);
+            m_StripSectionButtons.Clear();
+
+            var settings = DevConsoleHost.Settings;
+            var theme = DevConsoleHost.ActiveTheme;
+            float cell = Mathf.Max(20f, settings.railCollapsedWidth - 8f);
+            string open = DevConsole.OpenSectionName;
+            var sections = DevConsoleRegistry.GetOrderedSections();
+            for (int i = 0; i < sections.Count; i++)
+            {
+                var sec = sections[i];
+                string name = string.IsNullOrEmpty(sec.Name) ? "?" : sec.Name;
+                var rt = DevConsoleUiUtil.CreateRect("Strip_" + name, m_RailStripIcons);
+                var le = rt.gameObject.AddComponent<LayoutElement>();
+                le.minWidth = cell;
+                le.minHeight = cell;
+                le.preferredWidth = cell;
+                le.preferredHeight = cell;
+                le.flexibleWidth = 0f;
+                le.flexibleHeight = 0f;
+
+                bool active = string.Equals(sec.Name, open, System.StringComparison.Ordinal);
+                Color bg = active ? theme.buttonSelected : theme.buttonNormal;
+                var btn = DevConsoleUiUtil.AddButton(rt, bg);
+                var icon = DevConsoleRegistry.GetSectionIcon(sec.Name);
+                if (icon != null)
+                {
+                    var imgRt = DevConsoleUiUtil.CreateRect("Icon", rt);
+                    DevConsoleUiUtil.Stretch(imgRt);
+                    imgRt.offsetMin = new Vector2(4, 4);
+                    imgRt.offsetMax = new Vector2(-4, -4);
+                    var img = DevConsoleUiUtil.AddImage(imgRt, Color.white);
+                    img.sprite = icon;
+                    img.preserveAspect = true;
+                    img.raycastTarget = false;
+                }
+                else
+                {
+                    char letter = char.ToUpperInvariant(name[0]);
+                    DevConsoleUiUtil.AddLabel(
+                        rt, "Letter", letter.ToString(),
+                        Mathf.Max(12f, theme.bodyFontSize * 0.85f),
+                        TextAlignmentOptions.Midline, true);
+                }
+
+                string captured = sec.Name;
+                btn.onClick.AddListener(() => DevConsole.OpenSection(captured));
+                m_StripSectionButtons.Add(btn);
+            }
+
+            if (m_RailStripExpand != null)
+                m_RailStripExpand.transform.SetAsLastSibling();
         }
 
         void ApplySectionWindowRect()
@@ -760,25 +979,30 @@ namespace AmberScreen.Dev
             float canvasW = safe.width / scale;
             float hudLeft = DevHudLayout.HudLeftReserveCanvasUnits(settings, scale);
             float hudTop = DevHudLayout.HudTopReserveCanvasUnits(settings, scale);
-            float railW = m_RailWidth;
-            if (railW <= 0f)
-            {
-                railW = Mathf.Clamp(canvasW * settings.railScreenFraction,
-                    settings.railMinWidth, settings.railMaxWidth);
-                if (portrait)
-                    railW = Mathf.Max(40f, canvasW - (safe.x / scale));
-            }
+            float railW = EffectiveRailReserveWidth(settings, canvasW, portrait);
+            float stripH = m_Collapsed ? Mathf.Max(24f, settings.railCollapsedWidth) : 0f;
 
             float winMargin = canvasW < 900f ? 8f : settings.windowMargin;
             if (portrait)
             {
                 DevConsoleUiUtil.Stretch(m_SectionWindow);
-                m_SectionWindow.offsetMin = new Vector2(
-                    safe.x / scale,
-                    safe.y / scale);
-                m_SectionWindow.offsetMax = new Vector2(
-                    -((LayoutScreenWidth - (safe.x + safe.width)) / scale),
-                    -((LayoutScreenHeight - (safe.y + safe.height)) / scale + hudTop));
+                float topInset = hudTop + (m_Collapsed ? stripH + margin : 0f);
+                // Expanded portrait: full sheet owns the area; window fills under HUD.
+                // Collapsed: window sits under the icon strip.
+                if (m_Collapsed)
+                {
+                    m_SectionWindow.offsetMin = new Vector2(safe.x / scale, safe.y / scale);
+                    m_SectionWindow.offsetMax = new Vector2(
+                        -((LayoutScreenWidth - (safe.x + safe.width)) / scale),
+                        -((LayoutScreenHeight - (safe.y + safe.height)) / scale + topInset));
+                }
+                else
+                {
+                    m_SectionWindow.offsetMin = new Vector2(safe.x / scale, safe.y / scale);
+                    m_SectionWindow.offsetMax = new Vector2(
+                        -((LayoutScreenWidth - (safe.x + safe.width)) / scale),
+                        -((LayoutScreenHeight - (safe.y + safe.height)) / scale + hudTop));
+                }
             }
             else
             {
@@ -895,7 +1119,8 @@ namespace AmberScreen.Dev
                 return false;
             if (m_Rail != null && m_Rail.gameObject.activeInHierarchy && RectContainsScreenPoint(m_Rail))
                 return true;
-            if (m_RailTab != null && m_RailTab.gameObject.activeInHierarchy && RectContainsScreenPoint(m_RailTab))
+            if (m_RailStrip != null && m_RailStrip.gameObject.activeInHierarchy &&
+                RectContainsScreenPoint(m_RailStrip))
                 return true;
             if (m_SectionWindow != null && m_SectionWindow.gameObject.activeInHierarchy &&
                 RectContainsScreenPoint(m_SectionWindow))

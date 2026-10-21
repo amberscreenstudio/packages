@@ -129,17 +129,17 @@ namespace AmberScreen.Dev.Tests
 
             var blocker = FindNamedRect("Blocker");
             var rail = FindNamedRect("Rail");
-            var railTab = FindNamedRect("RailTab");
+            var railStrip = FindNamedRect("RailStrip");
             var window = FindNamedRect("SectionWindow");
             Assert.IsNotNull(blocker);
             Assert.IsNotNull(rail);
-            Assert.IsNotNull(railTab);
+            Assert.IsNotNull(railStrip);
             Assert.IsNotNull(window);
 
             Assert.Greater(window.GetSiblingIndex(), rail.GetSiblingIndex(),
                 "SectionWindow must draw above Rail");
-            Assert.Greater(window.GetSiblingIndex(), railTab.GetSiblingIndex(),
-                "SectionWindow must draw above RailTab");
+            Assert.Greater(window.GetSiblingIndex(), railStrip.GetSiblingIndex(),
+                "SectionWindow must draw above RailStrip");
             Assert.Less(blocker.GetSiblingIndex(), rail.GetSiblingIndex(),
                 "Blocker must stay below Rail so rail stays clickable in landscape");
         }

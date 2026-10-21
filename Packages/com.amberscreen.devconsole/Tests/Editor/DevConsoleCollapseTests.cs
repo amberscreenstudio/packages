@@ -34,28 +34,72 @@ namespace AmberScreen.Dev.Tests
         }
 
         [Test]
-        public void CollapseButton_FoldsToRailTab_DoesNotClose()
+        public void CollapseButton_ShowsStripWithSectionIcons()
+        {
+            DevConsoleView.SetLayoutScreenOverride(1920, 1080, 160f);
+            DevConsole.Register("Alpha", "One", () => { });
+            DevConsole.Register("Beta", "Two", () => { });
+            DevConsoleHost.EnsureExists();
+            DevConsole.Open();
+            Assert.IsTrue(DevConsole.IsOpen);
+
+            GameObject.Find("Collapse").GetComponent<Button>().onClick.Invoke();
+
+            Assert.IsTrue(DevConsole.IsOpen, "− must not close the console");
+            Assert.IsTrue(DevConsole.IsCollapsed, "− must collapse");
+            Assert.IsFalse(DevConsole.BlocksGame, "collapsed strip must not block");
+
+            var strip = GameObject.Find("RailStrip");
+            Assert.IsNotNull(strip);
+            Assert.IsTrue(strip.activeInHierarchy);
+            var rail = GameObject.Find("Rail");
+            Assert.IsNotNull(rail);
+            Assert.IsFalse(rail.activeSelf);
+
+            var icons = strip.transform.Find("Icons");
+            Assert.IsNotNull(icons);
+            Assert.AreEqual(2, icons.childCount, "one strip button per section");
+            Assert.IsNotNull(strip.transform.Find("Expand"));
+        }
+
+        [Test]
+        public void Collapse_StripIcon_OpensSectionWindow()
+        {
+            DevConsoleView.SetLayoutScreenOverride(1920, 1080, 160f);
+            DevConsole.Register("Alpha", "One", () => { });
+            DevConsole.Register("Beta", "Two", () => { });
+            DevConsoleHost.EnsureExists();
+            DevConsole.Open();
+            DevConsoleHost.View?.SetCollapsed(true);
+
+            var icon = GameObject.Find("Strip_Alpha");
+            Assert.IsNotNull(icon);
+            icon.GetComponent<Button>().onClick.Invoke();
+
+            Assert.IsTrue(DevConsole.IsCollapsed);
+            Assert.AreEqual("Alpha", DevConsole.OpenSectionName);
+            Assert.IsTrue(DevConsole.BlocksGame);
+            var window = GameObject.Find("SectionWindow");
+            Assert.IsNotNull(window);
+            Assert.IsTrue(window.activeInHierarchy);
+        }
+
+        [Test]
+        public void Collapse_ExpandButton_RestoresFullRail()
         {
             DevConsoleView.SetLayoutScreenOverride(1920, 1080, 160f);
             DevConsole.Register("Sec", "One", () => { });
             DevConsoleHost.EnsureExists();
             DevConsole.Open();
-            Assert.IsTrue(DevConsole.IsOpen);
+            DevConsoleHost.View?.SetCollapsed(true);
 
-            var collapseGo = GameObject.Find("Collapse");
-            Assert.IsNotNull(collapseGo, "Collapse (−) button missing");
-            var btn = collapseGo.GetComponent<Button>();
-            Assert.IsNotNull(btn);
-            btn.onClick.Invoke();
+            var expand = GameObject.Find("Expand");
+            Assert.IsNotNull(expand);
+            expand.GetComponent<Button>().onClick.Invoke();
 
-            Assert.IsTrue(DevConsole.IsOpen, "− must not close the console");
-            Assert.IsTrue(DevConsole.IsCollapsed, "− must collapse");
-            var railTab = GameObject.Find("RailTab");
-            Assert.IsNotNull(railTab);
-            Assert.IsTrue(railTab.activeInHierarchy);
-            var rail = GameObject.Find("Rail");
-            Assert.IsNotNull(rail);
-            Assert.IsFalse(rail.activeSelf);
+            Assert.IsFalse(DevConsole.IsCollapsed);
+            Assert.IsTrue(GameObject.Find("Rail").activeSelf);
+            Assert.IsFalse(GameObject.Find("RailStrip").activeSelf);
         }
 
         [Test]

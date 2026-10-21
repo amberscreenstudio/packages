@@ -60,6 +60,8 @@ namespace AmberScreen.Dev
         static readonly List<string> s_Notes = new List<string>(50);
         static readonly List<DevConsoleQuickEntry> s_Quicks = new List<DevConsoleQuickEntry>();
         static readonly List<DevConsolePinnedReadout> s_Pins = new List<DevConsolePinnedReadout>();
+        static readonly Dictionary<string, UnityEngine.Sprite> s_SectionIcons =
+            new Dictionary<string, UnityEngine.Sprite>(StringComparer.Ordinal);
         static string s_Status = string.Empty;
         static int s_NextOrder;
 
@@ -75,8 +77,26 @@ namespace AmberScreen.Dev
             s_Notes.Clear();
             s_Quicks.Clear();
             s_Pins.Clear();
+            s_SectionIcons.Clear();
             s_Status = string.Empty;
             s_NextOrder = 0;
+        }
+
+        public static void SetSectionIcon(string section, UnityEngine.Sprite icon)
+        {
+            if (string.IsNullOrEmpty(section))
+                return;
+            if (icon == null)
+                s_SectionIcons.Remove(section);
+            else
+                s_SectionIcons[section] = icon;
+        }
+
+        public static UnityEngine.Sprite GetSectionIcon(string section)
+        {
+            if (string.IsNullOrEmpty(section))
+                return null;
+            return s_SectionIcons.TryGetValue(section, out var s) ? s : null;
         }
 
         public static void SetSectionOrder(string[] sections)

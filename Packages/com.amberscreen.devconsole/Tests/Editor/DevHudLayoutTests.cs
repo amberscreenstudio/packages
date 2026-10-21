@@ -219,7 +219,7 @@ namespace AmberScreen.Dev.Tests
         }
 
         [Test]
-        public void Collapse_ShowsVisibleRailTab()
+        public void Collapse_ShowsVisibleRailStrip()
         {
             DevConsoleView.SetLayoutScreenOverride(1920, 1080, 160f);
             DevConsole.Register("Sec", "One", () => { });
@@ -227,19 +227,19 @@ namespace AmberScreen.Dev.Tests
             DevConsole.Open();
             DevConsoleHost.View?.SetCollapsed(true);
 
-            var railTab = FindNamedRect("RailTab");
+            var strip = FindNamedRect("RailStrip");
             var canvas = FindNamedRect("DevConsoleCanvas");
-            Assert.IsNotNull(railTab);
+            Assert.IsNotNull(strip);
             Assert.IsNotNull(canvas);
-            Assert.IsTrue(railTab.gameObject.activeInHierarchy, "RailTab should be active when collapsed");
-            ForceLayout(railTab);
+            Assert.IsTrue(strip.gameObject.activeInHierarchy, "RailStrip should be active when collapsed");
+            ForceLayout(strip);
 
-            Assert.Greater(railTab.rect.width, 0f);
-            Assert.Greater(railTab.rect.height, 0f);
-            Assert.GreaterOrEqual(RectMinX(railTab), RectMinX(canvas) - 1f);
-            Assert.LessOrEqual(RectMaxX(railTab), RectMaxX(canvas) + 1f);
-            Assert.GreaterOrEqual(RectMinY(railTab), RectMinY(canvas) - 1f);
-            Assert.LessOrEqual(RectMaxY(railTab), RectMaxY(canvas) + 1f);
+            Assert.Greater(strip.rect.width, 0f);
+            Assert.Greater(strip.rect.height, 0f);
+            Assert.GreaterOrEqual(RectMinX(strip), RectMinX(canvas) - 1f);
+            Assert.LessOrEqual(RectMaxX(strip), RectMaxX(canvas) + 1f);
+            Assert.GreaterOrEqual(RectMinY(strip), RectMinY(canvas) - 1f);
+            Assert.LessOrEqual(RectMaxY(strip), RectMaxY(canvas) + 1f);
         }
 
         static void ForceLayout(RectTransform rt)

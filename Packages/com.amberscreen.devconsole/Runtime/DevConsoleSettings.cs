@@ -66,6 +66,8 @@ namespace AmberScreen.Dev
         [Min(80f)] public float railMinWidth = 220f;
         [Min(80f)] public float railMaxWidth = 340f;
         [Min(0f)] public float railEdgeMargin = 6f;
+        [Tooltip("Width (landscape) / height (portrait) of the collapsed icon strip.")]
+        [Min(24f)] public float railCollapsedWidth = 36f;
         [Min(0f)] public float windowMargin = 24f;
         public bool rememberState = true;
 
@@ -161,6 +163,7 @@ namespace AmberScreen.Dev
             railMinWidth = 220f;
             railMaxWidth = 340f;
             railEdgeMargin = 6f;
+            railCollapsedWidth = 36f;
             windowMargin = 24f;
             rememberState = true;
             portraitUiScale = 1f;

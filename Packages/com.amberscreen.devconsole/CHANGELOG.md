@@ -10,10 +10,11 @@ All notable changes to `com.amberscreen.devconsole` are documented here.
 - **Command line** (settings `commandLine`, off by default): `DevConsole.RegisterCommand`, quoted args, history, built-in `help`.
 - **DevHud key hints:** `SetKeyHints` / `SetMode` / `ClearKeyHints` draw a Keys section for the active mode.
 - HUD skips lines whose getter returns null/empty and hides sections with no visible lines.
+- **Collapsed icon strip:** `railCollapsedWidth` (default 36); `DevConsole.SetSectionIcon`. **−** shrinks the rail to section icons (+ expand); **×** still closes. Portrait uses a single icon row under the HUD.
 
 ### Fixed
 
-- **−** collapses the rail to the DEV tab; **×** closes. Remembered collapsed state restores via the view.
+- **−** no longer looks like close: folds to the icon strip (not the old DEV RailTab). Remembered collapsed state restores via the view.
 - Portrait layout test: console rail right edge accounts for `railEdgeMargin`.
 
 ## [0.4.0] - 2026-10-20
@@ -29,7 +30,7 @@ All notable changes to `com.amberscreen.devconsole` are documented here.
 - At 16:9 or narrower the HUD overlays the game; wider than 16:9 it prefers the left margin outside a centred 16:9 `DevHud.GameRect`.
 - Fix: console rail keeps full width when the HUD is visible; wide layouts shrink the HUD into the left margin when it fits; HUD refresh avoids per-tick sort/`ToString` GC.
 - Fix: use `TMP_Text.textWrappingMode` instead of obsolete `enableWordWrapping` (CS0619).
-- Fix: collapsed rail shows a visible "DEV" tab (56×26) on the right edge to expand.
+- Fix: collapsed rail shows a visible control on the right edge to expand (superseded in 0.4.1 by the icon strip).
 
 ## [0.3.4] - 2026-10-19
 
