@@ -1,0 +1,25 @@
+{
+    "name": "AmberScreen.LLMChat.LLMUnity",
+    "rootNamespace": "AmberScreen.LLMChat",
+    "references": [
+        "AmberScreen.LLMChat",
+        "undream.llmunity.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "AMBERSCREEN_LLMUNITY"
+    ],
+    "versionDefines": [
+        {
+            "name": "ai.undream.llm",
+            "expression": "1.0.0",
+            "define": "AMBERSCREEN_LLMUNITY"
+        }
+    ],
+    "noEngineReferences": false
+}

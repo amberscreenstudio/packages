@@ -1,0 +1,19 @@
+{
+  "name": "com.amberscreen.llmchat",
+  "version": "0.2.0",
+  "displayName": "Amber Screen LLM Chat",
+  "description": "In-character chat runners, personas, reply validation, and example picking. No game story or PhoneUI refs.",
+  "unity": "6000.6",
+  "documentationUrl": "https://github.com/amberscreenstudio/packages/blob/main/Packages/com.amberscreen.llmchat/README.md",
+  "changelogUrl": "https://github.com/amberscreenstudio/packages/blob/main/Packages/com.amberscreen.llmchat/CHANGELOG.md",
+  "keywords": [
+    "llm",
+    "chat",
+    "persona",
+    "amberscreen"
+  ],
+  "author": {
+    "name": "Amber Screen Studio"
+  },
+  "dependencies": {}
+}

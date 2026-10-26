@@ -6,6 +6,14 @@ Short status per package. Newest notes win.
 
 - **Registry v3** is current as of 2026-10-19 (`DOCS/REGISTRY.md`): one entry per package (includes / stays-in-games / interfaces / depends on).
 
+## com.amberscreen.phoneui
+
+- **0.2.1** pushed (not tagged). Lifted from Twin Ticks 0.0.38 (`bdbb8e6`) with GUIDs kept; circle-clip Resources mat, UV1 modifier, AA edge, PackageInfo + font-cache tests. Awaiting Fabio's Sandbox check; Twin Ticks switches after tagging.
+
+## com.amberscreen.llmchat
+
+- **0.2.0** pushed (not tagged). Straight lift from Twin Ticks 0.0.38 (`bdbb8e6`); GUIDs kept; PackageInfo test added. Awaiting Fabio's Sandbox check; Twin Ticks switches after tagging.
+
 ## com.amberscreen.meters
 
 - **0.1.0** tagged (`meters/0.1.0`). Lifted from Snorkel & Sail `1a12b5b` with original script GUIDs.

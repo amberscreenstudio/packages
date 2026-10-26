@@ -2,15 +2,29 @@
 
 ## Package versions per game
 
-| Game | Repo | com.amberscreen.devconsole | com.amberscreen.meters | com.amberscreen.economy |
-| --- | --- | --- | --- | --- |
-| Twin Ticks | amberscreenstudio/Twin-Ticks | `devconsole/0.3.1` (Twin Ticks 0.0.18), bumping to 0.3.3 | none | none |
-| Sand & Ink | amberscreenstudio/Sand-and-Ink | switching to `devconsole/0.3.3` (S&I 0.1.9) | adopting for drinking water | planned |
-| Snorkel & Sail | (local) | not yet (own console) | switching from `Assets/Shared/Meters` | planned |
-| LWN | (local) | not yet (own console) | none | switching from `Assets/Shared/Economy` |
-| The Watchmaker Shop | local, `E:\Unity Projects\Time & Tension` | not yet (own console) | none | planned |
+| Game | Repo | com.amberscreen.devconsole | com.amberscreen.meters | com.amberscreen.economy | com.amberscreen.phoneui | com.amberscreen.llmchat |
+| --- | --- | --- | --- | --- | --- | --- |
+| Twin Ticks | amberscreenstudio/Twin-Ticks | `devconsole/0.3.1` (Twin Ticks 0.0.18), bumping to 0.3.3 | none | none | switching from `Assets/Shared/PhoneUI` | switching from `Assets/Shared/LLMChat` |
+| Sand & Ink | amberscreenstudio/Sand-and-Ink | switching to `devconsole/0.3.3` (S&I 0.1.9) | adopting for drinking water | planned | none | none |
+| Snorkel & Sail | (local) | not yet (own console) | switching from `Assets/Shared/Meters` | planned | none | none |
+| LWN | (local) | not yet (own console) | none | switching from `Assets/Shared/Economy` | planned | likely |
+| The Watchmaker Shop | local, `E:\Unity Projects\Time & Tension` | not yet (own console) | none | planned | none | none |
 
-Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3`, `#meters/0.1.0`, or `#economy/0.1.0` (once tagged). Always pin a tag, never `main`.
+Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3`, `#meters/0.1.0`, `#economy/0.1.0`, `#phoneui/0.2.1`, or `#llmchat/0.2.0` (once tagged). Always pin a tag, never `main`.
+
+## com.amberscreen.phoneui quick start
+
+1. Add the package (local Sandbox: `"com.amberscreen.phoneui": "file:../../Packages/com.amberscreen.phoneui"`).
+2. Implement `IChatSource` + `IContactDirectory`, then `phoneShell.Initialize(statusOrNull, chat, contacts)`.
+3. Theme resolution: `SetOverride` → `Resources/PhoneUITheme` (game asset) → builtin defaults. Package never ships its own `Resources/PhoneUITheme`.
+4. Circle avatars need UV1 on the canvas (`CircleClipMeshModifier` enables `TexCoord1` on the root canvas).
+
+## com.amberscreen.llmchat quick start
+
+1. Add the package (local Sandbox: `"com.amberscreen.llmchat": "file:../../Packages/com.amberscreen.llmchat"`).
+2. `runner.Configure(backend, persona, timings)`; subscribe to `Seen` / `TypingStarted` / `Chunk` / `Done` / `Error`.
+3. Optional: LLMUnity via `LLMUnityChatBackend` (install `ai.undream.llm`); otherwise supply any `ILLMChatBackend`.
+4. Retry prompts reserve tokens with `FitPromptToBudget(..., reserveExtraTokens)` so the validation hint fits before `/no_think`.
 
 ## com.amberscreen.economy quick start
 

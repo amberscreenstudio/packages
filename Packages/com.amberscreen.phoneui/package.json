@@ -1,0 +1,22 @@
+{
+  "name": "com.amberscreen.phoneui",
+  "version": "0.2.1",
+  "displayName": "Amber Screen Phone UI",
+  "description": "Shared portrait phone chrome: shell, messaging, status bar, image attachments. No game story references.",
+  "unity": "6000.6",
+  "documentationUrl": "https://github.com/amberscreenstudio/packages/blob/main/Packages/com.amberscreen.phoneui/README.md",
+  "changelogUrl": "https://github.com/amberscreenstudio/packages/blob/main/Packages/com.amberscreen.phoneui/CHANGELOG.md",
+  "keywords": [
+    "phone",
+    "ui",
+    "messaging",
+    "amberscreen"
+  ],
+  "author": {
+    "name": "Amber Screen Studio"
+  },
+  "dependencies": {
+    "com.unity.inputsystem": "1.20.0",
+    "com.unity.ugui": "2.0.0"
+  }
+}
