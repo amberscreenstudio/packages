@@ -2,15 +2,22 @@
 
 ## Package versions per game
 
-| Game | Repo | com.amberscreen.devconsole | com.amberscreen.meters | com.amberscreen.economy | com.amberscreen.phoneui | com.amberscreen.llmchat |
-| --- | --- | --- | --- | --- | --- | --- |
-| Twin Ticks | amberscreenstudio/Twin-Ticks | `devconsole/0.3.1` (Twin Ticks 0.0.18), bumping to 0.3.3 | none | none | `#phoneui/0.2.1` (0.0.39), 0.2.2 next | `#llmchat/0.2.0` (0.0.39), 0.2.1 next |
-| Sand & Ink | amberscreenstudio/Sand-and-Ink | switching to `devconsole/0.3.3` (S&I 0.1.9) | adopting for drinking water | planned | none | none |
-| Snorkel & Sail | (local) | not yet (own console) | switching from `Assets/Shared/Meters` | planned | none | none |
-| LWN | (local) | not yet (own console) | none | switching from `Assets/Shared/Economy` | planned | likely |
-| The Watchmaker Shop | local, `E:\Unity Projects\Time & Tension` | not yet (own console) | none | planned | none | none |
+| Game | Repo | com.amberscreen.devconsole | com.amberscreen.meters | com.amberscreen.economy | com.amberscreen.phoneui | com.amberscreen.llmchat | com.amberscreen.modelreview |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Twin Ticks | amberscreenstudio/Twin-Ticks | `devconsole/0.3.1` (Twin Ticks 0.0.18), bumping to 0.3.3 | none | none | `#phoneui/0.2.1` (0.0.39), 0.2.2 next | `#llmchat/0.2.0` (0.0.39), 0.2.1 next | none |
+| Sand & Ink | amberscreenstudio/Sand-and-Ink | switching to `devconsole/0.3.3` (S&I 0.1.9) | adopting for drinking water | planned | none | none | planned |
+| Snorkel & Sail | (local) | not yet (own console) | switching from `Assets/Shared/Meters` | planned | none | none | none |
+| LWN | (local) | not yet (own console) | none | switching from `Assets/Shared/Economy` | planned | likely | planned |
+| The Watchmaker Shop | local, `E:\Unity Projects\Time & Tension` | not yet (own console) | none | planned | none | none | none |
 
-Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3`, `#meters/0.1.0`, `#economy/0.1.0`, `#phoneui/0.2.2`, or `#llmchat/0.2.1` (once tagged). Always pin a tag, never `main`.
+Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3`, `#meters/0.1.0`, `#economy/0.1.0`, `#phoneui/0.2.2`, `#llmchat/0.2.1`, or `#modelreview/0.1.0` (once tagged). Always pin a tag, never `main`.
+
+## com.amberscreen.modelreview quick start
+
+1. Add the package (local Sandbox: `"com.amberscreen.modelreview": "file:../../Packages/com.amberscreen.modelreview"`). Host should be URP 17.6.
+2. **Tools > Amber Screen > Model Review > Open Review Scene**.
+3. Right-click a prefab/model → **Amber Screen > Review in Model Review**. Keys `1`/`2`/`3` for Delivered/Clay/Wireframe.
+4. **Tools > Amber Screen > Model Review > Material Report** for the read-only Console report.
 
 ## com.amberscreen.phoneui quick start
 

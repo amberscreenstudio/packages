@@ -1,0 +1,29 @@
+{
+    "name": "AmberScreen.ModelReview.Editor",
+    "rootNamespace": "AmberScreen.ModelReview.Editor",
+    "references": [
+        "AmberScreen.ModelReview",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Editor",
+        "Unity.RenderPipelines.Core.Editor",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "1.0.0",
+            "define": "AMBERSCREEN_MODELREVIEW_INPUTSYSTEM"
+        }
+    ],
+    "noEngineReferences": false
+}

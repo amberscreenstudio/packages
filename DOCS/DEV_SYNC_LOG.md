@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-27
 
+- **modelreview 0.1.0: new package, ideal-conditions 3D model review scene (tuned URP profile switched in memory, studio lights, orbit/interior camera, Delivered/Clay/Wireframe, read-only material report); Sandbox manifest + test prop**
+- Save: n/a
+
 - **phoneui 0.2.2 + llmchat 0.2.1: composer placeholder/text stretched (stray descender), AA rounded icons via CircleClip `_CornerRadius` (no stencil), cross_repeat validator + LiveHistoryProvider final check; Sandbox icon tiles**
 - Save: n/a
 

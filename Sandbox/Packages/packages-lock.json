@@ -27,6 +27,14 @@
       "source": "local",
       "dependencies": {}
     },
+    "com.amberscreen.modelreview": {
+      "version": "file:../../Packages/com.amberscreen.modelreview",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.unity.render-pipelines.universal": "17.6.0"
+      }
+    },
     "com.amberscreen.phoneui": {
       "version": "file:../../Packages/com.amberscreen.phoneui",
       "depth": 0,

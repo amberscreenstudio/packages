@@ -1,0 +1,24 @@
+{
+    "name": "AmberScreen.ModelReview.Tests",
+    "rootNamespace": "AmberScreen.ModelReview.Tests",
+    "references": [
+        "AmberScreen.ModelReview",
+        "AmberScreen.ModelReview.Editor",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

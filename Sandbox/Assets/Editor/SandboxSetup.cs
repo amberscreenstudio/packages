@@ -35,6 +35,42 @@ namespace AmberScreen.Sandbox.Editor
             Debug.Log("[Sandbox] Rebuilt. Commit Sandbox/Assets and Sandbox/ProjectSettings.");
         }
 
+        [MenuItem("AmberScreen/Ensure Sandbox URP")]
+        public static void EnsureUrpPipeline()
+        {
+            EnsureFolders();
+            UniversalRenderPipelineAsset pipeline;
+            if (AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(PipelinePath) != null
+                && AssetDatabase.LoadAssetAtPath<UniversalRendererData>(RendererPath) != null)
+            {
+                pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(PipelinePath);
+            }
+            else
+            {
+                pipeline = CreateUrpAssets();
+            }
+
+            AssignPipeline(pipeline);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log("[Sandbox] URP pipeline ensured at " + PipelinePath);
+        }
+
+        /// <summary>Batch entry for -executeMethod AmberScreen.Sandbox.Editor.SandboxSetup.EnsureUrpPipelineBatch</summary>
+        public static void EnsureUrpPipelineBatch()
+        {
+            try
+            {
+                EnsureUrpPipeline();
+                EditorApplication.Exit(0);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogException(ex);
+                EditorApplication.Exit(1);
+            }
+        }
+
         [MenuItem("AmberScreen/Reset DevConsole Settings To Defaults")]
         public static void ResetDevConsoleSettingsToDefaults()
         {

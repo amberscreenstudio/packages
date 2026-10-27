@@ -6,6 +6,10 @@ Short status per package. Newest notes win.
 
 - **Registry v3** is current as of 2026-10-19 (`DOCS/REGISTRY.md`): one entry per package (includes / stays-in-games / interfaces / depends on).
 
+## com.amberscreen.modelreview
+
+- **0.1.0** pushed (not tagged). Awaiting Fabio's Sandbox check, then tag `modelreview/0.1.0`. LWN and Sand & Ink install by tag.
+
 ## com.amberscreen.phoneui
 
 - **0.2.2** pushed (not tagged); `phoneui/0.2.1` tagged on 1051d97 and used by Twin Ticks 0.0.39. Awaiting Fabio's Sandbox check; Twin Ticks bumps in 0.0.40/0.0.41.

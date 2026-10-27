@@ -29,6 +29,7 @@ Local development against this repo (Sandbox):
 | Package | Version | Description |
 | --- | --- | --- |
 | `com.amberscreen.devconsole` | 0.2.0 | Runtime debug console (`AmberScreen.Dev`) |
+| `com.amberscreen.modelreview` | 0.1.0 | Ideal-conditions 3D model review scene (`AmberScreen.ModelReview`) |
 
 See [DOCS/USAGE.md](DOCS/USAGE.md) for which games use which package versions, [DOCS/REGISTRY.md](DOCS/REGISTRY.md) for shared-module claims, and [DOCS/PROJECT_STATUS_HANDOFF.md](DOCS/PROJECT_STATUS_HANDOFF.md) for status.
 

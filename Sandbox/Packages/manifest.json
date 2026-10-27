@@ -3,6 +3,7 @@
     "com.amberscreen.devconsole",
     "com.amberscreen.economy",
     "com.amberscreen.meters",
+    "com.amberscreen.modelreview",
     "com.amberscreen.phoneui",
     "com.amberscreen.llmchat"
   ],
@@ -11,6 +12,7 @@
     "com.amberscreen.economy": "file:../../Packages/com.amberscreen.economy",
     "com.amberscreen.llmchat": "file:../../Packages/com.amberscreen.llmchat",
     "com.amberscreen.meters": "file:../../Packages/com.amberscreen.meters",
+    "com.amberscreen.modelreview": "file:../../Packages/com.amberscreen.modelreview",
     "com.amberscreen.phoneui": "file:../../Packages/com.amberscreen.phoneui",
     "com.unity.inputsystem": "1.20.0",
     "com.unity.render-pipelines.universal": "17.6.0",

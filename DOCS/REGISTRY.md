@@ -2,6 +2,7 @@
 
 Last updated: 2026-10-27. Kept by Packages. Every registered module is a package with exactly ONE owner (Fabio, 2026-10-19).
 
+
 ## Rules
 
 **Claim before building.** Before prompting ANY new game system, a director checks with Packages. The answer is one of three:
@@ -171,6 +172,15 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 - **Stays in games:** every game's apps' content and chats; theme asset `Resources/PhoneUITheme`; fonts; avatars/icons; app ids/colours
 - **Interfaces:** `IPhoneApp`, `IChatSource`, `IContactDirectory`, `IDeviceStatusProvider`
 - **Depends on:** TMP/uGUI, Input System
+
+### com.amberscreen.modelreview
+
+- **Owner:** Packages | **State:** in library, `0.1.0` untagged | **Users:** LWN, Sand & Ink (planned), any 3D project
+- **Includes:** review scene, tuned URP profile, studio lights, orbit/interior camera, Delivered/Clay/Wireframe, generic read-only material report
+- **Stays in games:** the models themselves, game-specific checks
+- **Interfaces:** menus, `ModelReviewRig`, `ModelMaterialReport.Build`
+- **Depends on:** URP 17.6
+- **Note:** supersedes game-local material report menus
 
 ### com.amberscreen.phonecamera
 
