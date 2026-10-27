@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1] - 2026-10-27
+
+### Added
+
+- `cross_repeat` validation (last 8 other-speaker lines, Dice ≥ 0.8 or containment, ≥ 3 words).
+- `LLMChatRunner.LiveHistoryProvider` (validate and retry against live thread history; final cross-speaker check before Done → Error `cross_repeat`).
+
 ## [0.2.0] - 2026-10-26
 
 ### Changed

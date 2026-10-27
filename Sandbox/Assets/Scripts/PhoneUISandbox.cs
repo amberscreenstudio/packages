@@ -20,6 +20,8 @@ namespace AmberScreen.Sandbox
         LLMChatPersona _persona;
         LLMChatTimingSettings _timings;
         CancellationTokenSource _cts;
+        Texture2D _testIconTex;
+        Sprite _testIconSprite;
 
         void Awake()
         {
@@ -30,7 +32,15 @@ namespace AmberScreen.Sandbox
 
             var shellGo = new GameObject("PhoneShell", typeof(RectTransform), typeof(PhoneShell));
             var shell = shellGo.GetComponent<PhoneShell>();
-            shell.Initialize(null, _chat, contacts);
+            shell.Initialize(
+                null,
+                _chat,
+                contacts,
+                new IPhoneApp[]
+                {
+                    new ComingSoonApp("icon_test", "Icon", MakeTestIcon()),
+                    new ComingSoonApp("no_icon", "NoIcon")
+                });
 
             _persona = ScriptableObject.CreateInstance<LLMChatPersona>();
             _persona.hideFlags = HideFlags.HideAndDontSave;
@@ -60,6 +70,32 @@ namespace AmberScreen.Sandbox
             _cts?.Dispose();
             if (_persona != null) Destroy(_persona);
             if (_timings != null) Destroy(_timings);
+            if (_testIconSprite != null) Destroy(_testIconSprite);
+            if (_testIconTex != null) Destroy(_testIconTex);
+        }
+
+        Sprite MakeTestIcon()
+        {
+            const int size = 256;
+            _testIconTex = new Texture2D(size, size, TextureFormat.RGBA32, true);
+            var a = new Color32(60, 160, 220, 255);
+            var b = new Color32(220, 120, 60, 255);
+            var border = new Color32(20, 20, 24, 255);
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                Color32 c = x + y < size ? a : b;
+                if (x < 4 || y < 4 || x >= size - 4 || y >= size - 4)
+                    c = border;
+                _testIconTex.SetPixel(x, y, c);
+            }
+            _testIconTex.Apply(true);
+            _testIconTex.filterMode = FilterMode.Trilinear;
+            _testIconTex.hideFlags = HideFlags.HideAndDontSave;
+            _testIconSprite = Sprite.Create(
+                _testIconTex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            _testIconSprite.hideFlags = HideFlags.HideAndDontSave;
+            return _testIconSprite;
         }
 
         static void EnsureEventSystem()

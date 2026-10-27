@@ -11,6 +11,8 @@ namespace AmberScreen.PhoneUI
         static TMP_FontAsset _font;
         static bool _fallbacksWired;
         static bool _circleClipCreatedAtRuntime;
+        static bool _roundedIconClipCreatedAtRuntime;
+        static Material _roundedIconClipMaterial;
 
         /// <summary>Clear cached font / fallback wiring so the next <see cref="DefaultFont"/> read picks up a new theme.</summary>
         public static void InvalidateFontCache()
@@ -28,6 +30,10 @@ namespace AmberScreen.PhoneUI
                 Object.DestroyImmediate(_circleClipMaterial);
             _circleClipMaterial = null;
             _circleClipCreatedAtRuntime = false;
+            if (_roundedIconClipMaterial != null && _roundedIconClipCreatedAtRuntime)
+                Object.DestroyImmediate(_roundedIconClipMaterial);
+            _roundedIconClipMaterial = null;
+            _roundedIconClipCreatedAtRuntime = false;
             _whiteSprite = null;
             _circleSprite = null;
             _roundedSquareSprite = null;
@@ -246,6 +252,7 @@ namespace AmberScreen.PhoneUI
         static Sprite _roundedSquareSprite;
         static Material _circleClipMaterial;
 
+        /// <summary>Legacy stencil-mask sprites; not used by RoundedIcon since 0.2.2.</summary>
         public static Sprite CircleSprite
         {
             get
@@ -256,6 +263,7 @@ namespace AmberScreen.PhoneUI
             }
         }
 
+        /// <summary>Legacy stencil-mask sprites; not used by RoundedIcon since 0.2.2.</summary>
         public static Sprite RoundedSquareSprite
         {
             get
@@ -295,6 +303,8 @@ namespace AmberScreen.PhoneUI
                     name = "PhoneUI_CircleClip_Shared",
                     hideFlags = HideFlags.HideAndDontSave
                 };
+                if (_circleClipMaterial.HasProperty("_CornerRadius"))
+                    _circleClipMaterial.SetFloat("_CornerRadius", 0.5f);
                 _circleClipCreatedAtRuntime = true;
                 return _circleClipMaterial;
             }
@@ -338,12 +348,69 @@ namespace AmberScreen.PhoneUI
             }
         }
 
-        /// <summary>Rounded-square icon tile for home-screen app icons (stencil Mask — few icons).</summary>
-        public static RectTransform RoundedIcon(string name, Transform parent, Sprite icon, float size, Color fallback)
+        /// <summary>
+        /// Shared rounded-icon clip material (AA corners via CircleClip + <c>_CornerRadius</c> 0.14).
+        /// Prefers the Resources asset; runtime fallbacks use HideAndDontSave.
+        /// </summary>
+        public static Material RoundedIconClipMaterial
         {
-            return MaskedImage(name, parent, icon, size, size, RoundedSquareSprite, fallback);
+            get
+            {
+                if (_roundedIconClipMaterial != null) return _roundedIconClipMaterial;
+
+                var shared = Resources.Load<Material>("PhoneUI/RoundedIconClip");
+                if (shared != null)
+                {
+                    _roundedIconClipMaterial = shared;
+                    _roundedIconClipCreatedAtRuntime = false;
+                    return _roundedIconClipMaterial;
+                }
+
+                var shader = Shader.Find("AmberScreen/UI/CircleClip");
+                if (shader == null)
+                {
+                    Debug.LogWarning("[UiFactory] AmberScreen/UI/CircleClip missing — using UI/Default");
+                    shader = Shader.Find("UI/Default");
+                }
+                _roundedIconClipMaterial = new Material(shader)
+                {
+                    name = "PhoneUI_RoundedIconClip_Shared",
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+                if (_roundedIconClipMaterial.HasProperty("_CornerRadius"))
+                    _roundedIconClipMaterial.SetFloat("_CornerRadius", 0.14f);
+                _roundedIconClipCreatedAtRuntime = true;
+                return _roundedIconClipMaterial;
+            }
         }
 
+        /// <summary>Rounded-square icon tile via AA clip shader (no stencil Mask).</summary>
+        public static RectTransform RoundedIcon(string name, Transform parent, Sprite icon, float size, Color fallback)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var rt = go.GetComponent<RectTransform>();
+            rt.SetParent(parent, false);
+            rt.sizeDelta = new Vector2(size, size);
+            var img = go.GetComponent<Image>();
+            img.material = RoundedIconClipMaterial;
+            img.preserveAspect = true;
+            img.type = Image.Type.Simple;
+            img.raycastTarget = false;
+            go.AddComponent<CircleClipMeshModifier>();
+            if (icon != null)
+            {
+                img.sprite = icon;
+                img.color = Color.white;
+            }
+            else
+            {
+                img.sprite = WhiteSprite;
+                img.color = fallback;
+            }
+            return rt;
+        }
+
+        /// <summary>Legacy stencil-mask sprites; not used by RoundedIcon since 0.2.2.</summary>
         static RectTransform MaskedImage(
             string name, Transform parent, Sprite content, float w, float h, Sprite maskSprite, Color fallback)
         {

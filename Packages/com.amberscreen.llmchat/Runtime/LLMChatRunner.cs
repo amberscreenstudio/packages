@@ -108,6 +108,15 @@ namespace AmberScreen.LLMChat
         /// </summary>
         public string KnowledgeRulesHint { get; set; }
 
+        /// <summary>
+        /// Optional. Called on the main thread at validation time to get the thread's current history
+        /// (all speakers), so replies delivered by other runners after this request started are checked.
+        /// Null → the request snapshot is used.
+        /// </summary>
+        public Func<IReadOnlyList<LLMChatHistoryTurn>> LiveHistoryProvider { get; set; }
+
+        static bool s_LoggedLiveHistoryWarning;
+
         /// <summary>Last example lines chosen for the prompt (EditMode / diagnostics).</summary>
         public IReadOnlyList<string> LastPickedExamples =>
             _lastPickedExamples ?? (IReadOnlyList<string>)Array.Empty<string>();
@@ -203,15 +212,21 @@ namespace AmberScreen.LLMChat
                 const int maxAttempts = 2; // first try + one retry on validation fail
                 for (int attempt = 0; attempt < maxAttempts; attempt++)
                 {
+                    var validateHistory = SafeLiveHistory() ?? sharedHistory;
                     string promptForAttempt = userPrompt;
                     if (attempt > 0 && !string.IsNullOrEmpty(failReason))
                     {
-                        // Retry hint before /no_think; reserve hint tokens then apply the same trim.
-                        string hint = "(Previous draft was rejected: " + failReason
-                                      + ". Fix that and reply again.)";
+                        // Retry hint before /no_think; rebuild from live history so the model sees collisions.
+                        var retryHistory = validateHistory;
+                        string retryUser = BuildUserPrompt(retryHistory, directorInstruction, out histLines);
+                        retryUser = EnsureNoThinkSuffix(retryUser);
+                        string hint = failReason == LLMChatReplyValidator.ReasonCrossRepeat
+                            ? "(Previous draft repeated what someone else in the chat just said. Say something different in your own words, or react to them.)"
+                            : "(Previous draft was rejected: " + failReason
+                              + ". Fix that and reply again.)";
                         int reserve = EstimateTokens(hint) + 8;
                         string baseForRetry = FitPromptToBudget(
-                            system, userPrompt, sharedHistory, directorInstruction, ref histLines, reserve);
+                            system, retryUser, retryHistory, directorInstruction, ref histLines, reserve);
                         promptForAttempt = InsertBeforeNoThink(baseForRetry, hint);
                         LastPromptTokensApprox = EstimateTokens(system) + EstimateTokens(promptForAttempt);
                     }
@@ -240,7 +255,8 @@ namespace AmberScreen.LLMChat
                     if (!isActiveAndEnabled || ct.IsCancellationRequested) return;
 
                     text = SanitizeReply(raw, persona.DisplayName, persona.MaxReplyLength);
-                    if (LLMChatReplyValidator.TryValidate(text, CharacterId, sharedHistory, out failReason))
+                    validateHistory = SafeLiveHistory() ?? sharedHistory;
+                    if (LLMChatReplyValidator.TryValidate(text, CharacterId, validateHistory, out failReason))
                     {
                         failReason = null;
                         if (!string.IsNullOrEmpty(text))
@@ -275,6 +291,22 @@ namespace AmberScreen.LLMChat
                     await DelaySeconds(remaining, ct);
 
                 if (!isActiveAndEnabled || ct.IsCancellationRequested) return;
+
+                var live = SafeLiveHistory();
+                if (live != null
+                    && LLMChatReplyValidator.IsCrossSpeakerRepeat(
+                        text,
+                        CharacterId,
+                        live,
+                        LLMChatReplyValidator.CrossRepeatLookback,
+                        LLMChatReplyValidator.CrossRepeatSimilarityThreshold))
+                {
+                    Debug.LogWarning("[LLMChatRunner] " + CharacterId
+                                     + " final cross_repeat before Done — host should post fallback");
+                    Error?.Invoke(CharacterId, LLMChatReplyValidator.ReasonCrossRepeat);
+                    return;
+                }
+
                 Done?.Invoke(CharacterId, text);
             }
             catch (OperationCanceledException)
@@ -301,6 +333,24 @@ namespace AmberScreen.LLMChat
             _cts.Dispose();
             _cts = null;
             _busy = false;
+        }
+
+        IReadOnlyList<LLMChatHistoryTurn> SafeLiveHistory()
+        {
+            if (LiveHistoryProvider == null) return null;
+            try
+            {
+                return LiveHistoryProvider();
+            }
+            catch (Exception ex)
+            {
+                if (!s_LoggedLiveHistoryWarning)
+                {
+                    s_LoggedLiveHistoryWarning = true;
+                    Debug.LogWarning("[LLMChatRunner] LiveHistoryProvider threw: " + ex.Message);
+                }
+                return null;
+            }
         }
 
         void OnDestroy() => CancelActive();

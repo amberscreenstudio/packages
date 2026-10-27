@@ -1,6 +1,6 @@
 # Shared systems registry
 
-Last updated: 2026-10-26. Kept by Packages. Every registered module is a package with exactly ONE owner (Fabio, 2026-10-19).
+Last updated: 2026-10-27. Kept by Packages. Every registered module is a package with exactly ONE owner (Fabio, 2026-10-19).
 
 ## Rules
 
@@ -166,8 +166,8 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.phoneui
 
-- **Owner:** Twin Ticks | **State:** in library, `0.2.1` untagged | **Users:** Twin Ticks, LWN later
-- **Includes:** phone frame, status bar, home screen, messaging, notifications, app host; theme (`PhoneUITheme`); image attachments + viewer; circle-clip avatars
+- **Owner:** Twin Ticks | **State:** in library, `0.2.2` untagged (last tag `phoneui/0.2.1`) | **Users:** Twin Ticks, LWN later
+- **Includes:** phone frame, status bar, home screen, messaging, notifications, app host; theme (`PhoneUITheme`); image attachments + viewer; circle-clip avatars; AA rounded-icon clip (no stencil)
 - **Stays in games:** every game's apps' content and chats; theme asset `Resources/PhoneUITheme`; fonts; avatars/icons; app ids/colours
 - **Interfaces:** `IPhoneApp`, `IChatSource`, `IContactDirectory`, `IDeviceStatusProvider`
 - **Depends on:** TMP/uGUI, Input System
@@ -199,8 +199,8 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.llmchat
 
-- **Owner:** Twin Ticks | **State:** in library, `0.2.0` untagged | **Users:** Twin Ticks, LWN likely
-- **Includes:** LLM character chat runner: persona assets, history window, single final Chunk, seen/typing timing assets, runner events (seen, typing, chunk, done); reply validator; example picker; model ladder
+- **Owner:** Twin Ticks | **State:** in library, `0.2.1` untagged (last tag `llmchat/0.2.0`) | **Users:** Twin Ticks, LWN likely
+- **Includes:** LLM character chat runner: persona assets, history window, single final Chunk, seen/typing timing assets, runner events (seen, typing, chunk, done); reply validator; example picker; model ladder; cross-speaker repeat check, live-history validation
 - **Stays in games:** conversation director, story beats, personas' content, pacing, the PhoneUI adapter onto `IChatSource`
 - **Interfaces:** `ILLMChatBackend`, runner events
 - **Depends on:** nothing in core; LLMUnity only in a separate backend asmdef (`LLMUnityChatBackend`). No phoneui reference.

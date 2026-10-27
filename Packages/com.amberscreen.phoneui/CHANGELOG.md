@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.2] - 2026-10-27
+
+### Fixed
+
+- Composer placeholder/text stretched to the text area (stray descender glyph when empty).
+- Rounded app icons use the AA clip shader instead of a stencil Mask (smooth corners).
+
+### Changed
+
+- CircleClip shader gains `_CornerRadius` (0.5 = circle, unchanged for avatars).
+
+### Added
+
+- `RoundedIconClip.mat`, `UiFactory.RoundedIconClipMaterial`; HomeScreen fallback tiles are rounded.
+
 ## [0.2.1] - 2026-10-26
 
 ### Changed

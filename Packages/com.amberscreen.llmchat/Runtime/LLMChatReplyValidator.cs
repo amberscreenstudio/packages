@@ -15,11 +15,15 @@ namespace AmberScreen.LLMChat
         public const string ReasonEmpty = "empty_reply";
         public const string ReasonEmojiOnly = "emoji_only";
         public const string ReasonSelfRepeat = "self_repeat";
+        public const string ReasonCrossRepeat = "cross_repeat";
         public const string ReasonRoleplayMarkup = "roleplay_markup";
         public const string ReasonRepeatOpener = "repeat_opener";
 
         public const int SelfRepeatLookback = 6;
         public const float SelfRepeatSimilarityThreshold = 0.85f;
+        public const int CrossRepeatLookback = 8;
+        public const float CrossRepeatSimilarityThreshold = 0.8f;
+        public const int CrossRepeatMinWords = 3;
         public const int OpenerLookback = 3;
         public const int OpenerMatchThreshold = 2;
 
@@ -56,6 +60,13 @@ namespace AmberScreen.LLMChat
             if (IsSelfRepeat(reply, characterId, sharedHistory, SelfRepeatLookback, SelfRepeatSimilarityThreshold))
             {
                 failReason = ReasonSelfRepeat;
+                return false;
+            }
+
+            if (IsCrossSpeakerRepeat(
+                    reply, characterId, sharedHistory, CrossRepeatLookback, CrossRepeatSimilarityThreshold))
+            {
+                failReason = ReasonCrossRepeat;
                 return false;
             }
 
@@ -104,6 +115,61 @@ namespace AmberScreen.LLMChat
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// True when <paramref name="reply"/> closely matches a recent line from another speaker
+        /// (Dice ≥ threshold, or shorter ≥4-word line contained in the longer).
+        /// Self and (by default) player turns are skipped.
+        /// </summary>
+        public static bool IsCrossSpeakerRepeat(
+            string reply,
+            string characterId,
+            IReadOnlyList<LLMChatHistoryTurn> history,
+            int lookback,
+            float threshold,
+            bool includePlayer = false)
+        {
+            if (string.IsNullOrWhiteSpace(reply) || history == null)
+                return false;
+
+            string needle = Normalize(reply);
+            if (WordCount(needle) < CrossRepeatMinWords)
+                return false;
+
+            int found = 0;
+            for (int i = history.Count - 1; i >= 0 && found < lookback; i--)
+            {
+                var turn = history[i];
+                if (turn == null) continue;
+                if (!includePlayer && turn.FromPlayer) continue;
+                if (!string.IsNullOrEmpty(characterId)
+                    && string.Equals(turn.SpeakerId, characterId, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                found++;
+                string other = Normalize(turn.Text);
+                if (string.IsNullOrEmpty(other)) continue;
+
+                if (Similarity(needle, other) >= threshold)
+                    return true;
+
+                string shorter = needle.Length <= other.Length ? needle : other;
+                string longer = needle.Length <= other.Length ? other : needle;
+                if (WordCount(shorter) >= 4 && longer.Contains(shorter))
+                    return true;
+            }
+
+            return false;
+        }
+
+        static int WordCount(string normalized)
+        {
+            if (string.IsNullOrEmpty(normalized)) return 0;
+            int n = 1;
+            for (int i = 0; i < normalized.Length; i++)
+                if (normalized[i] == ' ') n++;
+            return n;
         }
 
         /// <summary>

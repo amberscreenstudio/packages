@@ -2,6 +2,11 @@
 
 Newest entries first.
 
+## 2026-10-27
+
+- **phoneui 0.2.2 + llmchat 0.2.1: composer placeholder/text stretched (stray descender), AA rounded icons via CircleClip `_CornerRadius` (no stencil), cross_repeat validator + LiveHistoryProvider final check; Sandbox icon tiles**
+- Save: n/a
+
 ## 2026-10-26
 
 - **phoneui 0.2.1 + llmchat 0.2.0: lifted from Twin Ticks 0.0.38 (bdbb8e6), GUIDs kept; circle-clip mat in Resources, atlas-safe UV1 circle, AA edge, PackageInfo tests, font cache invalidate; Sandbox PhoneUISandbox**

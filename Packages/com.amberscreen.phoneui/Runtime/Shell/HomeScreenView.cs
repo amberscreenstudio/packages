@@ -65,17 +65,7 @@ namespace AmberScreen.PhoneUI
                 btn.GetComponent<RectTransform>().localScale = Vector3.one;
 
                 Color fallback = theme.AppIconColor(app.Id);
-                RectTransform iconRt;
-                if (app.Icon != null)
-                {
-                    iconRt = UiFactory.RoundedIcon("Icon", btn.transform, app.Icon, PhoneDp.IconSize, fallback);
-                }
-                else
-                {
-                    var icon = UiFactory.MakeImage("Icon", btn.transform, fallback);
-                    iconRt = icon.rectTransform;
-                    icon.raycastTarget = false;
-                }
+                var iconRt = UiFactory.RoundedIcon("Icon", btn.transform, app.Icon, PhoneDp.IconSize, fallback);
                 iconRt.anchorMin = new Vector2(0.5f, 1f);
                 iconRt.anchorMax = new Vector2(0.5f, 1f);
                 iconRt.pivot = new Vector2(0.5f, 1f);

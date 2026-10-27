@@ -328,8 +328,15 @@ namespace AmberScreen.PhoneUI
             ta.offsetMin = new Vector2(8f, 4f);
             ta.offsetMax = new Vector2(-8f, -4f);
             var placeholder = UiFactory.Label("Placeholder", ta, "Message", PhoneDp.BodyText);
+            UiFactory.Stretch(placeholder.rectTransform);
             placeholder.color = PhoneUITheme.Active.ComposerPlaceholder;
+            placeholder.alignment = TextAlignmentOptions.MidlineLeft;
+            placeholder.textWrappingMode = TextWrappingModes.NoWrap;
+            placeholder.overflowMode = TextOverflowModes.Ellipsis;
             var text = UiFactory.Label("Text", ta, "", PhoneDp.BodyText);
+            UiFactory.Stretch(text.rectTransform);
+            text.alignment = TextAlignmentOptions.MidlineLeft;
+            text.textWrappingMode = TextWrappingModes.Normal;
             text.raycastTarget = true;
             text.overflowMode = TextOverflowModes.Overflow;
             _input.textViewport = ta;

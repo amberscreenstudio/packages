@@ -7,7 +7,7 @@ Layout: `Runtime/` (asmdef `AmberScreen.LLMChat`), `LLMUnity/` (`AmberScreen.LLM
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.llmchat#llmchat/0.2.0
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.llmchat#llmchat/0.2.1
 ```
 
 LLMUnity (`ai.undream.llm`) is optional and only needed for `LLMUnityChatBackend`. Without it, the LLMUnity asmdef skips silently (`versionDefines` / `defineConstraints`).
@@ -81,14 +81,19 @@ EditMode coverage: `Tests/Editor/ModelLadderTests.cs` (fake timer via injected m
 
 ## Reply validation
 
-`LLMChatReplyValidator` runs after sanitize, before Done:
+`LLMChatReplyValidator` runs after sanitize, before Done.
 
-- Empty / emoji-only → Error reason `empty_reply` / `emoji_only`
+**Validation reasons:** `empty_reply`, `emoji_only`, `roleplay_markup`, `self_repeat`, `cross_repeat`, `repeat_opener`.
+
+- Empty / emoji-only → `empty_reply` / `emoji_only`
 - Roleplay / markdown (`*…*`, `**…**`, leading `*` `_` `#`) → `roleplay_markup` (paired `_…_` is **not** matched — snake_case is allowed)
 - Near-identical to one of that speaker's last **6** lines (normalised Dice ≥ **0.85**) → `self_repeat`
+- Near-identical to another speaker's last **8** lines (Dice ≥ **0.8**, or ≥4-word containment; ≥3 words) → `cross_repeat`
 - First word matches ≥ **2** of that friend's last **3** openers → `repeat_opener`
 
 On validation fail the runner **retries once** with a hint naming the reason; `Chunk` is only raised for an accepted reply. After two failures the host gets `Error` and should fall back.
+
+**Group threads:** set `LiveHistoryProvider` when several runners share one thread so validation (and retry prompts) see lines delivered after the request started. A `cross_repeat` Error means "post your fallback".
 
 ## Example picker
 
@@ -106,6 +111,6 @@ Logged once at first generate: `temp=0.8 top_p=0.9 repeatPenalty=1.15 repeatLast
 
 ## Package readiness
 
-- Namespace `AmberScreen.LLMChat`. Version **0.2.0** (`package.json`).
+- Namespace `AmberScreen.LLMChat`. Version **0.2.1** (`package.json`).
 - No game story, PhoneUI, or classifier references.
 - Weights / `.gguf` stay outside git; the host project configures models.

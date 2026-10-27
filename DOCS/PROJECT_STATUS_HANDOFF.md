@@ -8,11 +8,11 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.phoneui
 
-- **0.2.1** pushed (not tagged). Lifted from Twin Ticks 0.0.38 (`bdbb8e6`) with GUIDs kept; circle-clip Resources mat, UV1 modifier, AA edge, PackageInfo + font-cache tests. Awaiting Fabio's Sandbox check; Twin Ticks switches after tagging.
+- **0.2.2** pushed (not tagged); `phoneui/0.2.1` tagged on 1051d97 and used by Twin Ticks 0.0.39. Awaiting Fabio's Sandbox check; Twin Ticks bumps in 0.0.40/0.0.41.
 
 ## com.amberscreen.llmchat
 
-- **0.2.0** pushed (not tagged). Straight lift from Twin Ticks 0.0.38 (`bdbb8e6`); GUIDs kept; PackageInfo test added. Awaiting Fabio's Sandbox check; Twin Ticks switches after tagging.
+- **0.2.1** pushed (not tagged); `llmchat/0.2.0` tagged on 1051d97 and used by Twin Ticks 0.0.39. Awaiting Fabio's Sandbox check; Twin Ticks bumps in 0.0.40/0.0.41.
 
 ## com.amberscreen.meters
 

@@ -11,7 +11,7 @@ namespace AmberScreen.LLMChat.Tests
             var info = PackageInfo.FindForAssembly(typeof(LLMChatRunner).Assembly);
             Assert.That(info, Is.Not.Null);
             Assert.That(info.name, Is.EqualTo("com.amberscreen.llmchat"));
-            Assert.That(info.version, Is.EqualTo("0.2.0"));
+            Assert.That(info.version, Is.EqualTo("0.2.1"));
             Assert.That(info.dependencies == null || info.dependencies.Length == 0, Is.True);
         }
     }

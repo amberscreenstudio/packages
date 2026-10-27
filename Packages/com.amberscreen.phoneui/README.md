@@ -1,6 +1,6 @@
 # AmberScreen.PhoneUI (`com.amberscreen.phoneui`)
 
-**Version: 0.2.1**
+**Version: 0.2.2**
 
 Shared phone chrome for portrait messaging games. Portrait stage, status bar, home, apps, nav. Namespace `AmberScreen.PhoneUI`.
 
@@ -9,10 +9,18 @@ Layout: `Runtime/` (asmdef `AmberScreen.PhoneUI`), `Tests/Editor/`, `package.jso
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.phoneui#phoneui/0.2.1
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.phoneui#phoneui/0.2.2
 ```
 
 Owner: Twin Ticks. Changes go through Packages.
+
+## Sharpness
+
+PhoneAspectFitter/PhoneShell keep the 360 dp stage at Constant Pixel Size × uniform localScale. There is no RenderTexture or world-space canvas, so nothing renders at low resolution and then gets upscaled. TMP fallbacks use runtime `CreateFontAsset` defaults (90 pt sampling, 1024 atlas).
+
+- Host art should be imported with mipmaps and a max size of at least about 2× the largest on-screen dp × stage scale.
+- Runtime textures shown in RawImage thumbnails should have mips.
+- A stage scale below 1 (small Game view) makes 11–13 dp text soft. Check it with `PhoneShell.ScaleOverlayEnabled`.
 
 ## Theme resolution order
 

@@ -4,6 +4,7 @@ Shader "AmberScreen/UI/CircleClip"
     {
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
+        _CornerRadius ("Corner Radius (fraction of size)", Range(0, 0.5)) = 0.5
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
         _StencilOp ("Stencil Operation", Float) = 0
@@ -76,6 +77,7 @@ Shader "AmberScreen/UI/CircleClip"
             fixed4 _TextureSampleAdd;
             float4 _ClipRect;
             float4 _MainTex_ST;
+            float _CornerRadius;
 
             v2f vert(appdata_t v)
             {
@@ -94,10 +96,12 @@ Shader "AmberScreen/UI/CircleClip"
             {
                 half4 color = (tex2D(_MainTex, IN.texcoord) + _TextureSampleAdd) * IN.color;
 
-                float2 c = IN.circleUv;
-                float dist = length(c - 0.5);
+                float2 p = abs(IN.circleUv - 0.5);
+                float r = _CornerRadius;
+                float2 q = p - (0.5 - r);
+                float dist = length(max(q, 0)) + min(max(q.x, q.y), 0) - r;
                 float aa = max(fwidth(dist), 1e-4);
-                color.a *= 1 - smoothstep(0.5 - aa, 0.5, dist);
+                color.a *= 1 - smoothstep(-aa, 0, dist);
 
                 #ifdef UNITY_UI_CLIP_RECT
                 color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
