@@ -1,10 +1,15 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEditor.Rendering;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SceneManagement;
 using AmberScreen.ModelReview.Editor;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 using Object = UnityEngine.Object;
@@ -19,7 +24,7 @@ namespace AmberScreen.ModelReview.Tests
             var info = PackageInfo.FindForAssembly(typeof(ModelReviewRig).Assembly);
             Assert.That(info, Is.Not.Null);
             Assert.That(info.name, Is.EqualTo("com.amberscreen.modelreview"));
-            Assert.That(info.version, Is.EqualTo("0.1.0"));
+            Assert.That(info.version, Is.EqualTo("0.1.1"));
             Assert.That(info.dependencies, Has.Some.Matches<UnityEditor.PackageManager.DependencyInfo>(
                 d => d.name == "com.unity.render-pipelines.universal"));
             Assert.That(info.dependencies.Length, Is.EqualTo(1));
@@ -103,7 +108,6 @@ namespace AmberScreen.ModelReview.Tests
             var wire = new Material(lit) { name = "Wire" };
             var rigGo = new GameObject("Rig");
             var rig = rigGo.AddComponent<ModelReviewRig>();
-            // Inject materials via WireReferences (other refs null ok for this test)
             rig.WireReferences(null, null, null, null, null, null, null, null, null, clay, wire, null);
             rig.SetTarget(root);
 
@@ -130,6 +134,288 @@ namespace AmberScreen.ModelReview.Tests
         }
 
         [Test]
+        public void ViewMode_Clay_CoversLegacyNullAndMultiMaterial_ThenRestoresExactReferences()
+        {
+            var lit = Shader.Find("Universal Render Pipeline/Lit");
+            var legacyShader = Shader.Find("Standard") ?? Shader.Find("Hidden/InternalErrorShader");
+            Assert.That(legacyShader, Is.Not.Null);
+
+            var urpA = new Material(lit) { name = "UrpA" };
+            urpA.SetColor("_BaseColor", Color.green);
+            var legacyB = new Material(legacyShader) { name = "LegacyB" };
+            var legacySolo = new Material(legacyShader) { name = "LegacySolo" };
+            var clay = new Material(lit) { name = "Clay" };
+            var wire = new Material(lit) { name = "Wire" };
+
+            var root = new GameObject("Root");
+            var legacyCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            legacyCube.name = "Legacy";
+            legacyCube.transform.SetParent(root.transform);
+            legacyCube.GetComponent<MeshRenderer>().sharedMaterial = legacySolo;
+
+            var nullCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            nullCube.name = "NullSlot";
+            nullCube.transform.SetParent(root.transform);
+            nullCube.GetComponent<MeshRenderer>().sharedMaterial = null;
+
+            var multiCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            multiCube.name = "Multi";
+            multiCube.transform.SetParent(root.transform);
+            multiCube.GetComponent<MeshRenderer>().sharedMaterials = new[] { urpA, null, legacyB };
+
+            var skinnedGo = new GameObject("Skinned");
+            skinnedGo.transform.SetParent(root.transform);
+            var skinned = skinnedGo.AddComponent<SkinnedMeshRenderer>();
+            skinned.sharedMesh = legacyCube.GetComponent<MeshFilter>().sharedMesh;
+            var skinnedMat = new Material(lit) { name = "SkinnedLit" };
+            skinned.sharedMaterial = skinnedMat;
+
+            var idUrp = urpA.GetEntityId();
+            var idLegacy = legacyB.GetEntityId();
+            var idSolo = legacySolo.GetEntityId();
+            var idSkinned = skinnedMat.GetEntityId();
+            Color baseUrp = urpA.GetColor("_BaseColor");
+            EditorUtility.ClearDirty(urpA);
+            EditorUtility.ClearDirty(legacyB);
+            EditorUtility.ClearDirty(legacySolo);
+            EditorUtility.ClearDirty(skinnedMat);
+
+            var rigGo = new GameObject("Rig");
+            var rig = rigGo.AddComponent<ModelReviewRig>();
+            rig.WireReferences(null, null, null, null, null, null, null, null, null, clay, wire, null);
+            rig.SetTarget(root);
+
+            rig.SetViewMode(ModelReviewViewMode.Clay);
+            AssertAllSlotsAre(root, clay);
+
+            rig.SetViewMode(ModelReviewViewMode.Wireframe);
+            Material expectedWire = SystemInfo.supportsGeometryShaders ? wire : clay;
+            AssertAllSlotsAre(root, expectedWire);
+
+            rig.SetViewMode(ModelReviewViewMode.Delivered);
+            Assert.That(legacyCube.GetComponent<MeshRenderer>().sharedMaterials[0], Is.SameAs(legacySolo));
+            Assert.That(nullCube.GetComponent<MeshRenderer>().sharedMaterials[0], Is.Null);
+            var multi = multiCube.GetComponent<MeshRenderer>().sharedMaterials;
+            Assert.That(multi.Length, Is.EqualTo(3));
+            Assert.That(multi[0], Is.SameAs(urpA));
+            Assert.That(multi[1], Is.Null);
+            Assert.That(multi[2], Is.SameAs(legacyB));
+            Assert.That(skinned.sharedMaterials[0], Is.SameAs(skinnedMat));
+
+            Assert.That(urpA.GetEntityId(), Is.EqualTo(idUrp));
+            Assert.That(legacyB.GetEntityId(), Is.EqualTo(idLegacy));
+            Assert.That(legacySolo.GetEntityId(), Is.EqualTo(idSolo));
+            Assert.That(skinnedMat.GetEntityId(), Is.EqualTo(idSkinned));
+            Assert.That(urpA.shader, Is.EqualTo(lit));
+            Assert.That(urpA.GetColor("_BaseColor"), Is.EqualTo(baseUrp));
+            Assert.That(EditorUtility.IsDirty(urpA), Is.False);
+            Assert.That(EditorUtility.IsDirty(legacyB), Is.False);
+            Assert.That(EditorUtility.IsDirty(legacySolo), Is.False);
+            Assert.That(EditorUtility.IsDirty(skinnedMat), Is.False);
+
+            Object.DestroyImmediate(rigGo);
+            Object.DestroyImmediate(root);
+            Object.DestroyImmediate(clay);
+            Object.DestroyImmediate(wire);
+            Object.DestroyImmediate(urpA);
+            Object.DestroyImmediate(legacyB);
+            Object.DestroyImmediate(legacySolo);
+            Object.DestroyImmediate(skinnedMat);
+        }
+
+        [Test]
+        public void ViewMode_SourceAssetUntouched()
+        {
+            var lit = Shader.Find("Universal Render Pipeline/Lit");
+            var srcMat = new Material(lit) { name = "Src" };
+            srcMat.SetColor("_BaseColor", Color.cyan);
+            var source = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            source.name = "Source";
+            source.GetComponent<MeshRenderer>().sharedMaterial = srcMat;
+            var srcArr = source.GetComponent<MeshRenderer>().sharedMaterials;
+            var srcId = srcMat.GetEntityId();
+            EditorUtility.ClearDirty(srcMat);
+            EditorUtility.ClearDirty(source);
+
+            var instance = Object.Instantiate(source);
+            var clay = new Material(lit) { name = "Clay" };
+            var wire = new Material(lit) { name = "Wire" };
+            var rigGo = new GameObject("Rig");
+            var rig = rigGo.AddComponent<ModelReviewRig>();
+            rig.WireReferences(null, null, null, null, null, null, null, null, null, clay, wire, null);
+            rig.SetTarget(instance);
+            rig.SetViewMode(ModelReviewViewMode.Clay);
+            rig.SetViewMode(ModelReviewViewMode.Delivered);
+
+            Assert.That(source.GetComponent<MeshRenderer>().sharedMaterials[0], Is.SameAs(srcMat));
+            Assert.That(source.GetComponent<MeshRenderer>().sharedMaterials.Length, Is.EqualTo(srcArr.Length));
+            Assert.That(srcMat.GetEntityId(), Is.EqualTo(srcId));
+            Assert.That(EditorUtility.IsDirty(srcMat), Is.False);
+            Assert.That(EditorUtility.IsDirty(source), Is.False);
+
+            string prefabPath = "Assets/ModelReviewTest/ReviewTestProp.prefab";
+            Assume.That(File.Exists(prefabPath), "Sandbox ReviewTestProp.prefab not present");
+            string[] hashPaths =
+            {
+                prefabPath,
+                "Assets/ModelReviewTest/ReviewTest_Lit.mat",
+                "Assets/ModelReviewTest/ReviewTest_Legacy.mat"
+            };
+            var before = hashPaths.Select(FileHash).ToArray();
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            Assume.That(asset, Is.Not.Null);
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var rig2Go = new GameObject("Rig2");
+            var rig2 = rig2Go.AddComponent<ModelReviewRig>();
+            rig2.WireReferences(null, null, null, null, null, null, null, null, null, clay, wire, null);
+            ModelReviewTargetLoader.SpawnPreview(asset, scene, rig2);
+            rig2.SetViewMode(ModelReviewViewMode.Clay);
+            rig2.SetViewMode(ModelReviewViewMode.Wireframe);
+            rig2.SetViewMode(ModelReviewViewMode.Delivered);
+            ModelReviewTargetLoader.DestroyAllPreviews();
+            Object.DestroyImmediate(rig2Go);
+            for (int i = 0; i < hashPaths.Length; i++)
+                Assert.That(FileHash(hashPaths[i]), Is.EqualTo(before[i]), hashPaths[i]);
+
+            Object.DestroyImmediate(rigGo);
+            Object.DestroyImmediate(instance);
+            Object.DestroyImmediate(source);
+            Object.DestroyImmediate(srcMat);
+            Object.DestroyImmediate(clay);
+            Object.DestroyImmediate(wire);
+        }
+
+        [Test]
+        public void Loader_TryReloadTwice_LeavesExactlyOnePreview()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var lit = Shader.Find("Universal Render Pipeline/Lit");
+            var clay = new Material(lit);
+            var wire = new Material(lit);
+            var asset = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var rigGo = new GameObject("Rig");
+            var rig = rigGo.AddComponent<ModelReviewRig>();
+            rig.WireReferences(null, null, null, null, null, null, null, null, null, clay, wire, null);
+
+            ModelReviewTargetLoader.SpawnPreview(asset, scene, rig);
+            ModelReviewTargetLoader.SpawnPreview(asset, scene, rig);
+            Assert.That(ModelReviewTargetLoader.FindAllPreviewRoots().Count, Is.EqualTo(1));
+
+            ModelReviewTargetLoader.DestroyAllPreviews();
+            Object.DestroyImmediate(rigGo);
+            Object.DestroyImmediate(asset);
+            Object.DestroyImmediate(clay);
+            Object.DestroyImmediate(wire);
+        }
+
+        [Test]
+        public void Loader_DestroyAll_FindsDontSaveRoots()
+        {
+            ModelReviewTargetLoader.DestroyAllPreviews();
+
+            var a = new GameObject(ModelReviewTargetLoader.TargetRootName);
+            a.hideFlags = HideFlags.DontSave;
+            a.AddComponent<ModelReviewPreviewMarker>();
+
+            var b = new GameObject("OtherPreview");
+            b.hideFlags = HideFlags.DontSave;
+            b.AddComponent<ModelReviewPreviewMarker>();
+
+            var legacy = new GameObject(ModelReviewTargetLoader.TargetRootName);
+            legacy.hideFlags = HideFlags.DontSave;
+
+            ModelReviewTargetLoader.DestroyAllPreviews();
+
+            var markers = Resources.FindObjectsOfTypeAll<ModelReviewPreviewMarker>()
+                .Where(m => m != null && !EditorUtility.IsPersistent(m))
+                .ToArray();
+            Assert.That(markers, Is.Empty);
+
+            var leftovers = Resources.FindObjectsOfTypeAll<GameObject>()
+                .Where(g => g != null
+                            && !EditorUtility.IsPersistent(g)
+                            && g.name == ModelReviewTargetLoader.TargetRootName)
+                .ToArray();
+            Assert.That(leftovers, Is.Empty);
+        }
+
+        [Test]
+        public void OpenReviewClose_LeavesNoPreviewObjects()
+        {
+            // Drive the same destroy/spawn path without opening the package scene (heavy in batch).
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var lit = Shader.Find("Universal Render Pipeline/Lit");
+            var clay = new Material(lit);
+            var wire = new Material(lit);
+            var asset = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var rigGo = new GameObject("Rig");
+            var rig = rigGo.AddComponent<ModelReviewRig>();
+            rig.WireReferences(null, null, null, null, null, null, null, null, null, clay, wire, null);
+
+            ModelReviewTargetLoader.SpawnPreview(asset, scene, rig);
+            Assert.That(ModelReviewTargetLoader.FindAllPreviewRoots().Count, Is.EqualTo(1));
+
+            // Same order as CloseReviewScene: destroy previews, then leave.
+            ModelReviewTargetLoader.DestroyAllPreviews();
+            Object.DestroyImmediate(rigGo);
+
+            var markers = Resources.FindObjectsOfTypeAll<ModelReviewPreviewMarker>()
+                .Where(m => m != null && !EditorUtility.IsPersistent(m))
+                .ToArray();
+            Assert.That(markers, Is.Empty);
+            var leftovers = Resources.FindObjectsOfTypeAll<GameObject>()
+                .Where(g => g != null
+                            && !EditorUtility.IsPersistent(g)
+                            && g.name == ModelReviewTargetLoader.TargetRootName)
+                .ToArray();
+            Assert.That(leftovers, Is.Empty);
+
+            Object.DestroyImmediate(asset);
+            Object.DestroyImmediate(clay);
+            Object.DestroyImmediate(wire);
+        }
+
+        [Test]
+        public void Shaders_AllPackageShadersCompileAndAreSupported()
+        {
+            var info = PackageInfo.FindForAssembly(typeof(ModelReviewRig).Assembly);
+            Assert.That(info, Is.Not.Null);
+            string shaderDir = Path.Combine(info.resolvedPath, "Runtime", "Shaders");
+            var shaders = Directory.GetFiles(shaderDir, "*.shader", SearchOption.AllDirectories);
+            Assert.That(shaders.Length, Is.GreaterThan(0));
+
+            // Force-compile package materials (import-time messages alone missed ShadowCaster issues).
+            string matDir = Path.Combine(info.resolvedPath, "Rendering", "Materials");
+            foreach (var matPath in Directory.GetFiles(matDir, "*.mat"))
+            {
+                string assetPath = "Packages/com.amberscreen.modelreview/Rendering/Materials/"
+                                   + Path.GetFileName(matPath);
+                var mat = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+                if (mat == null || mat.shader == null) continue;
+                int passes = mat.passCount;
+                for (int p = 0; p < passes; p++)
+                    ShaderUtil.CompilePass(mat, p, true);
+            }
+
+            foreach (var full in shaders)
+            {
+                string file = Path.GetFileName(full);
+                string assetPath = "Packages/com.amberscreen.modelreview/Runtime/Shaders/" + file;
+                var shader = AssetDatabase.LoadAssetAtPath<Shader>(assetPath);
+                Assert.That(shader, Is.Not.Null, assetPath);
+                bool skipSupported = file.IndexOf("ClayWire", System.StringComparison.OrdinalIgnoreCase) >= 0
+                                     && !SystemInfo.supportsGeometryShaders;
+                if (!skipSupported)
+                    Assert.That(shader.isSupported, Is.True, assetPath + " not supported");
+                Assert.That(ShaderUtil.ShaderHasError(shader), Is.False, assetPath + " has error");
+                var msgs = ShaderUtil.GetShaderMessages(shader);
+                foreach (var m in msgs)
+                    Assert.That(m.severity, Is.Not.EqualTo(ShaderCompilerMessageSeverity.Error),
+                        assetPath + ": " + m.message);
+            }
+        }
+
+        [Test]
         public void PipelineGuard_SwitchRestore_RestoresOriginal_AndProjectSettingsFilesUnchanged()
         {
             string gfxPath = "ProjectSettings/GraphicsSettings.asset";
@@ -147,8 +433,6 @@ namespace AmberScreen.ModelReview.Tests
                 return;
             }
 
-            // Without the review scene open, TrySwitch still may run — call Restore after.
-            // We only assert ProjectSettings files unchanged.
             bool switched = ModelReviewPipelineGuard.TrySwitch();
             if (switched)
             {
@@ -166,20 +450,27 @@ namespace AmberScreen.ModelReview.Tests
         [Test]
         public void LoadTarget_DoesNotDirtyScene()
         {
-            // Opening the full review scene in batch is heavy; simulate DontSave instantiate.
-            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewScene(
-                UnityEditor.SceneManagement.NewSceneSetup.EmptyScene,
-                UnityEditor.SceneManagement.NewSceneMode.Single);
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             Assert.That(scene.isDirty, Is.False);
 
-            var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            var instance = Object.Instantiate(cube);
-            instance.hideFlags = HideFlags.DontSave;
-            Object.DestroyImmediate(cube);
+            var lit = Shader.Find("Universal Render Pipeline/Lit");
+            var clay = new Material(lit);
+            var wire = new Material(lit);
+            var asset = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var rigGo = new GameObject("Rig");
+            var rig = rigGo.AddComponent<ModelReviewRig>();
+            rig.WireReferences(null, null, null, null, null, null, null, null, null, clay, wire, null);
 
-            // DontSave objects must not dirty the scene.
-            Assert.That(scene.isDirty, Is.False);
-            Object.DestroyImmediate(instance);
+            bool dirtyBefore = scene.isDirty;
+            ModelReviewTargetLoader.SpawnPreview(asset, scene, rig);
+            Assert.That(scene.isDirty, Is.EqualTo(dirtyBefore),
+                "SpawnPreview/MoveGameObjectToScene must not dirty the review scene");
+
+            ModelReviewTargetLoader.DestroyAllPreviews();
+            Object.DestroyImmediate(rigGo);
+            Object.DestroyImmediate(asset);
+            Object.DestroyImmediate(clay);
+            Object.DestroyImmediate(wire);
         }
 
         [Test]
@@ -194,7 +485,8 @@ namespace AmberScreen.ModelReview.Tests
                 "ForceReserializeAssets", "WriteImportSettingsIfDirty", "AddRemap", "RemoveRemap",
                 "ExtractAsset", "CreateAsset", "DeleteAsset", "MoveAsset", "SetDirty",
                 "ApplyModifiedProperties", "SaveAsPrefabAsset", "ApplyPrefabInstance",
-                "SaveScene", "MarkSceneDirty", "materialImportMode ="
+                "SaveScene", "MarkSceneDirty", "materialImportMode =",
+                "PrefabUtility.SavePrefabAsset", "Undo.RecordObject"
             };
             var materialsRegex = new Regex(@"\.materials?\b");
             var setRegex = new Regex(@"material\.Set");
@@ -208,8 +500,19 @@ namespace AmberScreen.ModelReview.Tests
                 foreach (var token in forbidden)
                     Assert.That(text.Contains(token), Is.False, name + " contains " + token);
                 Assert.That(materialsRegex.IsMatch(text), Is.False, name + " uses .material(s)");
-                // allow only pipeline clone setters — material.Set is forbidden entirely outside builder
                 Assert.That(setRegex.IsMatch(text), Is.False, name + " uses material.Set");
+            }
+        }
+
+        static void AssertAllSlotsAre(GameObject root, Material expected)
+        {
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!(r is MeshRenderer || r is SkinnedMeshRenderer)) continue;
+                var mats = r.sharedMaterials;
+                Assert.That(mats.Length, Is.GreaterThan(0), r.name + " has no slots after override");
+                foreach (var m in mats)
+                    Assert.That(m, Is.SameAs(expected), r.name);
             }
         }
 

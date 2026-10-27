@@ -2,6 +2,11 @@
 
 Newest entries first.
 
+## 2026-10-28
+
+- **modelreview 0.1.1: one preview instance at a time, destroyed on every exit (no leak into other scenes), Clay/Wire cover every renderer incl. legacy/null/multi/skinned, Grid shader fixed, right-drag pans, plain-word legend**
+- Save: n/a
+
 ## 2026-10-27
 
 - **modelreview 0.1.0: new package, ideal-conditions 3D model review scene (tuned URP profile switched in memory, studio lights, orbit/interior camera, Delivered/Clay/Wireframe, read-only material report); Sandbox manifest + test prop**

@@ -26,6 +26,7 @@ namespace AmberScreen.ModelReview.Editor
         [MenuItem("Tools/Amber Screen/Model Review/Close Review Scene")]
         public static void CloseReviewScene()
         {
+            ModelReviewTargetLoader.DestroyAllPreviews();
             ModelReviewPipelineGuard.Restore();
             string prev = SessionState.GetString(SessionPrevScene, "");
             if (!string.IsNullOrEmpty(prev) && System.IO.File.Exists(prev))

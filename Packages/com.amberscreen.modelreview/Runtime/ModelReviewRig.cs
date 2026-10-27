@@ -115,6 +115,15 @@ namespace AmberScreen.ModelReview
             TargetInstance = null;
         }
 
+        public void RestoreAllFromCache()
+        {
+            foreach (var kv in _originalShared)
+            {
+                if (kv.Key == null) continue;
+                kv.Key.sharedMaterials = kv.Value;
+            }
+        }
+
         public void SetViewMode(ModelReviewViewMode mode)
         {
             RestoreAllFromCache();
@@ -197,6 +206,18 @@ namespace AmberScreen.ModelReview
             }
         }
 
+        void OnDisable()
+        {
+            RestoreAllFromCache();
+        }
+
+        void OnDestroy()
+        {
+            RestoreAllFromCache();
+            _originalShared.Clear();
+            TargetInstance = null;
+        }
+
         void Update()
         {
             if (!Application.isPlaying) return;
@@ -206,7 +227,13 @@ namespace AmberScreen.ModelReview
         void OnGUI()
         {
             if (!_showLegend) return;
-            var style = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.UpperLeft, fontSize = 12 };
+            var style = new GUIStyle(GUI.skin.box)
+            {
+                alignment = TextAnchor.UpperLeft,
+                fontSize = 12,
+                wordWrap = true,
+                padding = new RectOffset(8, 8, 6, 6)
+            };
             string pipe = _usingReviewPipeline ? "Review URP" : "HOST pipeline (not tuned)";
             string target = TargetInstance != null ? TargetInstance.name : "(none)";
             string body =
@@ -215,11 +242,21 @@ namespace AmberScreen.ModelReview
                 "Tris: " + CountTriangles() + "  Renderers: " + CountRenderers() + "\n" +
                 "Shadow distance: " + CurrentShadowDistance.ToString("0.0") + "\n" +
                 "Pipeline: " + pipe + "\n" +
-                "1 Delivered  2 Clay  3 Wire  F Frame  I Interior  R Reset\n" +
-                "G Grid  C Capsule  T Tonemap  H Legend";
+                "Left-drag: orbit.\n" +
+                "Right-drag or middle-drag (press the scroll wheel): pan.\n" +
+                "Scroll: zoom.\n" +
+                "F: frame.\n" +
+                "1/2/3: Delivered/Clay/Wire.\n" +
+                "I: fly inside (WASD/QE).\n" +
+                "R: reset.\n" +
+                "G: grid.\n" +
+                "C: 1.8 m capsule.\n" +
+                "T: neutral tonemap.\n" +
+                "H: hide legend.";
+            float height = style.CalcHeight(new GUIContent(body), 460f) + 12f;
             var prev = GUI.color;
             if (!_usingReviewPipeline) GUI.color = Color.yellow;
-            GUI.Box(new Rect(8, 8, 420, 130), body, style);
+            GUI.Box(new Rect(8, 8, 470, height), body, style);
             GUI.color = prev;
         }
 
@@ -245,23 +282,18 @@ namespace AmberScreen.ModelReview
         {
             _originalShared.Clear();
             if (TargetInstance == null) return;
-            foreach (var r in TargetInstance.GetComponentsInChildren<Renderer>(true))
-            {
-                var shared = r.sharedMaterials;
-                var copy = new Material[shared.Length];
-                for (int i = 0; i < shared.Length; i++)
-                    copy[i] = shared[i];
-                _originalShared[r] = copy;
-            }
+            foreach (var r in EnumeratePreviewRenderers(TargetInstance))
+                CacheOne(r);
         }
 
-        void RestoreAllFromCache()
+        void CacheOne(Renderer r)
         {
-            foreach (var kv in _originalShared)
-            {
-                if (kv.Key == null) continue;
-                kv.Key.sharedMaterials = kv.Value;
-            }
+            if (r == null || _originalShared.ContainsKey(r)) return;
+            var shared = r.sharedMaterials;
+            var copy = new Material[shared.Length];
+            for (int i = 0; i < shared.Length; i++)
+                copy[i] = shared[i];
+            _originalShared[r] = copy;
         }
 
         void ApplyCurrentMode()
@@ -302,15 +334,42 @@ namespace AmberScreen.ModelReview
 
         void ApplyOverride(Material mat)
         {
-            if (mat == null) return;
-            foreach (var kv in _originalShared)
+            if (mat == null || TargetInstance == null) return;
+            foreach (var r in EnumeratePreviewRenderers(TargetInstance))
             {
-                if (kv.Key == null) continue;
-                var arr = new Material[kv.Value.Length];
+                if (r == null) continue;
+                if (!_originalShared.ContainsKey(r))
+                    CacheOne(r);
+                if (!_originalShared.TryGetValue(r, out var original))
+                    continue;
+
+                int overrideLen = original.Length;
+                if (overrideLen == 0)
+                    overrideLen = Mathf.Max(1, GetSubMeshCount(r));
+
+                var arr = new Material[overrideLen];
                 for (int i = 0; i < arr.Length; i++)
                     arr[i] = mat;
-                kv.Key.sharedMaterials = arr;
+                r.sharedMaterials = arr;
             }
+        }
+
+        static IEnumerable<Renderer> EnumeratePreviewRenderers(GameObject root)
+        {
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r is MeshRenderer || r is SkinnedMeshRenderer)
+                    yield return r;
+            }
+        }
+
+        static int GetSubMeshCount(Renderer r)
+        {
+            if (r is SkinnedMeshRenderer smr && smr.sharedMesh != null)
+                return smr.sharedMesh.subMeshCount;
+            if (r is MeshRenderer && r.TryGetComponent(out MeshFilter mf) && mf.sharedMesh != null)
+                return mf.sharedMesh.subMeshCount;
+            return 0;
         }
 
         public static Bounds ComputeBounds(GameObject root)

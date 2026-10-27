@@ -8,7 +8,7 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.modelreview
 
-- **0.1.0** pushed (not tagged). Awaiting Fabio's Sandbox check, then tag `modelreview/0.1.0`. LWN and Sand & Ink install by tag.
+- **0.1.1** pushed (not tagged; 0.1.0 is superseded and won't be tagged). Awaiting Fabio's Sandbox check, then tag `modelreview/0.1.1`. 0.1.2 next: Snorkel & Sail review features (see notes).
 
 ## com.amberscreen.phoneui
 

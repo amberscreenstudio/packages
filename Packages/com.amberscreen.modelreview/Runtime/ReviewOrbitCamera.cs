@@ -99,8 +99,10 @@ namespace AmberScreen.ModelReview
                 _distance = Mathf.Clamp(_distance * (1f - scroll * zoomSensitivity * 0.01f), 0.15f, 250f);
 
             Vector2 delta = ReviewInput.MouseDelta;
-            bool pan = ReviewInput.GetMouseButton(2) || (ReviewInput.GetMouseButton(0) && ReviewInput.ShiftHeld);
-            bool orbit = ReviewInput.GetMouseButton(0) && !ReviewInput.ShiftHeld;
+            bool pan = ReviewInput.GetMouseButton(1)
+                       || ReviewInput.GetMouseButton(2)
+                       || (ReviewInput.GetMouseButton(0) && ReviewInput.ShiftHeld);
+            bool orbit = ReviewInput.GetMouseButton(0) && !ReviewInput.ShiftHeld && !ReviewInput.GetMouseButton(1);
 
             if (pan)
             {

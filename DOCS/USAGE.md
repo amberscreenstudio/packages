@@ -10,14 +10,15 @@
 | LWN | (local) | not yet (own console) | none | switching from `Assets/Shared/Economy` | planned | likely | planned |
 | The Watchmaker Shop | local, `E:\Unity Projects\Time & Tension` | not yet (own console) | none | planned | none | none | none |
 
-Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3`, `#meters/0.1.0`, `#economy/0.1.0`, `#phoneui/0.2.2`, `#llmchat/0.2.1`, or `#modelreview/0.1.0` (once tagged). Always pin a tag, never `main`.
+Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3`, `#meters/0.1.0`, `#economy/0.1.0`, `#phoneui/0.2.2`, `#llmchat/0.2.1`, or `#modelreview/0.1.1` (once tagged). Always pin a tag, never `main`.
 
 ## com.amberscreen.modelreview quick start
 
 1. Add the package (local Sandbox: `"com.amberscreen.modelreview": "file:../../Packages/com.amberscreen.modelreview"`). Host should be URP 17.6.
 2. **Tools > Amber Screen > Model Review > Open Review Scene**.
-3. Right-click a prefab/model → **Amber Screen > Review in Model Review**. Keys `1`/`2`/`3` for Delivered/Clay/Wireframe.
-4. **Tools > Amber Screen > Model Review > Material Report** for the read-only Console report.
+3. Right-click a prefab/model → **Amber Screen > Review in Model Review**.
+4. Controls: Left-drag: orbit. Right-drag or middle-drag (press the scroll wheel): pan. Scroll: zoom. F: frame. 1/2/3: Delivered/Clay/Wire. I: fly inside (WASD/QE). R: reset. G: grid. C: 1.8 m capsule. T: neutral tonemap. H: hide legend.
+5. **Tools > Amber Screen > Model Review > Material Report** for the read-only Console report.
 
 ## com.amberscreen.phoneui quick start
 

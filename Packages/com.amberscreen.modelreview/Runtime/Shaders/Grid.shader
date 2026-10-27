@@ -60,8 +60,8 @@ Shader "AmberScreen/ModelReview/Grid"
                 float cell = max(_CellSize, 1e-3);
                 float2 uv = input.positionWS.xz / cell;
                 float2 g = abs(frac(uv - 0.5) - 0.5) / fwidth(uv);
-                float line = 1.0 - min(g.x, g.y);
-                float a = saturate(line) * _LineColor.a;
+                float gridLine = 1.0 - min(g.x, g.y);
+                float a = saturate(gridLine) * _LineColor.a;
                 return half4(_LineColor.rgb, a);
             }
             ENDHLSL
