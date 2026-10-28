@@ -12,7 +12,8 @@ namespace AmberScreen.ModelReview
         [SerializeField] Camera targetCamera;
         [SerializeField] float orbitSensitivity = 0.2f;
         [SerializeField] float panSensitivity = 0.0025f;
-        [SerializeField] float zoomSensitivity = 0.12f;
+        [SerializeField, Range(0.01f, 0.5f), Tooltip("Fraction of the current distance per scroll-wheel notch.")]
+        float zoomSpeed = 0.15f;
         [SerializeField] float moveSpeed = 2.5f;
 
         float _yaw = 35f;
@@ -27,7 +28,24 @@ namespace AmberScreen.ModelReview
         public Vector3 Pivot => _pivot;
         public float Distance => _distance;
 
+        public float ZoomSpeed
+        {
+            get => zoomSpeed;
+            set => zoomSpeed = Mathf.Clamp(value, 0.01f, 0.5f);
+        }
+
         public void BindCamera(Camera cam) => targetCamera = cam;
+
+        /// <summary>
+        /// Distance after one or more scroll notches. Scroll up (positive) zooms in.
+        /// Values with |rawScroll| ≥ 10 are treated as legacy 120-units-per-notch.
+        /// </summary>
+        public static float ZoomedDistance(float distance, float rawScroll, float zoomSpeed)
+        {
+            float notches = Mathf.Abs(rawScroll) >= 10f ? rawScroll / 120f : rawScroll;
+            float speed = Mathf.Clamp(zoomSpeed, 0.01f, 0.5f);
+            return Mathf.Clamp(distance * Mathf.Pow(1f - speed, notches), 0.15f, 250f);
+        }
 
         public void Frame(Bounds bounds)
         {
@@ -96,7 +114,7 @@ namespace AmberScreen.ModelReview
 
             float scroll = ReviewInput.ScrollY;
             if (Mathf.Abs(scroll) > 0.01f)
-                _distance = Mathf.Clamp(_distance * (1f - scroll * zoomSensitivity * 0.01f), 0.15f, 250f);
+                _distance = ZoomedDistance(_distance, scroll, zoomSpeed);
 
             Vector2 delta = ReviewInput.MouseDelta;
             bool pan = ReviewInput.GetMouseButton(1)

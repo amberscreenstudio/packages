@@ -1,24 +1,65 @@
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace AmberScreen.ModelReview.Editor
 {
+    /// <summary>
+    /// Menus for the temporary untitled review scene (marked with <see cref="ModelReviewSceneMarker"/>).
+    /// </summary>
     public static class ModelReviewMenus
     {
-        const string ReviewScenePath = "Packages/com.amberscreen.modelreview/Scenes/ModelReview.unity";
         const string SessionPrevScene = "AmberScreen.ModelReview.PreviousScene";
         static string s_LastReport;
+        static bool s_LoggedClearMissing;
+        static bool s_DirtiedHook;
 
         [MenuItem("Tools/Amber Screen/Model Review/Open Review Scene")]
         public static void OpenReviewScene()
         {
+            EnsureDirtiedHook();
+
+            if (ModelReviewPipelineGuard.IsReviewSceneActive())
+            {
+                ModelReviewPipelineGuard.TrySwitch();
+                ModelReviewTargetLoader.TryReload();
+                return;
+            }
+
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                 return;
+
             var active = EditorSceneManager.GetActiveScene();
             if (active.IsValid() && !string.IsNullOrEmpty(active.path))
                 SessionState.SetString(SessionPrevScene, active.path);
-            EditorSceneManager.OpenScene(ReviewScenePath, OpenSceneMode.Single);
+            else if (active.IsValid() && !ModelReviewPipelineGuard.IsReviewScene(active))
+                SessionState.EraseString(SessionPrevScene);
+
+            // NewScene can invalidate ScriptableObject refs loaded beforehand — load after.
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            if (!ModelReviewSceneBuilder.TryLoadPackageAssets(out var assets, out string error))
+            {
+                Debug.LogError("[ModelReview] Cannot open review scene: " + error);
+                return;
+            }
+
+            ModelReviewSceneBuilder.BuildInto(scene, assets);
+
+            bool dirtyBefore = scene.isDirty;
+            if (!ModelReviewSceneBuilder.TryClearSceneDirtiness(scene, out bool foundApi))
+            {
+                if (!s_LoggedClearMissing)
+                {
+                    s_LoggedClearMissing = true;
+                    Debug.LogWarning(
+                        "[ModelReview] ClearSceneDirtiness not found; untitled scene may prompt to save.");
+                }
+            }
+            Debug.Log("[ModelReview] Untitled review scene isDirty before clear=" + dirtyBefore
+                      + " after=" + scene.isDirty
+                      + " clearApi=" + foundApi);
+
             ModelReviewPipelineGuard.TrySwitch();
             ModelReviewTargetLoader.TryReload();
         }
@@ -47,9 +88,12 @@ namespace AmberScreen.ModelReview.Editor
             string path = AssetDatabase.GetAssetPath(go);
             if (string.IsNullOrEmpty(path)) return;
             string guid = AssetDatabase.AssetPathToGUID(path);
+            // Store before open so Open's TryReload spawns once.
+            SessionState.SetString(ModelReviewTargetLoader.SessionGuidKey, guid ?? "");
             if (!ModelReviewPipelineGuard.IsReviewSceneActive())
                 OpenReviewScene();
-            ModelReviewTargetLoader.SetTargetGuid(guid);
+            else
+                ModelReviewTargetLoader.TryReload();
         }
 
         [MenuItem("Tools/Amber Screen/Model Review/Material Report")]
@@ -92,6 +136,23 @@ namespace AmberScreen.ModelReview.Editor
             }
             EditorGUIUtility.systemCopyBuffer = s_LastReport;
             Debug.Log("[ModelReview] Last report copied to clipboard.");
+        }
+
+        static void EnsureDirtiedHook()
+        {
+            if (s_DirtiedHook) return;
+            s_DirtiedHook = true;
+            EditorSceneManager.sceneDirtied += scene =>
+            {
+                if (!ModelReviewPipelineGuard.IsReviewScene(scene)) return;
+                if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+                EditorApplication.delayCall += () =>
+                {
+                    if (!scene.IsValid() || !ModelReviewPipelineGuard.IsReviewScene(scene)) return;
+                    if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+                    ModelReviewSceneBuilder.TryClearSceneDirtiness(scene, out _);
+                };
+            };
         }
     }
 }

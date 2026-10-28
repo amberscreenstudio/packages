@@ -38,6 +38,20 @@ namespace AmberScreen.ModelReview
 
         [NonSerialized] public GameObject TargetInstance;
 
+        // NonSerialized mirrors survive ClearSceneDirtiness on untitled scenes.
+        ReviewOrbitCamera _wiredOrbit;
+        Light _wiredKey;
+        Light _wiredFill;
+        Light _wiredRim;
+        GameObject _wiredFloor;
+        GameObject _wiredGrid;
+        GameObject _wiredCapsule;
+        Volume _wiredVolume;
+        ReflectionProbe _wiredProbe;
+        Material _wiredClay;
+        Material _wiredWire;
+        UniversalRenderPipelineAsset _wiredUrp;
+
         ModelReviewViewMode _mode = ModelReviewViewMode.Delivered;
         readonly Dictionary<Renderer, Material[]> _originalShared = new();
         bool _keyOnly;
@@ -60,11 +74,11 @@ namespace AmberScreen.ModelReview
             get => _usingReviewPipeline;
             set => _usingReviewPipeline = value;
         }
-        public UniversalRenderPipelineAsset ReviewUrpAsset => reviewUrpAsset;
+        public UniversalRenderPipelineAsset ReviewUrpAsset => _wiredUrp != null ? _wiredUrp : reviewUrpAsset;
         public UniversalRenderPipelineAsset RuntimePipelineClone => _runtimePipelineClone;
-        public Material ClayMaterial => clayMaterial;
-        public Material ClayWireMaterial => clayWireMaterial;
-        public ReviewOrbitCamera Orbit => orbitCamera;
+        public Material ClayMaterial => _wiredClay != null ? _wiredClay : clayMaterial;
+        public Material ClayWireMaterial => _wiredWire != null ? _wiredWire : clayWireMaterial;
+        public ReviewOrbitCamera Orbit => _wiredOrbit != null ? _wiredOrbit : orbitCamera;
 
         public void WireReferences(
             ReviewOrbitCamera cam,
@@ -80,18 +94,18 @@ namespace AmberScreen.ModelReview
             Material wire,
             UniversalRenderPipelineAsset urp)
         {
-            orbitCamera = cam;
-            keyLight = key;
-            fillLight = fill;
-            rimLight = rim;
-            floor = floorGo;
-            grid = gridGo;
-            scaleCapsule = capsuleGo;
-            volume = vol;
-            reflectionProbe = probe;
-            clayMaterial = clay;
-            clayWireMaterial = wire;
-            reviewUrpAsset = urp;
+            orbitCamera = _wiredOrbit = cam;
+            keyLight = _wiredKey = key;
+            fillLight = _wiredFill = fill;
+            rimLight = _wiredRim = rim;
+            floor = _wiredFloor = floorGo;
+            grid = _wiredGrid = gridGo;
+            scaleCapsule = _wiredCapsule = capsuleGo;
+            volume = _wiredVolume = vol;
+            reflectionProbe = _wiredProbe = probe;
+            clayMaterial = _wiredClay = clay;
+            clayWireMaterial = _wiredWire = wire;
+            reviewUrpAsset = _wiredUrp = urp;
         }
 
         public void SetRuntimePipelineClone(UniversalRenderPipelineAsset clone) =>
@@ -134,27 +148,33 @@ namespace AmberScreen.ModelReview
         public void SetKeyOnly(bool on)
         {
             _keyOnly = on;
-            if (fillLight != null) fillLight.enabled = !on;
-            if (rimLight != null) rimLight.enabled = !on;
+            var fill = _wiredFill != null ? _wiredFill : fillLight;
+            var rim = _wiredRim != null ? _wiredRim : rimLight;
+            if (fill != null) fill.enabled = !on;
+            if (rim != null) rim.enabled = !on;
         }
 
         public void SetGridVisible(bool on)
         {
             _showGrid = on;
-            if (grid != null) grid.SetActive(on);
+            var g = _wiredGrid != null ? _wiredGrid : grid;
+            if (g != null) g.SetActive(on);
         }
 
         public void SetCapsuleVisible(bool on)
         {
             _showCapsule = on;
-            if (scaleCapsule != null) scaleCapsule.SetActive(on);
+            var c = _wiredCapsule != null ? _wiredCapsule : scaleCapsule;
+            if (c != null) c.SetActive(on);
         }
 
         public void SetNeutralTonemap(bool on)
         {
             _neutralTonemap = on;
-            if (volume != null) volume.enabled = on;
-            var cam = orbitCamera != null ? orbitCamera.Cam : null;
+            var vol = _wiredVolume != null ? _wiredVolume : volume;
+            if (vol != null) vol.enabled = on;
+            var orbit = Orbit;
+            var cam = orbit != null ? orbit.Cam : null;
             if (cam != null && cam.TryGetComponent(out UniversalAdditionalCameraData urpCam))
                 urpCam.renderPostProcessing = on;
         }
@@ -165,16 +185,16 @@ namespace AmberScreen.ModelReview
         {
             if (TargetInstance == null) return;
             var bounds = ComputeBounds(TargetInstance);
-            orbitCamera?.Frame(bounds);
+            Orbit?.Frame(bounds);
             AutoScaleShadows(bounds);
         }
 
         public void AutoScaleShadows(Bounds bounds)
         {
+            // Only mutate the in-memory clone — never the loaded package URP asset.
+            if (_runtimePipelineClone == null) return;
             float dist = Mathf.Clamp(3f * bounds.size.magnitude, 5f, 60f);
-            var pipe = _runtimePipelineClone != null ? _runtimePipelineClone : reviewUrpAsset;
-            if (pipe != null)
-                pipe.shadowDistance = dist;
+            _runtimePipelineClone.shadowDistance = dist;
         }
 
         public void RefreshProbe()

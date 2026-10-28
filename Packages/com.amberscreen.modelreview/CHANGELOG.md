@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.2] - 2026-10-28
+
+### Fixed
+
+- Open Review Scene works from git-URL installs. It builds the studio (camera rig, lights, volume, probe, floor, grid, capsule, render settings) in a new untitled scene from package assets instead of opening the package scene, which Unity can't open from an immutable package. The scene is detected by `ModelReviewSceneMarker`. Close returns to the previous scene without a save prompt. Nothing is saved or written to Assets.
+- T (neutral tonemap) uses `ModelReview_Volume` (the 0.1.1 scene's Volume had no profile).
+
+### Changed
+
+- Scroll zoom moves a fixed fraction of the current distance per notch (`zoomSpeed`, default 0.15).
+
+### Removed
+
+- `Scenes/ModelReview.unity` (studio is built in code).
+
 ## [0.1.1] - 2026-10-28
 
 ### Fixed

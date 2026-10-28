@@ -10,8 +10,9 @@ using UnityEngine.SceneManagement;
 namespace AmberScreen.ModelReview.Editor
 {
     /// <summary>
-    /// Switches Graphics/Quality pipeline to a runtime clone of ModelReview_URP while the review
-    /// scene is active. Restores originals in memory only — never writes ProjectSettings.
+    /// Switches Graphics/Quality pipeline to a runtime clone of ModelReview_URP while the
+    /// temporary untitled review scene (with <see cref="ModelReviewSceneMarker"/>) is active.
+    /// Restores originals in memory only — never writes ProjectSettings.
     /// </summary>
     [InitializeOnLoad]
     public static class ModelReviewPipelineGuard
@@ -20,7 +21,6 @@ namespace AmberScreen.ModelReview.Editor
         const string SessionDefaultGuid = "AmberScreen.ModelReview.DefaultRPGuid";
         const string SessionQualityCount = "AmberScreen.ModelReview.QualityCount";
         const string SessionQualityPrefix = "AmberScreen.ModelReview.QualityRPGuid.";
-        const string ReviewSceneName = "ModelReview";
 
         static UniversalRenderPipelineAsset s_Clone;
         static bool s_Registered;
@@ -45,6 +45,11 @@ namespace AmberScreen.ModelReview.Editor
             EditorSceneManager.sceneClosing += (scene, _) =>
             {
                 if (IsReviewScene(scene)) Restore();
+            };
+            EditorSceneManager.sceneSaving += (scene, _) =>
+            {
+                if (IsReviewScene(scene))
+                    Debug.LogWarning("[ModelReview] The review scene is temporary; don't save it.");
             };
             EditorApplication.playModeStateChanged += _ =>
                 EditorApplication.delayCall += OnSceneContextChanged;
@@ -73,12 +78,14 @@ namespace AmberScreen.ModelReview.Editor
 
         public static bool IsReviewScene(Scene scene)
         {
-            if (!scene.IsValid()) return false;
-            string path = scene.path ?? "";
-            return path.Replace('\\', '/').IndexOf(
-                       "com.amberscreen.modelreview/Scenes/ModelReview",
-                       StringComparison.OrdinalIgnoreCase) >= 0
-                   || string.Equals(scene.name, ReviewSceneName, StringComparison.Ordinal);
+            if (!scene.IsValid() || !scene.isLoaded) return false;
+            var roots = scene.GetRootGameObjects();
+            for (int i = 0; i < roots.Length; i++)
+            {
+                if (roots[i] != null && roots[i].GetComponent<ModelReviewSceneMarker>() != null)
+                    return true;
+            }
+            return false;
         }
 
         public static bool TrySwitch()
@@ -155,7 +162,6 @@ namespace AmberScreen.ModelReview.Editor
             var current = GraphicsSettings.defaultRenderPipeline;
             if (current == null)
             {
-                // Built-in: only switch if URP global settings already exist (avoid auto-create write).
                 var settings = GraphicsSettings.GetSettingsForRenderPipeline<UniversalRenderPipeline>();
                 if (settings == null)
                 {
@@ -241,20 +247,7 @@ namespace AmberScreen.ModelReview.Editor
                     if (IsReviewSceneActive())
                         TrySwitch();
                 };
-
-                var kept = new List<string>(paths.Length);
-                foreach (var p in paths)
-                {
-                    if (p != null && p.Replace('\\', '/').IndexOf(
-                            "com.amberscreen.modelreview/Scenes/ModelReview",
-                            StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        Debug.Log("[ModelReview] Model Review scene is read-only — excluded from save.");
-                        continue;
-                    }
-                    kept.Add(p);
-                }
-                return kept.ToArray();
+                return paths;
             }
         }
     }

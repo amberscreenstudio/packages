@@ -1,11 +1,9 @@
 using System.IO;
 using UnityEditor;
 using UnityEditor.PackageManager;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.SceneManagement;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace AmberScreen.ModelReview.Editor
@@ -79,28 +77,25 @@ namespace AmberScreen.ModelReview.Editor
         {
             EnsureFolder("Packages/com.amberscreen.modelreview/Rendering");
             EnsureFolder("Packages/com.amberscreen.modelreview/Rendering/Materials");
-            EnsureFolder("Packages/com.amberscreen.modelreview/Scenes");
 
-            var renderer = CreateOrReplaceRenderer("Packages/com.amberscreen.modelreview/Rendering/ModelReview_Renderer.asset");
-            var urp = CreateOrReplaceUrp("Packages/com.amberscreen.modelreview/Rendering/ModelReview_URP.asset", renderer);
-            var volume = CreateVolumeProfile("Packages/com.amberscreen.modelreview/Rendering/ModelReview_Volume.asset");
+            var renderer = CreateOrReplaceRenderer(
+                "Packages/com.amberscreen.modelreview/Rendering/ModelReview_Renderer.asset");
+            CreateOrReplaceUrp(
+                "Packages/com.amberscreen.modelreview/Rendering/ModelReview_URP.asset", renderer);
+            CreateVolumeProfile("Packages/com.amberscreen.modelreview/Rendering/ModelReview_Volume.asset");
             CreateLightingSettings("Packages/com.amberscreen.modelreview/Rendering/ModelReview_Lighting.lighting");
 
-            var clay = CreateLitMat("Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Clay.mat",
+            CreateLitMat("Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Clay.mat",
                 new Color(0.5f, 0.5f, 0.5f), 0.25f);
-            var floor = CreateLitMat("Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Floor.mat",
+            CreateLitMat("Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Floor.mat",
                 new Color(0.42f, 0.42f, 0.42f), 0.1f);
-            var capsule = CreateLitMat("Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Capsule.mat",
+            CreateLitMat("Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Capsule.mat",
                 new Color(0.6f, 0.6f, 0.6f), 0.2f);
-            var wire = CreateShaderMat("Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_ClayWire.mat",
+            CreateShaderMat("Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_ClayWire.mat",
                 "AmberScreen/ModelReview/ClayWire");
-            var grid = CreateShaderMat("Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Grid.mat",
+            CreateShaderMat("Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Grid.mat",
                 "AmberScreen/ModelReview/Grid");
-            var sky = CreateSkyMat("Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Sky.mat");
-
-            BuildScene(
-                "Packages/com.amberscreen.modelreview/Scenes/ModelReview.unity",
-                urp, volume, clay, floor, capsule, wire, grid, sky);
+            CreateSkyMat("Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Sky.mat");
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -220,122 +215,6 @@ namespace AmberScreen.ModelReview.Editor
             if (mat.HasProperty("_Exposure")) mat.SetFloat("_Exposure", 0.9f);
             AssetDatabase.CreateAsset(mat, path);
             return mat;
-        }
-
-        static void BuildScene(
-            string scenePath,
-            UniversalRenderPipelineAsset urp,
-            VolumeProfile volumeProfile,
-            Material clay,
-            Material floorMat,
-            Material capsuleMat,
-            Material wireMat,
-            Material gridMat,
-            Material skyMat)
-        {
-            AssertPackagePath(scenePath);
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-
-            // Camera
-            var camGo = new GameObject("ReviewCamera");
-            camGo.tag = "MainCamera";
-            var cam = camGo.AddComponent<Camera>();
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0.32f, 0.32f, 0.32f);
-            cam.fieldOfView = ReviewOrbitCamera.DefaultFov;
-            cam.nearClipPlane = 0.05f;
-            cam.farClipPlane = 200f;
-            cam.allowMSAA = true;
-            var urpCam = camGo.AddComponent<UniversalAdditionalCameraData>();
-            urpCam.renderPostProcessing = false;
-            var orbit = camGo.AddComponent<ReviewOrbitCamera>();
-            orbit.BindCamera(cam);
-
-            // Lights
-            var key = CreateDirLight("KeyLight", new Vector3(50f, -30f, 0f), 1.1f, true);
-            var fill = CreateDirLight("FillLight", new Vector3(20f, 150f, 0f), 0.35f, false);
-            var rim = CreateDirLight("RimLight", new Vector3(25f, 200f, 0f), 0.6f, false);
-
-            // Floor
-            var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            floor.name = "Floor";
-            floor.transform.localScale = new Vector3(2f, 1f, 2f); // 20x20 m
-            Object.DestroyImmediate(floor.GetComponent<Collider>());
-            floor.GetComponent<MeshRenderer>().sharedMaterial = floorMat;
-
-            // Grid (off)
-            var grid = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            grid.name = "Grid";
-            grid.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-            grid.transform.position = new Vector3(0f, 0.001f, 0f);
-            grid.transform.localScale = new Vector3(20f, 20f, 1f);
-            Object.DestroyImmediate(grid.GetComponent<Collider>());
-            grid.GetComponent<MeshRenderer>().sharedMaterial = gridMat;
-            grid.SetActive(false);
-
-            // Capsule (off)
-            var capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            capsule.name = "ScaleCapsule";
-            capsule.transform.position = new Vector3(2f, 0.9f, 0f);
-            capsule.transform.localScale = new Vector3(0.35f, 0.9f, 0.35f); // ~1.8 m tall
-            Object.DestroyImmediate(capsule.GetComponent<Collider>());
-            capsule.GetComponent<MeshRenderer>().sharedMaterial = capsuleMat;
-            capsule.SetActive(false);
-
-            // Volume (disabled)
-            var volGo = new GameObject("Volume");
-            var volume = volGo.AddComponent<Volume>();
-            volume.isGlobal = true;
-            volume.profile = volumeProfile;
-            volume.enabled = false;
-
-            // Probe
-            var probeGo = new GameObject("ReflectionProbe");
-            probeGo.transform.position = new Vector3(0f, 2f, 0f);
-            var probe = probeGo.AddComponent<ReflectionProbe>();
-            probe.mode = ReflectionProbeMode.Realtime;
-            probe.refreshMode = ReflectionProbeRefreshMode.ViaScripting;
-            probe.size = new Vector3(20f, 20f, 20f);
-            probe.resolution = 256;
-            probe.intensity = 1f;
-
-            // Render settings
-            RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.62f, 0.62f, 0.62f);
-            RenderSettings.ambientEquatorColor = new Color(0.48f, 0.48f, 0.48f);
-            RenderSettings.ambientGroundColor = new Color(0.30f, 0.30f, 0.30f);
-            RenderSettings.skybox = skyMat;
-            RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
-
-            // Lighting settings asset
-            var lighting = AssetDatabase.LoadAssetAtPath<LightingSettings>(
-                "Packages/com.amberscreen.modelreview/Rendering/ModelReview_Lighting.lighting");
-            if (lighting != null)
-                Lightmapping.lightingSettings = lighting;
-
-            // Rig
-            var rigGo = new GameObject("ModelReviewRig");
-            var rig = rigGo.AddComponent<ModelReviewRig>();
-            rig.WireReferences(orbit, key, fill, rim, floor, grid, capsule, volume, probe, clay, wireMat, urp);
-
-            EditorSceneManager.SaveScene(scene, scenePath);
-        }
-
-        static Light CreateDirLight(string name, Vector3 euler, float intensity, bool shadows)
-        {
-            var go = new GameObject(name);
-            go.transform.rotation = Quaternion.Euler(euler);
-            var light = go.AddComponent<Light>();
-            light.type = LightType.Directional;
-            light.intensity = intensity;
-            light.colorTemperature = 6500f;
-            light.useColorTemperature = true;
-            light.shadows = shadows ? LightShadows.Soft : LightShadows.None;
-            var data = light.GetUniversalAdditionalLightData();
-            data.usePipelineSettings = true;
-            if (shadows)
-                data.softShadowQuality = SoftShadowQuality.High;
-            return light;
         }
 
         static void EnsureFolder(string assetPath)

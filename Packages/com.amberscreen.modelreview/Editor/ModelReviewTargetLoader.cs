@@ -7,8 +7,9 @@ using UnityEngine.SceneManagement;
 namespace AmberScreen.ModelReview.Editor
 {
     /// <summary>
-    /// Instantiates the review target under a DontSave marked root in the review scene.
-    /// Uses Object.Instantiate (no prefab link). Tracks and destroys all previews on every exit.
+    /// Instantiates the review target under a DontSave marked root in the temporary untitled
+    /// review scene (<see cref="ModelReviewSceneMarker"/>). Uses Object.Instantiate (no prefab link).
+    /// Tracks and destroys all previews on every exit.
     /// </summary>
     [InitializeOnLoad]
     public static class ModelReviewTargetLoader
@@ -42,10 +43,10 @@ namespace AmberScreen.ModelReview.Editor
                 if (ModelReviewPipelineGuard.IsReviewScene(scene))
                     DestroyAllPreviews();
             };
-            EditorSceneManager.activeSceneChangedInEditMode += (prev, next) =>
+            EditorSceneManager.activeSceneChangedInEditMode += (_, next) =>
             {
-                if (ModelReviewPipelineGuard.IsReviewScene(prev)
-                    && !ModelReviewPipelineGuard.IsReviewScene(next))
+                // Closing scene loses the marker; destroy whenever we leave the review scene.
+                if (!ModelReviewPipelineGuard.IsReviewScene(next))
                     DestroyAllPreviews();
             };
 

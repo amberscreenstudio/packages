@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -24,7 +25,7 @@ namespace AmberScreen.ModelReview.Tests
             var info = PackageInfo.FindForAssembly(typeof(ModelReviewRig).Assembly);
             Assert.That(info, Is.Not.Null);
             Assert.That(info.name, Is.EqualTo("com.amberscreen.modelreview"));
-            Assert.That(info.version, Is.EqualTo("0.1.1"));
+            Assert.That(info.version, Is.EqualTo("0.1.2"));
             Assert.That(info.dependencies, Has.Some.Matches<UnityEditor.PackageManager.DependencyInfo>(
                 d => d.name == "com.unity.render-pipelines.universal"));
             Assert.That(info.dependencies.Length, Is.EqualTo(1));
@@ -502,6 +503,174 @@ namespace AmberScreen.ModelReview.Tests
                 Assert.That(materialsRegex.IsMatch(text), Is.False, name + " uses .material(s)");
                 Assert.That(setRegex.IsMatch(text), Is.False, name + " uses material.Set");
             }
+        }
+
+        [Test]
+        public void OpenReviewScene_BuildsUntitledScene_WithoutLoadingAnySceneAsset()
+        {
+            var opened = new List<string>();
+            void OnOpening(string path, OpenSceneMode mode) => opened.Add(path ?? "");
+            EditorSceneManager.sceneOpening += OnOpening;
+            var originalPipe = GraphicsSettings.defaultRenderPipeline;
+            string gfxBefore = FileHash("ProjectSettings/GraphicsSettings.asset");
+            string qualBefore = FileHash("ProjectSettings/QualitySettings.asset");
+
+            try
+            {
+                EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                ModelReviewMenus.OpenReviewScene();
+
+                Assert.That(opened.Any(p => p.Replace('\\', '/').IndexOf("Packages/", StringComparison.Ordinal) >= 0),
+                    Is.False, "Opened a Packages/ scene path: " + string.Join(", ", opened));
+                var scene = SceneManager.GetActiveScene();
+                Assert.That(string.IsNullOrEmpty(scene.path), Is.True);
+                Assert.That(ModelReviewPipelineGuard.IsReviewSceneActive(), Is.True);
+
+                var rigs = Object.FindObjectsByType<ModelReviewRig>(FindObjectsSortMode.None);
+                Assert.That(rigs.Length, Is.EqualTo(1));
+                Assert.That(rigs[0].GetComponent<ModelReviewSceneMarker>(), Is.Not.Null);
+
+                var lights = Object.FindObjectsByType<Light>(FindObjectsSortMode.None)
+                    .Where(l => l.type == LightType.Directional).ToArray();
+                Assert.That(lights.Length, Is.EqualTo(3));
+                var key = lights.First(l => l.name == "KeyLight");
+                var fill = lights.First(l => l.name == "FillLight");
+                var rim = lights.First(l => l.name == "RimLight");
+                Assert.That(key.intensity, Is.EqualTo(1.1f).Within(0.001f));
+                Assert.That(fill.intensity, Is.EqualTo(0.35f).Within(0.001f));
+                Assert.That(rim.intensity, Is.EqualTo(0.6f).Within(0.001f));
+                Assert.That(Quaternion.Angle(key.transform.rotation, Quaternion.Euler(50f, -30f, 0f)), Is.LessThan(0.01f));
+                Assert.That(Quaternion.Angle(fill.transform.rotation, Quaternion.Euler(20f, 150f, 0f)), Is.LessThan(0.01f));
+                Assert.That(Quaternion.Angle(rim.transform.rotation, Quaternion.Euler(25f, 200f, 0f)), Is.LessThan(0.01f));
+                Assert.That(key.shadows, Is.EqualTo(LightShadows.Soft));
+                Assert.That(fill.shadows, Is.EqualTo(LightShadows.None));
+                Assert.That(rim.shadows, Is.EqualTo(LightShadows.None));
+
+                var volume = Object.FindAnyObjectByType<Volume>();
+                Assert.That(volume, Is.Not.Null);
+                Assert.That(volume.isGlobal, Is.True);
+                Assert.That(volume.enabled, Is.False);
+                var expectedProfile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(
+                    "Packages/com.amberscreen.modelreview/Rendering/ModelReview_Volume.asset");
+                Assert.That(volume.sharedProfile, Is.SameAs(expectedProfile));
+
+                var floor = GameObject.Find("Floor");
+                var grid = Resources.FindObjectsOfTypeAll<GameObject>()
+                    .First(g => g.name == "Grid" && !EditorUtility.IsPersistent(g));
+                var capsule = Resources.FindObjectsOfTypeAll<GameObject>()
+                    .First(g => g.name == "ScaleCapsule" && !EditorUtility.IsPersistent(g));
+                Assert.That(floor.activeInHierarchy, Is.True);
+                Assert.That(grid.activeSelf, Is.False);
+                Assert.That(capsule.activeSelf, Is.False);
+                Assert.That(floor.GetComponent<MeshRenderer>().sharedMaterial,
+                    Is.SameAs(AssetDatabase.LoadAssetAtPath<Material>(
+                        "Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Floor.mat")));
+                Assert.That(grid.GetComponent<MeshRenderer>().sharedMaterial,
+                    Is.SameAs(AssetDatabase.LoadAssetAtPath<Material>(
+                        "Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Grid.mat")));
+                Assert.That(capsule.GetComponent<MeshRenderer>().sharedMaterial,
+                    Is.SameAs(AssetDatabase.LoadAssetAtPath<Material>(
+                        "Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Capsule.mat")));
+
+                var probe = Object.FindAnyObjectByType<ReflectionProbe>();
+                Assert.That(probe, Is.Not.Null);
+                Assert.That(probe.mode, Is.EqualTo(ReflectionProbeMode.Realtime));
+                Assert.That(probe.refreshMode, Is.EqualTo(ReflectionProbeRefreshMode.ViaScripting));
+                Assert.That(probe.resolution, Is.EqualTo(256));
+                Assert.That(probe.size, Is.EqualTo(new Vector3(20f, 20f, 20f)));
+
+                var cam = Object.FindAnyObjectByType<Camera>();
+                Assert.That(cam.clearFlags, Is.EqualTo(CameraClearFlags.SolidColor));
+                Assert.That(cam.fieldOfView, Is.EqualTo(40f).Within(0.01f));
+                Assert.That(cam.GetComponent<UniversalAdditionalCameraData>().renderPostProcessing, Is.False);
+
+                Assert.That(RenderSettings.ambientMode, Is.EqualTo(AmbientMode.Trilight));
+                Assert.That(RenderSettings.skybox, Is.SameAs(AssetDatabase.LoadAssetAtPath<Material>(
+                    "Packages/com.amberscreen.modelreview/Rendering/Materials/ModelReview_Sky.mat")));
+                Assert.That(RenderSettings.fog, Is.False);
+
+                var expectedUrp = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(
+                    "Packages/com.amberscreen.modelreview/Rendering/ModelReview_URP.asset");
+                Assert.That(rigs[0].ReviewUrpAsset, Is.SameAs(expectedUrp));
+
+                if (scene.isDirty)
+                    Assert.Inconclusive("Untitled review scene stayed dirty after ClearSceneDirtiness (api may be missing)");
+                else
+                    Assert.That(scene.isDirty, Is.False);
+
+                ModelReviewMenus.CloseReviewScene();
+                Assert.That(
+                    Resources.FindObjectsOfTypeAll<ModelReviewSceneMarker>()
+                        .Where(m => m != null && !EditorUtility.IsPersistent(m)).Any(),
+                    Is.False);
+                Assert.That(
+                    Resources.FindObjectsOfTypeAll<GameObject>()
+                        .Where(g => g != null && !EditorUtility.IsPersistent(g)
+                                    && g.name == ModelReviewTargetLoader.TargetRootName).Any(),
+                    Is.False);
+                Assert.That(
+                    ReferenceEquals(GraphicsSettings.defaultRenderPipeline, originalPipe)
+                    || (originalPipe == null && GraphicsSettings.defaultRenderPipeline == null),
+                    Is.True);
+                Assert.That(FileHash("ProjectSettings/GraphicsSettings.asset"), Is.EqualTo(gfxBefore));
+                Assert.That(FileHash("ProjectSettings/QualitySettings.asset"), Is.EqualTo(qualBefore));
+            }
+            finally
+            {
+                EditorSceneManager.sceneOpening -= OnOpening;
+                ModelReviewTargetLoader.DestroyAllPreviews();
+                ModelReviewPipelineGuard.Restore();
+            }
+        }
+
+        [Test]
+        public void Package_NeverOpensSceneAssets()
+        {
+            var info = PackageInfo.FindForAssembly(typeof(ModelReviewRig).Assembly);
+            Assert.That(info, Is.Not.Null);
+            var openSceneLiteral = new Regex(@"OpenScene\s*\(\s*""", RegexOptions.Compiled);
+            foreach (var file in Directory.GetFiles(info.resolvedPath, "*.cs", SearchOption.AllDirectories))
+            {
+                string name = Path.GetFileName(file);
+                if (name == "ModelReviewTests.cs") continue;
+                string text = File.ReadAllText(file);
+                Assert.That(text.Contains("\".unity\""), Is.False, name + " contains .unity string literal");
+                Assert.That(text.Contains("Scenes/ModelReview"), Is.False, name + " references Scenes/ModelReview");
+                Assert.That(openSceneLiteral.IsMatch(text), Is.False, name + " OpenScene with string literal");
+            }
+        }
+
+        [Test]
+        public void IsReviewScene_RequiresMarker()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var go = new GameObject("RigOnly");
+            go.AddComponent<ModelReviewRig>();
+            Assert.That(ModelReviewPipelineGuard.IsReviewScene(scene), Is.False);
+            go.AddComponent<ModelReviewSceneMarker>();
+            Assert.That(ModelReviewPipelineGuard.IsReviewScene(scene), Is.True);
+            Object.DestroyImmediate(go);
+        }
+
+        [Test]
+        public void Zoom_StepIsProportionalToDistance()
+        {
+            Assert.That(ReviewOrbitCamera.ZoomedDistance(10f, 1f, 0.15f), Is.EqualTo(8.5f).Within(0.001f));
+            Assert.That(ReviewOrbitCamera.ZoomedDistance(1f, 1f, 0.15f), Is.EqualTo(0.85f).Within(0.001f));
+            Assert.That(ReviewOrbitCamera.ZoomedDistance(10f, 120f, 0.15f), Is.EqualTo(8.5f).Within(0.001f));
+
+            float start = 12f;
+            float inDist = ReviewOrbitCamera.ZoomedDistance(start, 1f, 0.15f);
+            float back = ReviewOrbitCamera.ZoomedDistance(inDist, -1f, 0.15f);
+            Assert.That(back, Is.EqualTo(start).Within(0.001f));
+
+            Assert.That(ReviewOrbitCamera.ZoomedDistance(0.1f, 1f, 0.15f), Is.EqualTo(0.15f).Within(0.001f));
+            Assert.That(ReviewOrbitCamera.ZoomedDistance(300f, -5f, 0.15f), Is.LessThanOrEqualTo(250f));
+
+            var go = new GameObject("ZoomCam");
+            var cam = go.AddComponent<ReviewOrbitCamera>();
+            Assert.That(cam.ZoomSpeed, Is.EqualTo(0.15f).Within(0.0001f));
+            Object.DestroyImmediate(go);
         }
 
         static void AssertAllSlotsAre(GameObject root, Material expected)
