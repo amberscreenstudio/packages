@@ -8,7 +8,7 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.modelreview
 
-- **0.1.2** pushed (not tagged); `modelreview/0.1.1` tagged on 170c50d (Open Review Scene fails from git installs). Git-install verified on pending. Awaiting Fabio's Sandbox check, then tag `modelreview/0.1.2`. 0.1.3 next: Snorkel & Sail review features (see notes).
+- **0.1.2** pushed (not tagged); `modelreview/0.1.1` tagged on 170c50d (Open Review Scene fails from git installs). Git-install verified on 8c16e404a12db2c2a21817703a07a1a1c730b235. Awaiting Fabio's Sandbox check, then tag `modelreview/0.1.2`. 0.1.3 next: Snorkel & Sail review features (see notes).
 
 ## com.amberscreen.phoneui
 

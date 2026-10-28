@@ -5,7 +5,7 @@ Newest entries first.
 ## 2026-10-28
 
 - **modelreview 0.1.2: Open Review Scene builds an untitled scene from package assets (works from git installs; marker-based detection, no save prompt), T tonemap profile fixed, scroll zoom proportional (`zoomSpeed`)**
-- Save: n/a
+- Save: n/a; git-install verified on `8c16e404a12db2c2a21817703a07a1a1c730b235` (`[MRGitVerify] PASS`)
 
 - **modelreview 0.1.1: one preview instance at a time, destroyed on every exit (no leak into other scenes), Clay/Wire cover every renderer incl. legacy/null/multi/skinned, Grid shader fixed, right-drag pans, plain-word legend**
 - Save: n/a
