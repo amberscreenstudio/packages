@@ -1,6 +1,6 @@
 {
   "name": "com.amberscreen.phoneui",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "displayName": "Amber Screen Phone UI",
   "description": "Shared portrait phone chrome: shell, messaging, status bar, image attachments. No game story references.",
   "unity": "6000.6",

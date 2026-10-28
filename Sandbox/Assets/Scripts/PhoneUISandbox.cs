@@ -22,13 +22,15 @@ namespace AmberScreen.Sandbox
         CancellationTokenSource _cts;
         Texture2D _testIconTex;
         Sprite _testIconSprite;
+        Texture2D _testImageTex;
 
         void Awake()
         {
             EnsureEventSystem();
 
             var contacts = new FakeContacts();
-            _chat = new FakeChatSource(contacts);
+            var testImage = MakeTestImage();
+            _chat = new FakeChatSource(contacts, testImage);
 
             var shellGo = new GameObject("PhoneShell", typeof(RectTransform), typeof(PhoneShell));
             var shell = shellGo.GetComponent<PhoneShell>();
@@ -51,10 +53,10 @@ namespace AmberScreen.Sandbox
 
             _timings = ScriptableObject.CreateInstance<LLMChatTimingSettings>();
             _timings.hideFlags = HideFlags.HideAndDontSave;
-            _timings.SeenDelaySeconds = new Vector2(0.15f, 0.2f);
-            _timings.TypingBaseSeconds = new Vector2(0.2f, 0.25f);
+            _timings.SeenDelaySeconds = new Vector2(0.8f, 1.0f);
+            _timings.TypingBaseSeconds = new Vector2(2.0f, 2.5f);
             _timings.TypingSecondsPerChar = 0f;
-            _timings.TypingClampSeconds = new Vector2(0.2f, 0.3f);
+            _timings.TypingClampSeconds = new Vector2(2.0f, 2.5f);
             _timings.TypingJitterSeconds = 0f;
 
             var runnerGo = new GameObject("LLMChatRunner");
@@ -72,6 +74,37 @@ namespace AmberScreen.Sandbox
             if (_timings != null) Destroy(_timings);
             if (_testIconSprite != null) Destroy(_testIconSprite);
             if (_testIconTex != null) Destroy(_testIconTex);
+            if (_testImageTex != null) Destroy(_testImageTex);
+        }
+
+        Texture2D MakeTestImage()
+        {
+            const int w = 540;
+            const int h = 960;
+            _testImageTex = new Texture2D(w, h, TextureFormat.RGBA32, true);
+            var mid = new Color32(160, 160, 160, 255);
+            var dark = new Color32(40, 40, 44, 255);
+            var line = new Color32(90, 90, 96, 255);
+            var fill = new Color32(70, 130, 180, 255);
+            for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                Color32 c = mid;
+                if (x < 6 || y < 6 || x >= w - 6 || y >= h - 6)
+                    c = dark;
+                else if (x % 60 == 0 || y % 60 == 0)
+                    c = line;
+                int dx = x - w / 2;
+                int dy = y - h / 2;
+                if (dx * dx + dy * dy <= 200 * 200)
+                    c = fill;
+                _testImageTex.SetPixel(x, y, c);
+            }
+            _testImageTex.Apply(true);
+            _testImageTex.filterMode = FilterMode.Trilinear;
+            _testImageTex.wrapMode = TextureWrapMode.Clamp;
+            _testImageTex.hideFlags = HideFlags.HideAndDontSave;
+            return _testImageTex;
         }
 
         Sprite MakeTestIcon()
@@ -223,10 +256,10 @@ namespace AmberScreen.Sandbox
             LLMChatRunner _runner;
             PhoneUISandbox _host;
 
-            public FakeChatSource(FakeContacts contacts)
+            public FakeChatSource(FakeContacts contacts, Texture2D testImage)
             {
                 _contacts = contacts;
-                Seed("full", "Full", "hey from Full");
+                SeedFull(testImage);
                 Seed("packed", "Packed", "packed avatar here");
                 Seed("noavatar", "NoAvatar", "no avatar thread");
             }
@@ -328,6 +361,60 @@ namespace AmberScreen.Sandbox
                     _runner.TypingStarted -= OnTyping;
                     _runner.Done -= OnDone;
                 }
+            }
+
+            void SeedFull(Texture2D testImage)
+            {
+                const string contactId = "full";
+                const string preview = "hey from Full";
+                _threads.Add(new ChatThreadInfo
+                {
+                    Id = contactId,
+                    Title = "Full",
+                    LastMessagePreview = preview,
+                    LastMessageUtc = DateTime.UtcNow.AddMinutes(-5),
+                    UnreadCount = 0,
+                    ParticipantIds = new[] { "player", contactId }
+                });
+                var hist = History(contactId);
+                for (int i = 0; i < 12; i++)
+                {
+                    bool fromPlayer = i % 2 == 1;
+                    float minutesAgo = 30f - i * (23f / 11f);
+                    hist.Add(new ChatMessage
+                    {
+                        Id = Guid.NewGuid().ToString("N"),
+                        ThreadId = contactId,
+                        SenderId = fromPlayer ? "player" : contactId,
+                        Text = fromPlayer ? "player filler " + i : "friend filler " + i,
+                        TimestampUtc = DateTime.UtcNow.AddMinutes(-minutesAgo),
+                        FromPlayer = fromPlayer,
+                        Receipt = fromPlayer ? MessageReceipt.Read : MessageReceipt.None
+                    });
+                }
+                hist.Add(new ChatMessage
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    ThreadId = contactId,
+                    SenderId = contactId,
+                    Text = "",
+                    TimestampUtc = DateTime.UtcNow.AddMinutes(-6),
+                    FromPlayer = false,
+                    Image = new ChatImageAttachment
+                    {
+                        FileName = "sandbox_9x16.png",
+                        Texture = testImage
+                    }
+                });
+                hist.Add(new ChatMessage
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    ThreadId = contactId,
+                    SenderId = contactId,
+                    Text = preview,
+                    TimestampUtc = DateTime.UtcNow.AddMinutes(-5),
+                    FromPlayer = false
+                });
             }
 
             void Seed(string contactId, string title, string preview)

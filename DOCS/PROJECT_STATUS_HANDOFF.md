@@ -12,11 +12,11 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.phoneui
 
-- **0.2.2** pushed (not tagged); `phoneui/0.2.1` tagged on 1051d97 and used by Twin Ticks 0.0.39. Awaiting Fabio's Sandbox check; Twin Ticks bumps in 0.0.40/0.0.41.
+- **0.2.3** pushed (not tagged); `phoneui/0.2.2` tagged on 29b7213 and used by Twin Ticks 0.0.40. Awaiting Fabio's Sandbox check; Twin Ticks bumps in 0.0.41.
 
 ## com.amberscreen.llmchat
 
-- **0.2.1** pushed (not tagged); `llmchat/0.2.0` tagged on 1051d97 and used by Twin Ticks 0.0.39. Awaiting Fabio's Sandbox check; Twin Ticks bumps in 0.0.40/0.0.41.
+- **0.2.1** tagged (`llmchat/0.2.1` on 29b7213), used by Twin Ticks 0.0.40.
 
 ## com.amberscreen.meters
 

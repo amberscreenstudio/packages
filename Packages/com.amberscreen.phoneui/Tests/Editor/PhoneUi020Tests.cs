@@ -119,7 +119,7 @@ namespace AmberScreen.PhoneUI.Tests
             var info = PackageInfo.FindForAssembly(typeof(PhoneUITheme).Assembly);
             Assert.That(info, Is.Not.Null);
             Assert.That(info.name, Is.EqualTo("com.amberscreen.phoneui"));
-            Assert.That(info.version, Is.EqualTo("0.2.2"));
+            Assert.That(info.version, Is.EqualTo("0.2.3"));
             Assert.That(info.dependencies, Has.Some.Matches<UnityEditor.PackageManager.DependencyInfo>(
                 d => d.name == "com.unity.inputsystem"));
             Assert.That(info.dependencies, Has.Some.Matches<UnityEditor.PackageManager.DependencyInfo>(
@@ -186,6 +186,199 @@ namespace AmberScreen.PhoneUI.Tests
             Assert.That(
                 UiFactory.CircleClipMaterial.GetFloat("_CornerRadius"),
                 Is.EqualTo(0.5f).Within(0.001f));
+        }
+
+        [Test]
+        public void ImageViewer_PreservesAttachmentAspect_Tall()
+        {
+            var canvasGo = new GameObject("C", typeof(RectTransform), typeof(Canvas));
+            var canvas = canvasGo.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var hostGo = new GameObject("Host", typeof(RectTransform));
+            var host = hostGo.GetComponent<RectTransform>();
+            host.SetParent(canvasGo.transform, false);
+            host.anchorMin = host.anchorMax = new Vector2(0.5f, 0.5f);
+            host.sizeDelta = new Vector2(360f, 640f);
+
+            var tex = new Texture2D(1080, 1920, TextureFormat.RGBA32, false);
+            tex.Apply();
+            var att = new ChatImageAttachment { FileName = "tall.png", Texture = tex, Aspect = 0.5625f };
+            var viewer = ImageMessageViewer.Show(host, att);
+            Canvas.ForceUpdateCanvases();
+
+            var img = FindDeep(viewer.transform, "Img");
+            var area = FindDeep(viewer.transform, "ImgArea");
+            Assert.That(img, Is.Not.Null);
+            Assert.That(area, Is.Not.Null);
+            var fit = img.GetComponent<AspectRatioFitter>();
+            Assert.That(fit, Is.Not.Null);
+            Assert.That(fit.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.FitInParent));
+            Assert.That(fit.aspectRatio, Is.EqualTo(0.5625f).Within(0.001f));
+
+            var imgRt = img.GetComponent<RectTransform>();
+            var areaRt = area.GetComponent<RectTransform>();
+            Assert.That(imgRt.rect.width / imgRt.rect.height, Is.EqualTo(0.5625f).Within(0.01f));
+            Assert.That(imgRt.rect.width, Is.LessThanOrEqualTo(areaRt.rect.width + 0.5f));
+            Assert.That(imgRt.rect.height, Is.LessThanOrEqualTo(areaRt.rect.height + 0.5f));
+
+            Object.DestroyImmediate(viewer);
+            Object.DestroyImmediate(tex);
+            Object.DestroyImmediate(canvasGo);
+        }
+
+        [Test]
+        public void ImageViewer_PreservesAttachmentAspect_Wide()
+        {
+            var canvasGo = new GameObject("C", typeof(RectTransform), typeof(Canvas));
+            var canvas = canvasGo.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var hostGo = new GameObject("Host", typeof(RectTransform));
+            var host = hostGo.GetComponent<RectTransform>();
+            host.SetParent(canvasGo.transform, false);
+            host.anchorMin = host.anchorMax = new Vector2(0.5f, 0.5f);
+            host.sizeDelta = new Vector2(360f, 640f);
+
+            var tex = new Texture2D(64, 32, TextureFormat.RGBA32, false);
+            tex.Apply();
+            var att = new ChatImageAttachment { FileName = "wide.png", Texture = tex, Aspect = 2f };
+            var viewer = ImageMessageViewer.Show(host, att);
+            Canvas.ForceUpdateCanvases();
+
+            var img = FindDeep(viewer.transform, "Img");
+            var area = FindDeep(viewer.transform, "ImgArea");
+            Assert.That(img, Is.Not.Null);
+            Assert.That(area, Is.Not.Null);
+            var fit = img.GetComponent<AspectRatioFitter>();
+            Assert.That(fit.aspectMode, Is.EqualTo(AspectRatioFitter.AspectMode.FitInParent));
+            Assert.That(fit.aspectRatio, Is.EqualTo(2f).Within(0.001f));
+
+            var imgRt = img.GetComponent<RectTransform>();
+            var areaRt = area.GetComponent<RectTransform>();
+            Assert.That(imgRt.rect.width / imgRt.rect.height, Is.EqualTo(2f).Within(0.01f));
+            Assert.That(imgRt.rect.width, Is.LessThanOrEqualTo(areaRt.rect.width + 0.5f));
+
+            Object.DestroyImmediate(viewer);
+            Object.DestroyImmediate(tex);
+            Object.DestroyImmediate(canvasGo);
+        }
+
+        [Test]
+        public void Thread_TypingAndSeen_AreLastChildrenOfScrollContent()
+        {
+            var canvasGo = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas));
+            var canvas = canvasGo.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvasGo.AddComponent<CanvasScaler>();
+            canvasGo.AddComponent<GraphicRaycaster>();
+
+            var shellGo = new GameObject("PhoneShell", typeof(RectTransform), typeof(PhoneShell));
+            shellGo.transform.SetParent(canvasGo.transform, false);
+            var shell = shellGo.GetComponent<PhoneShell>();
+            var contacts = new TestContacts();
+            var chat = new TestChat();
+            shell.Initialize(null, chat, contacts);
+            shell.OpenMessagesThread("t1");
+
+            var content = FindDeep(shellGo.transform, "ThreadScroll")?.Find("Content");
+            Assert.That(content, Is.Not.Null);
+            var typing = content.Find("Typing");
+            var seen = content.Find("Seen");
+            Assert.That(typing, Is.Not.Null);
+            Assert.That(seen, Is.Not.Null);
+            Assert.That(typing.parent, Is.SameAs(content));
+            Assert.That(seen.parent, Is.SameAs(content));
+            Assert.That(typing.gameObject.activeSelf, Is.False);
+            Assert.That(seen.gameObject.activeSelf, Is.False);
+
+            chat.RaiseSeen("t1", "friend");
+            chat.RaiseTypingStarted("t1", "friend");
+            Assert.That(typing.gameObject.activeSelf, Is.True);
+            Assert.That(seen.gameObject.activeSelf, Is.True);
+            Assert.That(content.GetChild(content.childCount - 1), Is.SameAs(typing));
+            Assert.That(content.GetChild(content.childCount - 2), Is.SameAs(seen));
+
+            var delivered = new ChatMessage
+            {
+                Id = "m2",
+                ThreadId = "t1",
+                SenderId = "friend",
+                Text = "later",
+                TimestampUtc = DateTime.UtcNow.AddSeconds(1),
+                FromPlayer = false
+            };
+            chat.Deliver(delivered);
+            Assert.That(content.GetChild(content.childCount - 1), Is.SameAs(typing));
+            var bubble = content.Find("Bubble_m2");
+            Assert.That(bubble, Is.Not.Null);
+            Assert.That(bubble.GetSiblingIndex(), Is.LessThan(seen.GetSiblingIndex()));
+
+            chat.RaiseTypingStopped("t1", "friend");
+            Assert.That(typing.gameObject.activeSelf, Is.False);
+
+            Object.DestroyImmediate(canvasGo);
+        }
+
+        [Test]
+        public void Thread_AutoScroll_OnlyWhenStuckToBottom()
+        {
+            var canvasGo = new GameObject("Canvas", typeof(RectTransform), typeof(Canvas));
+            var canvas = canvasGo.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvasGo.AddComponent<CanvasScaler>();
+            canvasGo.AddComponent<GraphicRaycaster>();
+
+            var shellGo = new GameObject("PhoneShell", typeof(RectTransform), typeof(PhoneShell));
+            shellGo.transform.SetParent(canvasGo.transform, false);
+            var shellRt = shellGo.GetComponent<RectTransform>();
+            shellRt.sizeDelta = new Vector2(360f, 640f);
+            var shell = shellGo.GetComponent<PhoneShell>();
+            var contacts = new TestContacts();
+            var chat = new TestChat();
+            chat.AddFiller("t1", 40);
+            shell.Initialize(null, chat, contacts);
+            shell.OpenMessagesThread("t1");
+            Canvas.ForceUpdateCanvases();
+
+            var scrollTf = FindDeep(shellGo.transform, "ThreadScroll");
+            Assert.That(scrollTf, Is.Not.Null);
+            var scroll = scrollTf.GetComponent<ScrollRect>();
+            Assert.That(scroll, Is.Not.Null);
+            Assume.That(scroll.content.rect.height > scroll.viewport.rect.height,
+                "Thread content must exceed viewport height for scroll tests");
+
+            scroll.verticalNormalizedPosition = 0f;
+            scroll.onValueChanged.Invoke(new Vector2(0f, 0f));
+            chat.Deliver(new ChatMessage
+            {
+                Id = "stuck_msg",
+                ThreadId = "t1",
+                SenderId = "friend",
+                Text = "stuck",
+                TimestampUtc = DateTime.UtcNow,
+                FromPlayer = false
+            });
+            Assert.That(scroll.verticalNormalizedPosition, Is.EqualTo(0f).Within(0.02f));
+
+            scroll.verticalNormalizedPosition = 1f;
+            scroll.onValueChanged.Invoke(new Vector2(0f, 1f));
+            chat.Deliver(new ChatMessage
+            {
+                Id = "up_msg",
+                ThreadId = "t1",
+                SenderId = "friend",
+                Text = "up",
+                TimestampUtc = DateTime.UtcNow.AddSeconds(1),
+                FromPlayer = false
+            });
+            Assert.That(scroll.verticalNormalizedPosition, Is.GreaterThan(0.9f));
+            var pill = FindDeep(shellGo.transform, "NewMessages");
+            Assert.That(pill, Is.Not.Null);
+            Assert.That(pill.gameObject.activeSelf, Is.True);
+
+            chat.RaiseTypingStarted("t1", "friend");
+            Assert.That(scroll.verticalNormalizedPosition, Is.GreaterThan(0.9f));
+
+            Object.DestroyImmediate(canvasGo);
         }
 
         [Test]
@@ -288,13 +481,51 @@ namespace AmberScreen.PhoneUI.Tests
             public void SendPlayerMessage(string threadId, string text) { }
             public void MarkThreadRead(string threadId) { }
             public void OpenMessageLink(ChatMessage message) { }
+
+            public void RaiseSeen(string threadId, string id) => Seen?.Invoke(threadId, id);
+            public void RaiseTypingStarted(string threadId, string id) => TypingStarted?.Invoke(threadId, id);
+            public void RaiseTypingStopped(string threadId, string id) => TypingStopped?.Invoke(threadId, id);
+
+            public void Deliver(ChatMessage m)
+            {
+                if (!_history.TryGetValue(m.ThreadId, out var list))
+                {
+                    list = new List<ChatMessage>();
+                    _history[m.ThreadId] = list;
+                }
+                list.Add(m);
+                MessageDelivered?.Invoke(m);
+            }
+
+            public void AddFiller(string threadId, int count)
+            {
+                if (!_history.TryGetValue(threadId, out var list))
+                {
+                    list = new List<ChatMessage>();
+                    _history[threadId] = list;
+                }
+                var now = DateTime.UtcNow;
+                for (int i = 0; i < count; i++)
+                {
+                    list.Add(new ChatMessage
+                    {
+                        Id = "filler_" + i,
+                        ThreadId = threadId,
+                        SenderId = "friend",
+                        Text = "filler " + i,
+                        TimestampUtc = now.AddMinutes(-(count - i)),
+                        FromPlayer = false
+                    });
+                }
+            }
+
 #pragma warning disable CS0067
             public event Action ThreadsChanged;
+#pragma warning restore CS0067
             public event Action<string, string> Seen;
             public event Action<string, string> TypingStarted;
             public event Action<string, string> TypingStopped;
             public event Action<ChatMessage> MessageDelivered;
-#pragma warning restore CS0067
         }
     }
 }

@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.3] - 2026-10-28
+
+### Fixed
+
+- The full-screen image viewer keeps the image's aspect (AspectRatioFitter FitInParent inside a padded `ImgArea`, letterboxed).
+- "Seen" and "typing…" are the last rows of the thread's scroll content, so they scroll with the messages, are hidden when empty, and the viewport no longer has a 28 px gutter.
+
+### Changed
+
+- Typing and seen auto-scroll only when the view is already at the bottom. `ScrollToBottom` rebuilds the layout before scrolling. Opening a thread always lands at the bottom.
+
 ## [0.2.2] - 2026-10-27
 
 ### Fixed

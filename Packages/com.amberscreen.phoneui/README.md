@@ -1,6 +1,6 @@
 # AmberScreen.PhoneUI (`com.amberscreen.phoneui`)
 
-**Version: 0.2.2**
+**Version: 0.2.3**
 
 Shared phone chrome for portrait messaging games. Portrait stage, status bar, home, apps, nav. Namespace `AmberScreen.PhoneUI`.
 
@@ -9,7 +9,7 @@ Layout: `Runtime/` (asmdef `AmberScreen.PhoneUI`), `Tests/Editor/`, `package.jso
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.phoneui#phoneui/0.2.2
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.phoneui#phoneui/0.2.3
 ```
 
 Owner: Twin Ticks. Changes go through Packages.
@@ -57,7 +57,7 @@ Draw order inside the phone screen: home → registered screen overlays (e.g. lo
 
 `ChatMessage.Image` is an optional `ChatImageAttachment` (`Texture2D` / `Sprite`, file name, aspect). MessagingApp draws a framed thumbnail bubble with the file name; tap opens `ImageMessageViewer` full-screen under `ScreenContentRoot` with `listenForEscape: false` so MessagingApp owns Back (one Esc closes the viewer only; a second Esc returns to the thread list). Standalone viewers can leave `listenForEscape` true. If the host DevConsole consumes Esc first, `PhoneInputGate.IgnoreBack` keeps the viewer open for that frame.
 
-**Packed sprites:** set `Sprite` on the attachment; thumbnails and the viewer apply `ChatImageAttachment.SpriteUvRect` so atlas sub-rects display correctly. Full-texture sprites and raw `Texture2D` use UV (0,0)–(1,1).
+**Packed sprites:** set `Sprite` on the attachment; thumbnails and the viewer apply `ChatImageAttachment.SpriteUvRect` so atlas sub-rects display correctly. Full-texture sprites and raw `Texture2D` use UV (0,0)–(1,1). The viewer letterboxes the image at `ResolvedAspect` (0.2.3).
 
 No Gallery save yet.
 

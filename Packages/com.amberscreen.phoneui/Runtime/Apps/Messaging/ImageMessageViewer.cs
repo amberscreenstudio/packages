@@ -7,9 +7,10 @@ namespace AmberScreen.PhoneUI
 {
     /// <summary>
     /// Full-screen image viewer inside the phone <see cref="PhoneShell.ScreenContentRoot"/>.
-    /// PhoneUI 0.2.0. Back/Escape: when <paramref name="listenForEscape"/> is true the closer
-    /// polls Esc; when false (MessagingApp owns the viewer) only host Back closes it.
-    /// Order: DevConsole Esc first, then viewer, then thread list.
+    /// The image keeps its aspect (<see cref="ChatImageAttachment.ResolvedAspect"/>) and is
+    /// letterboxed inside the frame. Back/Escape: when <paramref name="listenForEscape"/> is
+    /// true the closer polls Esc; when false (MessagingApp owns the viewer) only host Back
+    /// closes it. Order: DevConsole Esc first, then viewer, then thread list.
     /// </summary>
     public static class ImageMessageViewer
     {
@@ -45,12 +46,24 @@ namespace AmberScreen.PhoneUI
             frameRt.offsetMin = Vector2.zero;
             frameRt.offsetMax = Vector2.zero;
 
+            var areaGo = new GameObject("ImgArea", typeof(RectTransform));
+            var areaRt = areaGo.GetComponent<RectTransform>();
+            areaRt.SetParent(frameRt, false);
+            UiFactory.Stretch(areaRt);
+            areaRt.offsetMin = new Vector2(8f, 8f);
+            areaRt.offsetMax = new Vector2(-8f, -8f);
+
             var imgGo = new GameObject("Img", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
             var imgRt = imgGo.GetComponent<RectTransform>();
-            imgRt.SetParent(frameRt, false);
+            imgRt.SetParent(areaRt, false);
             UiFactory.Stretch(imgRt);
-            imgRt.offsetMin = new Vector2(8f, 8f);
-            imgRt.offsetMax = new Vector2(-8f, -8f);
+            // Disable while configuring: in Edit Mode, AspectMode.None syncs aspectRatio from
+            // the current rect on SetDirty, which would wipe ResolvedAspect before FitInParent.
+            var fit = imgGo.AddComponent<AspectRatioFitter>();
+            fit.enabled = false;
+            fit.aspectRatio = Mathf.Max(0.01f, image.ResolvedAspect);
+            fit.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            fit.enabled = true;
             var raw = imgGo.GetComponent<RawImage>();
             if (image.Sprite != null)
             {

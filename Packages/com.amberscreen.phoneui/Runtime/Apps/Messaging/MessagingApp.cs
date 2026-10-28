@@ -136,8 +136,8 @@ namespace AmberScreen.PhoneUI
             _openThreadId = threadId;
             _chat?.MarkThreadRead(threadId);
             ShowThread();
-            RebuildThreadMessages();
             MarkStickBottom();
+            RebuildThreadMessages();
             RefreshThreadList();
         }
 
@@ -256,7 +256,7 @@ namespace AmberScreen.PhoneUI
             var srt = scrollGo.GetComponent<RectTransform>();
             srt.SetParent(_threadPage, false);
             UiFactory.Stretch(srt);
-            srt.offsetMin = new Vector2(0f, PhoneDp.Composer + 28f);
+            srt.offsetMin = new Vector2(0f, PhoneDp.Composer + 4f);
             srt.offsetMax = new Vector2(0f, -36f);
             scrollGo.GetComponent<Image>().color = PhoneUITheme.Active.ScrollViewportTint;
 
@@ -283,31 +283,31 @@ namespace AmberScreen.PhoneUI
             _threadScroll.vertical = true;
             _threadScroll.onValueChanged.AddListener(OnThreadScroll);
 
-            _typingLabel = UiFactory.Label("Typing", _threadPage, "", PhoneDp.TimestampText);
+            _typingLabel = UiFactory.Label("Typing", _threadContent, "", PhoneDp.TimestampText);
             _typingLabel.color = PhoneUITheme.Active.TypingLabel;
-            var tyr = _typingLabel.rectTransform;
-            tyr.anchorMin = new Vector2(0f, 0f);
-            tyr.anchorMax = new Vector2(1f, 0f);
-            tyr.pivot = new Vector2(0.5f, 0f);
-            tyr.sizeDelta = new Vector2(0f, 16f);
-            tyr.anchoredPosition = new Vector2(0f, PhoneDp.Composer + 4f);
             _typingLabel.alignment = TextAlignmentOptions.Left;
+            _typingLabel.raycastTarget = false;
             var tipPad = _typingLabel.margin;
             tipPad.x = 12f;
             _typingLabel.margin = tipPad;
+            var typingLe = _typingLabel.gameObject.AddComponent<LayoutElement>();
+            typingLe.minHeight = 16f;
+            typingLe.preferredHeight = 16f;
+            typingLe.flexibleWidth = 1f;
+            _typingLabel.gameObject.SetActive(false);
 
-            _seenLabel = UiFactory.Label("Seen", _threadPage, "", PhoneDp.TimestampText);
+            _seenLabel = UiFactory.Label("Seen", _threadContent, "", PhoneDp.TimestampText);
             _seenLabel.color = PhoneUITheme.Active.SeenLabel;
-            var srSeen = _seenLabel.rectTransform;
-            srSeen.anchorMin = new Vector2(0f, 0f);
-            srSeen.anchorMax = new Vector2(1f, 0f);
-            srSeen.pivot = new Vector2(1f, 0f);
-            srSeen.sizeDelta = new Vector2(0f, 14f);
-            srSeen.anchoredPosition = new Vector2(0f, PhoneDp.Composer + 18f);
             _seenLabel.alignment = TextAlignmentOptions.Right;
+            _seenLabel.raycastTarget = false;
             var sm = _seenLabel.margin;
             sm.z = 12f;
             _seenLabel.margin = sm;
+            var seenLe = _seenLabel.gameObject.AddComponent<LayoutElement>();
+            seenLe.minHeight = 14f;
+            seenLe.preferredHeight = 14f;
+            seenLe.flexibleWidth = 1f;
+            _seenLabel.gameObject.SetActive(false);
 
             var composer = UiFactory.Panel("Composer", _threadPage, PhoneUITheme.Active.ComposerBg);
             UiFactory.SetBottomBar(composer, PhoneDp.Composer);
@@ -377,6 +377,8 @@ namespace AmberScreen.PhoneUI
                 _newMessagesPill.gameObject.SetActive(false);
             });
             pill.gameObject.SetActive(false);
+
+            PinStatusRowsLast();
         }
 
         void ShowList()
@@ -398,7 +400,7 @@ namespace AmberScreen.PhoneUI
             if (_threadTitle != null)
                 _threadTitle.text = t?.Title ?? "Chat";
             RefreshThreadHeaderAvatar(t);
-            if (_seenLabel != null) _seenLabel.text = "";
+            SetStatusText(_seenLabel, "");
             UpdateTypingLabel();
         }
 
@@ -575,6 +577,20 @@ namespace AmberScreen.PhoneUI
             AddBubble(msg);
             _renderedMessageIds.Add(msg.Id);
             if (msg.FromPlayer) _lastPlayerMessageId = msg.Id;
+            PinStatusRowsLast();
+        }
+
+        void PinStatusRowsLast()
+        {
+            if (_seenLabel != null) _seenLabel.transform.SetAsLastSibling();
+            if (_typingLabel != null) _typingLabel.transform.SetAsLastSibling();
+        }
+
+        static void SetStatusText(TextMeshProUGUI l, string text)
+        {
+            if (l == null) return;
+            l.text = text ?? "";
+            l.gameObject.SetActive(!string.IsNullOrEmpty(l.text));
         }
 
         static DateTime TruncateMinute(DateTime utc) =>
@@ -823,7 +839,7 @@ namespace AmberScreen.PhoneUI
             _chat.SendPlayerMessage(_openThreadId, text);
             _stickToBottom = true;
             if (_newMessagesPill != null) _newMessagesPill.gameObject.SetActive(false);
-            if (_seenLabel != null) _seenLabel.text = "";
+            SetStatusText(_seenLabel, "");
         }
 
         void OnThreadsChanged()
@@ -860,7 +876,8 @@ namespace AmberScreen.PhoneUI
             if (!IsAlive || _seenLabel == null) return;
             if (threadId != _openThreadId) return;
             var c = _contacts?.GetContact(contactId);
-            _seenLabel.text = "Seen by " + (c?.DisplayName ?? contactId);
+            SetStatusText(_seenLabel, "Seen by " + (c?.DisplayName ?? contactId));
+            if (IsShowingThread(threadId) && _stickToBottom) ScrollToBottom();
         }
 
         void OnTypingStarted(string threadId, string contactId)
@@ -869,6 +886,7 @@ namespace AmberScreen.PhoneUI
             if (threadId != _openThreadId) return;
             _typingIds.Add(contactId);
             UpdateTypingLabel();
+            if (IsShowingThread(threadId) && _stickToBottom) ScrollToBottom();
         }
 
         void OnTypingStopped(string threadId, string contactId)
@@ -877,6 +895,7 @@ namespace AmberScreen.PhoneUI
             if (threadId != _openThreadId) return;
             _typingIds.Remove(contactId);
             UpdateTypingLabel();
+            if (IsShowingThread(threadId) && _stickToBottom) ScrollToBottom();
         }
 
         void OnMessageDelivered(ChatMessage msg)
@@ -901,14 +920,14 @@ namespace AmberScreen.PhoneUI
             if (_typingLabel == null) return;
             if (_typingIds.Count == 0)
             {
-                _typingLabel.text = "";
+                SetStatusText(_typingLabel, "");
                 return;
             }
             var names = _typingIds
                 .Select(id => _contacts?.GetContact(id)?.DisplayName ?? id)
                 .ToList();
             string who = names.Count == 1 ? names[0] : string.Join(" & ", names);
-            _typingLabel.text = who + " typing…";
+            SetStatusText(_typingLabel, who + " typing…");
         }
 
         void OnThreadScroll(Vector2 _)
@@ -925,6 +944,7 @@ namespace AmberScreen.PhoneUI
         {
             if (!IsAlive || _threadScroll == null) return;
             Canvas.ForceUpdateCanvases();
+            if (_threadContent != null) LayoutRebuilder.ForceRebuildLayoutImmediate(_threadContent);
             _threadScroll.verticalNormalizedPosition = 0f;
         }
 

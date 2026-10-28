@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-10-28
 
+- **phoneui 0.2.3: image viewer keeps aspect (AspectRatioFitter FitInParent), Seen/typing are last rows of the thread scroll content (scroll with messages, auto-scroll only when stuck), OpenThread lands at bottom; Sandbox 9:16 image + filler thread**
+- Save: n/a
+
 - **modelreview 0.1.2: Open Review Scene builds an untitled scene from package assets (works from git installs; marker-based detection, no save prompt), T tonemap profile fixed, scroll zoom proportional (`zoomSpeed`)**
 - Save: n/a; git-install verified on `8c16e404a12db2c2a21817703a07a1a1c730b235` (`[MRGitVerify] PASS`)
 
