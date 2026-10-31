@@ -17,6 +17,19 @@ namespace AmberScreen.ModelReview.Editor
         static bool s_LoggedClearMissing;
         static bool s_DirtiedHook;
 
+        /// <summary>
+        /// Set by EditMode tests so Open/Close never call SaveCurrentModifiedScenesIfUserWantsTo
+        /// and always clear dirtiness before replacing scenes (no modal dialogs under Test Runner).
+        /// </summary>
+        internal static bool SuppressSceneSavePrompts { get; set; }
+
+        /// <summary>Discard dirty flags on untitled (no path) scenes — used before UTF SaveModifiedSceneTask.</summary>
+        public static void DiscardUntitledSceneDirtiness() =>
+            ModelReviewTestRunnerNoSaveDialog.ClearUntitledSceneDirtiness();
+
+        /// <summary>Increments when the interactive save prompt path would run (tests assert this stays put when suppressed).</summary>
+        internal static int SavePromptPathEntries { get; private set; }
+
         [MenuItem("Tools/Amber Screen/Model Review/Open Review Scene")]
         public static void OpenReviewScene()
         {
@@ -31,9 +44,7 @@ namespace AmberScreen.ModelReview.Editor
                 return;
             }
 
-            // Batch/CI has no save dialog; a cancel would leave tests unable to open the scene.
-            if (!Application.isBatchMode
-                && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            if (!PrepareToReplaceScenes())
                 return;
 
             var active = EditorSceneManager.GetActiveScene();
@@ -80,11 +91,28 @@ namespace AmberScreen.ModelReview.Editor
             if (wasReview && review.IsValid())
                 ModelReviewSceneBuilder.TryClearSceneDirtiness(review, out _);
 
+            // Tests / batch: clear every loaded scene so OpenScene/NewScene cannot show a modal.
+            if (SuppressSceneSavePrompts || Application.isBatchMode)
+                ModelReviewSceneBuilder.ClearDirtinessOnAllOpenScenes();
+
             string prev = SessionState.GetString(SessionPrevScene, "");
             if (!string.IsNullOrEmpty(prev) && File.Exists(prev))
                 EditorSceneManager.OpenScene(prev, OpenSceneMode.Single);
             else
                 EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+        }
+
+        /// <returns>False if the user cancelled the save dialog (interactive menu only).</returns>
+        static bool PrepareToReplaceScenes()
+        {
+            if (SuppressSceneSavePrompts || Application.isBatchMode)
+            {
+                ModelReviewSceneBuilder.ClearDirtinessOnAllOpenScenes();
+                return true;
+            }
+
+            SavePromptPathEntries++;
+            return EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
         }
 
         [MenuItem("Tools/Amber Screen/Model Review/Browse Whole Project")]

@@ -8,7 +8,7 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.modelreview
 
-- **0.1.5** on main (untagged); `modelreview/0.1.2` tagged on 8c16e404. 0.1.5: don’t close Project from menus; no Untitled save on Close after browse/tone.
+- **0.1.6** on main (untagged); `modelreview/0.1.2` tagged on 8c16e404. 0.1.6: no Untitled save modal under interactive Test Runner.
 
 ## com.amberscreen.phoneui
 

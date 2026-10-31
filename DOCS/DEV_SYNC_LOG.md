@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-11-01
 
+- **modelreview 0.1.6: EditMode tests never show Untitled save modal (SuppressSceneSavePrompts; clear dirty before NewScene; skip SaveCurrent… under tests)**
+- Save: n/a
+
 - **modelreview 0.1.5: menus never close Project window; sync clear Untitled dirtiness after Next/tone so Close Review Scene does not prompt save**
 - Save: n/a
 

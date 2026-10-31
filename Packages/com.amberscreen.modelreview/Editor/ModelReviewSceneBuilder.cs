@@ -178,6 +178,7 @@ namespace AmberScreen.ModelReview.Editor
         internal static bool TryClearSceneDirtiness(Scene scene, out bool foundApi)
         {
             foundApi = false;
+            if (!scene.IsValid()) return false;
             var mi = typeof(EditorSceneManager).GetMethod(
                 "ClearSceneDirtiness",
                 BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public,
@@ -189,6 +190,17 @@ namespace AmberScreen.ModelReview.Editor
             foundApi = true;
             mi.Invoke(null, new object[] { scene });
             return true;
+        }
+
+        /// <summary>Clear dirty on every loaded scene so NewScene/OpenScene will not show a save dialog.</summary>
+        internal static void ClearDirtinessOnAllOpenScenes()
+        {
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                if (scene.IsValid() && scene.isDirty)
+                    TryClearSceneDirtiness(scene, out _);
+            }
         }
 
         static T Load<T>(string relative) where T : Object =>

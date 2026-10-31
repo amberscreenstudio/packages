@@ -23,7 +23,8 @@ namespace AmberScreen.ModelReview.Tests
         [SetUp]
         public void SetUp()
         {
-            // Interactive Test Runner only — menus never touch Editor windows.
+            // Before any scene replace: suppress save modals and clear dirty Untitled (Test Runner).
+            ModelReviewTestScene.BeginSuppressSavePrompts();
             ModelReviewTestEditorWindows.CloseProjectBrowsers();
             ResetReviewEditorState();
 
@@ -45,15 +46,18 @@ namespace AmberScreen.ModelReview.Tests
             _createdPaths.Clear();
             AssetDatabase.Refresh();
             ModelReviewTestEditorWindows.EnsureProjectBrowserOpen();
+            ModelReviewTestScene.EndSuppressSavePrompts();
         }
 
         static void ResetReviewEditorState()
         {
+            ModelReviewTestScene.ClearDirtinessOnAllOpenScenes();
             ModelReviewTargetLoader.DestroyAllPreviews();
             if (ModelReviewPipelineGuard.IsReviewSceneActive())
                 ModelReviewMenus.CloseReviewScene();
             ModelReviewPipelineGuard.Restore();
             ModelReviewBrowser.ClearSessionState();
+            ModelReviewTestScene.ClearDirtinessOnAllOpenScenes();
         }
 
         [Test]
@@ -179,8 +183,7 @@ namespace AmberScreen.ModelReview.Tests
             var volAsset = AssetDatabase.LoadAssetAtPath<VolumeProfile>(volPath);
             Assert.That(EditorUtility.IsDirty(volAsset), Is.False);
 
-            if (Application.isBatchMode)
-                EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            ModelReviewTestScene.NewEmptySceneNoPrompt();
             ModelReviewMenus.OpenReviewScene();
             Assert.That(ModelReviewPipelineGuard.IsReviewSceneActive(), Is.True);
             var rig = Object.FindAnyObjectByType<ModelReviewRig>();
@@ -323,13 +326,29 @@ namespace AmberScreen.ModelReview.Tests
 
         void OpenReviewWithList(List<string> guids, int index)
         {
-            // Batch: empty scene avoids a cancelled Open. Project browsers closed in SetUp.
-            if (Application.isBatchMode)
-                EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            ModelReviewTestScene.NewEmptySceneNoPrompt();
             ModelReviewBrowser.SetList(guids, index);
             ModelReviewMenus.OpenReviewScene();
             Assert.That(ModelReviewPipelineGuard.IsReviewSceneActive(), Is.True,
                 "OpenReviewScene did not activate a marker review scene");
+        }
+
+        [Test]
+        public void OpenReviewScene_DirtyUntitled_DoesNotEnterSavePromptPath()
+        {
+            var scene = ModelReviewTestScene.NewEmptySceneNoPrompt();
+            new GameObject("DirtyUntitled");
+            EditorSceneManager.MarkSceneDirty(scene);
+            Assert.That(SceneManager.GetActiveScene().isDirty, Is.True);
+
+            int before = ModelReviewMenus.SavePromptPathEntries;
+            ModelReviewMenus.OpenReviewScene();
+            Assert.That(ModelReviewMenus.SavePromptPathEntries, Is.EqualTo(before),
+                "OpenReviewScene must not call SaveCurrentModifiedScenesIfUserWantsTo under tests");
+            Assert.That(ModelReviewPipelineGuard.IsReviewSceneActive(), Is.True);
+            Assert.That(SceneManager.GetActiveScene().isDirty, Is.False);
+
+            ModelReviewMenus.CloseReviewScene();
         }
 
         string CreatePrefab(string path, PrimitiveType type)

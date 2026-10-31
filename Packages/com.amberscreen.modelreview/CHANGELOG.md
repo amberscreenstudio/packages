@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.6] - 2026-11-01
+
+### Fixed
+
+- EditMode Test Runner no longer shows “save Untitled” modals. UTF’s first task (`SaveModifiedSceneTask`) calls `SaveCurrentModifiedScenesIfUserWantsTo` before any `[SetUp]`; while the Test Runner window is open (or under `-runTests`) we clear dirtiness on untitled scenes so that task finds nothing to save. Tests also set `SuppressSceneSavePrompts` and clear before NewScene/Open/Close so package Open/Close never prompts under Run All.
+
 ## [0.1.5] - 2026-11-01
 
 ### Fixed

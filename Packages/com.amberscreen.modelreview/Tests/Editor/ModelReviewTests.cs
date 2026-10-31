@@ -22,6 +22,7 @@ namespace AmberScreen.ModelReview.Tests
         [SetUp]
         public void SetUp()
         {
+            ModelReviewTestScene.BeginSuppressSavePrompts();
             ModelReviewTestEditorWindows.CloseProjectBrowsers();
             ResetReviewEditorState();
         }
@@ -31,15 +32,18 @@ namespace AmberScreen.ModelReview.Tests
         {
             ResetReviewEditorState();
             ModelReviewTestEditorWindows.EnsureProjectBrowserOpen();
+            ModelReviewTestScene.EndSuppressSavePrompts();
         }
 
         static void ResetReviewEditorState()
         {
+            ModelReviewTestScene.ClearDirtinessOnAllOpenScenes();
             ModelReviewTargetLoader.DestroyAllPreviews();
             if (ModelReviewPipelineGuard.IsReviewSceneActive())
                 ModelReviewMenus.CloseReviewScene();
             ModelReviewPipelineGuard.Restore();
             ModelReviewBrowser.ClearSessionState();
+            ModelReviewTestScene.ClearDirtinessOnAllOpenScenes();
         }
 
         [Test]
@@ -48,7 +52,7 @@ namespace AmberScreen.ModelReview.Tests
             var info = PackageInfo.FindForAssembly(typeof(ModelReviewRig).Assembly);
             Assert.That(info, Is.Not.Null);
             Assert.That(info.name, Is.EqualTo("com.amberscreen.modelreview"));
-            Assert.That(info.version, Is.EqualTo("0.1.5"));
+            Assert.That(info.version, Is.EqualTo("0.1.6"));
             Assert.That(info.dependencies, Has.Some.Matches<UnityEditor.PackageManager.DependencyInfo>(
                 d => d.name == "com.unity.render-pipelines.universal"));
             Assert.That(info.dependencies.Length, Is.EqualTo(1));
@@ -288,7 +292,7 @@ namespace AmberScreen.ModelReview.Tests
             var before = hashPaths.Select(FileHash).ToArray();
             var asset = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
             Assume.That(asset, Is.Not.Null);
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var scene = ModelReviewTestScene.NewEmptySceneNoPrompt();
             var rig2Go = new GameObject("Rig2");
             var rig2 = rig2Go.AddComponent<ModelReviewRig>();
             rig2.WireReferences(null, null, null, null, null, null, null, null, null, clay, wire, null);
@@ -312,7 +316,7 @@ namespace AmberScreen.ModelReview.Tests
         [Test]
         public void Loader_TryReloadTwice_LeavesExactlyOnePreview()
         {
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var scene = ModelReviewTestScene.NewEmptySceneNoPrompt();
             var lit = Shader.Find("Universal Render Pipeline/Lit");
             var clay = new Material(lit);
             var wire = new Material(lit);
@@ -367,7 +371,7 @@ namespace AmberScreen.ModelReview.Tests
         public void OpenReviewClose_LeavesNoPreviewObjects()
         {
             // Drive the same destroy/spawn path without opening the package scene (heavy in batch).
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var scene = ModelReviewTestScene.NewEmptySceneNoPrompt();
             var lit = Shader.Find("Universal Render Pipeline/Lit");
             var clay = new Material(lit);
             var wire = new Material(lit);
@@ -474,7 +478,7 @@ namespace AmberScreen.ModelReview.Tests
         [Test]
         public void LoadTarget_DoesNotDirtyScene()
         {
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var scene = ModelReviewTestScene.NewEmptySceneNoPrompt();
             Assert.That(scene.isDirty, Is.False);
 
             var lit = Shader.Find("Universal Render Pipeline/Lit");
@@ -542,8 +546,7 @@ namespace AmberScreen.ModelReview.Tests
 
             try
             {
-                if (Application.isBatchMode)
-                    EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                ModelReviewTestScene.NewEmptySceneNoPrompt();
                 ModelReviewMenus.OpenReviewScene();
 
                 Assert.That(opened.Any(p => p.Replace('\\', '/').IndexOf("Packages/", StringComparison.Ordinal) >= 0),
@@ -669,7 +672,7 @@ namespace AmberScreen.ModelReview.Tests
         [Test]
         public void IsReviewScene_RequiresMarker()
         {
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var scene = ModelReviewTestScene.NewEmptySceneNoPrompt();
             var go = new GameObject("RigOnly");
             go.AddComponent<ModelReviewRig>();
             Assert.That(ModelReviewPipelineGuard.IsReviewScene(scene), Is.False);
