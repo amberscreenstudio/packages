@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.3] - 2026-10-31
+
+### Added
+
+- Asset browser: gather prefabs/models under Assets (folder or whole project), one target at a time with wrap-around Next/Previous, multi-selection Review, on-screen list with search, Left/Right / `[` `]` / shoulders.
+- Tone cycle Off → Neutral → ACES (T), via an in-memory Volume profile clone (package volume asset untouched). ACES adds a light contrast/exposure bump so it reads clearly in the grey studio.
+- Legend readouts: size in metres, triangles (including skinned meshes), up-axis and scale warnings; plain-word controls.
+- Package-owned gamepad actions (orbit, pan, zoom, reset, frame, view mode, interior, legend, previous/next).
+- Waterline plane (W outside interior mode) with draft readout.
+- Material Report WARN when `ModelImporter.materialImportMode` is None.
+- Camera exterior pitch clamp (-15..75), zoom limits scaled to bounds, frame padding 1.35.
+
+### Changed
+
+- Opening a browse list always lands on one `ModelReview_Target`; swaps restore materials before destroying the previous preview.
+
 ## [0.1.2] - 2026-10-28
 
 ### Fixed

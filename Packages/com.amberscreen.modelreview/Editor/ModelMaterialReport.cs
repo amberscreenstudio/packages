@@ -170,6 +170,15 @@ namespace AmberScreen.ModelReview.Editor
 
             if (importer == null && string.IsNullOrEmpty(sourceAssetPath))
                 result.WarningMessages.Add("no ModelImporter, import compare skipped");
+            else if (importer != null)
+            {
+                var importMode = importer.materialImportMode;
+                if (importMode == ModelImporterMaterialImportMode.None)
+                {
+                    result.WarningMessages.Add("materials not imported, model will look grey");
+                    result.Warnings++;
+                }
+            }
 
             return result;
         }

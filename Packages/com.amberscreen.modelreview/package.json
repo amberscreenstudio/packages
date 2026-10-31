@@ -1,6 +1,6 @@
 {
   "name": "com.amberscreen.modelreview",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "displayName": "Amber Screen Model Review",
   "description": "Ideal-conditions review scene for 3D deliveries: tuned URP shadows, neutral studio, orbit/interior camera, clay/wireframe views, read-only material report. Never modifies the reviewed asset.",
   "unity": "6000.6",

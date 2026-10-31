@@ -102,6 +102,7 @@ namespace AmberScreen.ModelReview.Editor
             }
 
             SpawnPreview(asset, rig.gameObject.scene, rig);
+            ModelReviewBrowser.PushNamesToActiveRig();
         }
 
         /// <summary>

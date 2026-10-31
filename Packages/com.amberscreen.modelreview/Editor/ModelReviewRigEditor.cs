@@ -54,8 +54,8 @@ namespace AmberScreen.ModelReview.Editor
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button(rig.NeutralTonemap ? "Tonemap On" : "Tonemap Off"))
-                rig.SetNeutralTonemap(!rig.NeutralTonemap);
+            if (GUILayout.Button("Tone: " + rig.Tone))
+                rig.CycleTone();
             if (GUILayout.Button(rig.KeyOnly ? "Key Only" : "All Lights"))
                 rig.SetKeyOnly(!rig.KeyOnly);
             if (GUILayout.Button(rig.ShowLegend ? "Hide Legend" : "Show Legend"))

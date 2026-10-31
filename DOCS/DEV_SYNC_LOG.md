@@ -2,6 +2,11 @@
 
 Newest entries first.
 
+## 2026-10-31
+
+- **modelreview 0.1.3: asset browser (one model at a time), visible tone cycle (Off/Neutral/ACES), readouts, gamepad, waterline, zoom/pitch limits**
+- Save: n/a
+
 ## 2026-10-28
 
 - **phoneui 0.2.3: image viewer keeps aspect (AspectRatioFitter FitInParent), Seen/typing are last rows of the thread scroll content (scroll with messages, auto-scroll only when stuck), OpenThread lands at bottom; Sandbox 9:16 image + filler thread**

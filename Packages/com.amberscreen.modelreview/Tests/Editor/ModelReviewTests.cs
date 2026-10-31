@@ -25,7 +25,7 @@ namespace AmberScreen.ModelReview.Tests
             var info = PackageInfo.FindForAssembly(typeof(ModelReviewRig).Assembly);
             Assert.That(info, Is.Not.Null);
             Assert.That(info.name, Is.EqualTo("com.amberscreen.modelreview"));
-            Assert.That(info.version, Is.EqualTo("0.1.2"));
+            Assert.That(info.version, Is.EqualTo("0.1.3"));
             Assert.That(info.dependencies, Has.Some.Matches<UnityEditor.PackageManager.DependencyInfo>(
                 d => d.name == "com.unity.render-pipelines.universal"));
             Assert.That(info.dependencies.Length, Is.EqualTo(1));
@@ -495,7 +495,9 @@ namespace AmberScreen.ModelReview.Tests
             foreach (var file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
             {
                 string name = Path.GetFileName(file);
-                if (name == "ModelReviewPackageAssetBuilder.cs" || name == "ModelReviewTests.cs")
+                if (name == "ModelReviewPackageAssetBuilder.cs"
+                    || name == "ModelReviewTests.cs"
+                    || name == "ModelReviewBrowserTests.cs")
                     continue;
                 string text = File.ReadAllText(file);
                 foreach (var token in forbidden)
@@ -632,7 +634,7 @@ namespace AmberScreen.ModelReview.Tests
             foreach (var file in Directory.GetFiles(info.resolvedPath, "*.cs", SearchOption.AllDirectories))
             {
                 string name = Path.GetFileName(file);
-                if (name == "ModelReviewTests.cs") continue;
+                if (name == "ModelReviewTests.cs" || name == "ModelReviewBrowserTests.cs") continue;
                 string text = File.ReadAllText(file);
                 Assert.That(text.Contains("\".unity\""), Is.False, name + " contains .unity string literal");
                 Assert.That(text.Contains("Scenes/ModelReview"), Is.False, name + " references Scenes/ModelReview");

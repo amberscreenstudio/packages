@@ -31,6 +31,12 @@ namespace AmberScreen.ModelReview
                 KeyCode.D => kb.dKey.wasPressedThisFrame,
                 KeyCode.Q => kb.qKey.wasPressedThisFrame,
                 KeyCode.E => kb.eKey.wasPressedThisFrame,
+                KeyCode.LeftArrow => kb.leftArrowKey.wasPressedThisFrame,
+                KeyCode.RightArrow => kb.rightArrowKey.wasPressedThisFrame,
+                KeyCode.LeftBracket => kb.leftBracketKey.wasPressedThisFrame,
+                KeyCode.RightBracket => kb.rightBracketKey.wasPressedThisFrame,
+                KeyCode.PageUp => kb.pageUpKey.wasPressedThisFrame,
+                KeyCode.PageDown => kb.pageDownKey.wasPressedThisFrame,
                 KeyCode.LeftShift => kb.leftShiftKey.wasPressedThisFrame,
                 KeyCode.RightShift => kb.rightShiftKey.wasPressedThisFrame,
                 _ => false

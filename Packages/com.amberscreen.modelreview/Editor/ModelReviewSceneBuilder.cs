@@ -73,6 +73,7 @@ namespace AmberScreen.ModelReview.Editor
             cam.useOcclusionCulling = true;
             var urpCam = camGo.AddComponent<UniversalAdditionalCameraData>();
             urpCam.renderPostProcessing = false;
+            camGo.transform.rotation = Quaternion.identity.normalized;
             var orbit = camGo.AddComponent<ReviewOrbitCamera>();
             orbit.BindCamera(cam);
 
@@ -96,7 +97,7 @@ namespace AmberScreen.ModelReview.Editor
             var grid = GameObject.CreatePrimitive(PrimitiveType.Quad);
             SceneManager.MoveGameObjectToScene(grid, scene);
             grid.name = "Grid";
-            grid.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            grid.transform.rotation = Quaternion.Euler(90f, 0f, 0f).normalized;
             grid.transform.position = new Vector3(0f, 0.001f, 0f);
             grid.transform.localScale = new Vector3(20f, 20f, 1f);
             Object.DestroyImmediate(grid.GetComponent<Collider>());
@@ -197,7 +198,7 @@ namespace AmberScreen.ModelReview.Editor
         {
             var go = new GameObject(name);
             SceneManager.MoveGameObjectToScene(go, scene);
-            go.transform.rotation = Quaternion.Euler(euler);
+            go.transform.rotation = Quaternion.Euler(euler).normalized;
             var light = go.AddComponent<Light>();
             light.type = LightType.Directional;
             light.intensity = intensity;
