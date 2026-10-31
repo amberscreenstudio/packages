@@ -74,7 +74,10 @@ namespace AmberScreen.ModelReview.Editor
 
         public static void SetTargetGuid(string guid)
         {
-            SessionState.SetString(SessionGuidKey, guid ?? "");
+            if (string.IsNullOrEmpty(guid))
+                SessionState.EraseString(SessionGuidKey);
+            else
+                SessionState.SetString(SessionGuidKey, guid);
             TryReload();
         }
 

@@ -41,6 +41,10 @@ namespace AmberScreen.ModelReview.Editor
             else if (active.IsValid() && !ModelReviewPipelineGuard.IsReviewScene(active))
                 SessionState.EraseString(SessionPrevScene);
 
+            // Unity 6000 ProjectBrowser.SearchAreaBar can NRE (ExposablePopupMenu) while NewScene
+            // paints under the interactive Test Runner — close Project windows first.
+            CloseProjectBrowsers();
+
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             if (!ModelReviewSceneBuilder.TryLoadPackageAssets(out var assets, out string error))
             {
@@ -74,11 +78,22 @@ namespace AmberScreen.ModelReview.Editor
         {
             ModelReviewTargetLoader.DestroyAllPreviews();
             ModelReviewPipelineGuard.Restore();
+            CloseProjectBrowsers();
             string prev = SessionState.GetString(SessionPrevScene, "");
             if (!string.IsNullOrEmpty(prev) && File.Exists(prev))
                 EditorSceneManager.OpenScene(prev, OpenSceneMode.Single);
             else
                 EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+        }
+
+        static void CloseProjectBrowsers()
+        {
+            foreach (var w in Resources.FindObjectsOfTypeAll<EditorWindow>())
+            {
+                if (w == null) continue;
+                if (w.GetType().Name == "ProjectBrowser")
+                    w.Close();
+            }
         }
 
         [MenuItem("Tools/Amber Screen/Model Review/Browse Whole Project")]

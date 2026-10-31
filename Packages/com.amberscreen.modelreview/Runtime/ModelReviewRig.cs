@@ -400,6 +400,9 @@ namespace AmberScreen.ModelReview
 
         void OnGUI()
         {
+            // EditMode tests / batch can invoke ExecuteAlways OnGUI before GUI.skin exists.
+            if (Event.current == null || GUI.skin == null) return;
+
             DrawBrowserPanel();
             if (!_showLegend) return;
 
@@ -458,6 +461,7 @@ namespace AmberScreen.ModelReview
         void DrawBrowserPanel()
         {
             if (_browserNames.Count <= 1) return;
+            if (GUI.skin == null) return;
             float width = 300f;
             float x = Screen.width - width - 8f;
             var box = new Rect(x, 8f, width, Mathf.Min(Screen.height - 16f, 420f));
@@ -623,6 +627,12 @@ namespace AmberScreen.ModelReview
         void ApplyTone()
         {
             var vol = _wiredVolume != null ? _wiredVolume : volume;
+            // Destroyed Volume during scene teardown / test TearDown.
+            if (vol == null)
+            {
+                _wiredVolume = null;
+                volume = null;
+            }
             var orbit = Orbit;
             var cam = orbit != null ? orbit.Cam : null;
             UniversalAdditionalCameraData urpCam = null;
@@ -636,6 +646,7 @@ namespace AmberScreen.ModelReview
             }
 
             EnsureRuntimeVolumeProfile();
+            vol = _wiredVolume != null ? _wiredVolume : volume;
             if (vol != null) vol.enabled = true;
             if (urpCam != null) urpCam.renderPostProcessing = true;
 
@@ -671,9 +682,11 @@ namespace AmberScreen.ModelReview
             var source = vol.sharedProfile;
             if (source == null) return;
             _runtimeVolumeProfile = Instantiate(source);
+            if (_runtimeVolumeProfile == null) return;
             _runtimeVolumeProfile.name = source.name + " (Review Tone Clone)";
             _runtimeVolumeProfile.hideFlags = HideFlags.DontSave;
-            vol.sharedProfile = _runtimeVolumeProfile;
+            if (vol != null)
+                vol.sharedProfile = _runtimeVolumeProfile;
 
             if (!_runtimeVolumeProfile.TryGet(out _runtimeTonemap))
                 _runtimeTonemap = _runtimeVolumeProfile.Add<Tonemapping>(true);

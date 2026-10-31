@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4] - 2026-11-01
+
+### Fixed
+
+- EditMode isolation: `ModelReviewBrowser.ClearSessionState` plus test SetUp/TearDown clear SessionState and close the review scene so a prior Browse Whole Project / open studio cannot poison the suite.
+- Interactive Test Runner: close Project Browser windows before `NewScene`/`OpenScene` so Unity 6000's `ProjectBrowser.SearchAreaBar` / `ExposablePopupMenu` NullReferenceException is not logged as an unhandled test failure (10/30 failures when the Project window was open).
+- Null guards: `GatherGuids` skips null main assets; `OnBrowseRequested` no-ops without an active review/rig/list; tone/OnGUI tolerate destroyed Volume and missing `GUI.skin`.
+
 ## [0.1.3] - 2026-10-31
 
 ### Added

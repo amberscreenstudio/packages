@@ -5,12 +5,12 @@
 | Game | Repo | com.amberscreen.devconsole | com.amberscreen.meters | com.amberscreen.economy | com.amberscreen.phoneui | com.amberscreen.llmchat | com.amberscreen.modelreview |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Twin Ticks | amberscreenstudio/Twin-Ticks | `devconsole/0.4.2` (Twin Ticks main) | none | none | `#phoneui/0.2.2` (0.0.40), 0.2.3 next | `#llmchat/0.2.1` (0.0.40) | none |
-| Sand & Ink | amberscreenstudio/Sand-and-Ink | switching to `devconsole/0.3.3` (S&I 0.1.9) | adopting for drinking water | planned | none | none | `#modelreview/0.1.2`, 0.1.3 next (browser / tone / gamepad) |
+| Sand & Ink | amberscreenstudio/Sand-and-Ink | switching to `devconsole/0.3.3` (S&I 0.1.9) | adopting for drinking water | planned | none | none | `#modelreview/0.1.2`, 0.1.4 next (browser / tone / EditMode isolation) |
 | Snorkel & Sail | (local) | not yet (own console) | switching from `Assets/Shared/Meters` | planned | none | none | none |
 | LWN | (local) | not yet (own console) | none | switching from `Assets/Shared/Economy` | planned | likely | planned |
 | The Watchmaker Shop | local, `E:\Unity Projects\Time & Tension` | not yet (own console) | none | planned | none | none | none |
 
-Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3`, `#meters/0.1.0`, `#economy/0.1.0`, `#phoneui/0.2.3`, `#llmchat/0.2.1`, or `#modelreview/0.1.3` (once tagged). Always pin a tag, never `main`.
+Install URL format: `https://github.com/amberscreenstudio/packages.git?path=/Packages/<package>#<short>/<version>`, for example `#devconsole/0.3.3`, `#meters/0.1.0`, `#economy/0.1.0`, `#phoneui/0.2.3`, `#llmchat/0.2.1`, or `#modelreview/0.1.4` (once tagged). Always pin a tag, never `main`.
 
 ## com.amberscreen.modelreview quick start
 

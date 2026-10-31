@@ -79,7 +79,9 @@ namespace AmberScreen.ModelReview.Editor
                     && !string.Equals(path, "Assets", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                var type = PrefabUtility.GetPrefabAssetType(AssetDatabase.LoadMainAssetAtPath(path));
+                var main = AssetDatabase.LoadMainAssetAtPath(path);
+                if (main == null) continue;
+                var type = PrefabUtility.GetPrefabAssetType(main);
                 if (type != PrefabAssetType.Regular
                     && type != PrefabAssetType.Variant
                     && type != PrefabAssetType.Model)
@@ -97,6 +99,18 @@ namespace AmberScreen.ModelReview.Editor
             return result;
         }
 
+        /// <summary>
+        /// Erases browser SessionState and the target GUID. Does not open/close scenes.
+        /// Safe to call from tests before/after each case so a prior Browse leaves no residue.
+        /// </summary>
+        public static void ClearSessionState()
+        {
+            SessionState.EraseString(SessionGuidsKey);
+            SessionState.EraseInt(SessionIndexKey);
+            SessionState.EraseString(ModelReviewTargetLoader.SessionGuidKey);
+            PushNamesToActiveRig();
+        }
+
         public static void SetList(IList<string> guids, int startIndex)
         {
             var list = new List<string>();
@@ -111,7 +125,13 @@ namespace AmberScreen.ModelReview.Editor
             }
 
             SaveGuids(list);
-            int index = list.Count == 0 ? 0 : Mathf.Clamp(startIndex, 0, list.Count - 1);
+            if (list.Count == 0)
+            {
+                SessionState.EraseInt(SessionIndexKey);
+                ApplyCurrent();
+                return;
+            }
+            int index = Mathf.Clamp(startIndex, 0, list.Count - 1);
             SessionState.SetInt(SessionIndexKey, index);
             ApplyCurrent();
         }
@@ -152,27 +172,39 @@ namespace AmberScreen.ModelReview.Editor
             var names = new List<string>(list.Count);
             foreach (var guid in list)
             {
+                if (string.IsNullOrEmpty(guid)) continue;
                 string path = AssetDatabase.GUIDToAssetPath(guid) ?? "";
-                string file = Path.GetFileNameWithoutExtension(path);
-                string folder = Path.GetDirectoryName(path)?.Replace('\\', '/') ?? "";
+                string file = string.IsNullOrEmpty(path)
+                    ? "(missing)"
+                    : Path.GetFileNameWithoutExtension(path);
+                string folder = string.IsNullOrEmpty(path)
+                    ? ""
+                    : (Path.GetDirectoryName(path)?.Replace('\\', '/') ?? "");
                 names.Add(string.IsNullOrEmpty(folder) ? file : file + "  (" + folder + ")");
             }
-            rig.SetBrowserItems(names, Index);
+            if (rig != null)
+                rig.SetBrowserItems(names, Index);
         }
 
         static void ApplyCurrent()
         {
-            string guid = CurrentGuid;
+            string guid = CurrentGuid ?? "";
             ModelReviewTargetLoader.SetTargetGuid(guid);
             PushNamesToActiveRig();
         }
 
         static void OnBrowseRequested(int request)
         {
+            // No review scene / empty list: ignore hotkeys and OnGUI clicks from a leftover rig.
             if (!ModelReviewPipelineGuard.IsReviewSceneActive()) return;
+            if (Count == 0) return;
+            if (UnityEngine.Object.FindAnyObjectByType<ModelReviewRig>() == null) return;
+
             if (request <= int.MinValue / 2)
             {
-                Select(request - int.MinValue);
+                int pick = request - int.MinValue;
+                if (pick < 0) return;
+                Select(pick);
                 return;
             }
             if (request > 0)

@@ -175,7 +175,7 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.modelreview
 
-- **Owner:** Packages | **State:** in library, `0.1.3` untagged (last tag `modelreview/0.1.2` on 8c16e404) | **Users:** Sand & Ink, LWN (planned), any 3D project
+- **Owner:** Packages | **State:** in library, `0.1.4` untagged (last tag `modelreview/0.1.2` on 8c16e404) | **Users:** Sand & Ink, LWN (planned), any 3D project
 - **Includes:** review studio built in code (untitled scene), asset browser (one model at a time), tone cycle, tuned URP profile, studio lights, orbit/interior/gamepad camera, waterline, Delivered/Clay/Wireframe, generic read-only material report
 - **Stays in games:** the models themselves, game-specific checks
 - **Interfaces:** menus, `ModelReviewRig`, `ModelMaterialReport.Build`

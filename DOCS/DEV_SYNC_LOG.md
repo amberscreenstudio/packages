@@ -2,6 +2,11 @@
 
 Newest entries first.
 
+## 2026-11-01
+
+- **modelreview 0.1.4: EditMode isolation (ClearSessionState + SetUp/TearDown), close Project Browser before NewScene (Unity 6000 ExposablePopupMenu NRE under interactive Test Runner), null guards for Gather/BrowseRequested/tone/OnGUI**
+- Save: n/a
+
 ## 2026-10-31
 
 - **modelreview 0.1.3: asset browser (one model at a time), visible tone cycle (Off/Neutral/ACES), readouts, gamepad, waterline, zoom/pitch limits**

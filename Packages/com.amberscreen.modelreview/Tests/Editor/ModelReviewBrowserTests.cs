@@ -23,6 +23,9 @@ namespace AmberScreen.ModelReview.Tests
         [SetUp]
         public void SetUp()
         {
+            // Isolate from a prior Browse Whole Project / open review scene / SessionState.
+            ResetReviewEditorState();
+
             if (AssetDatabase.IsValidFolder(TempRoot))
                 AssetDatabase.DeleteAsset(TempRoot);
             AssetDatabase.CreateFolder("Assets", "ModelReviewBrowserTemp_013");
@@ -35,15 +38,38 @@ namespace AmberScreen.ModelReview.Tests
         [TearDown]
         public void TearDown()
         {
-            ModelReviewTargetLoader.DestroyAllPreviews();
-            if (ModelReviewPipelineGuard.IsReviewSceneActive())
-                ModelReviewMenus.CloseReviewScene();
-            ModelReviewPipelineGuard.Restore();
-            ModelReviewBrowser.SetList(System.Array.Empty<string>(), 0);
+            ResetReviewEditorState();
             if (AssetDatabase.IsValidFolder(TempRoot))
                 AssetDatabase.DeleteAsset(TempRoot);
             _createdPaths.Clear();
             AssetDatabase.Refresh();
+        }
+
+        static void ResetReviewEditorState()
+        {
+            ModelReviewTargetLoader.DestroyAllPreviews();
+            if (ModelReviewPipelineGuard.IsReviewSceneActive())
+            {
+                CloseProjectBrowsers();
+                ModelReviewMenus.CloseReviewScene();
+            }
+            ModelReviewPipelineGuard.Restore();
+            ModelReviewBrowser.ClearSessionState();
+        }
+
+        /// <summary>
+        /// Unity 6000 ProjectBrowser.SearchAreaBar can NRE (ExposablePopupMenu) while NewScene
+        /// runs under the interactive Test Runner; that Exception log fails the current test.
+        /// Closing Project windows before scene swaps avoids the paint.
+        /// </summary>
+        static void CloseProjectBrowsers()
+        {
+            foreach (var w in Resources.FindObjectsOfTypeAll<EditorWindow>())
+            {
+                if (w == null) continue;
+                if (w.GetType().Name == "ProjectBrowser")
+                    w.Close();
+            }
         }
 
         [Test]
@@ -169,7 +195,9 @@ namespace AmberScreen.ModelReview.Tests
             var volAsset = AssetDatabase.LoadAssetAtPath<VolumeProfile>(volPath);
             Assert.That(EditorUtility.IsDirty(volAsset), Is.False);
 
-            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            CloseProjectBrowsers();
+            if (Application.isBatchMode)
+                EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             ModelReviewMenus.OpenReviewScene();
             Assert.That(ModelReviewPipelineGuard.IsReviewSceneActive(), Is.True);
             var rig = Object.FindAnyObjectByType<ModelReviewRig>();
@@ -283,8 +311,13 @@ namespace AmberScreen.ModelReview.Tests
 
         void OpenReviewWithList(List<string> guids, int index)
         {
-            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            CloseProjectBrowsers();
+            // Batch has no save dialog; empty scene avoids a cancelled Open. Interactive skips
+            // pre-NewScene so ProjectBrowser does not NRE mid-test (see CloseProjectBrowsers).
+            if (Application.isBatchMode)
+                EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             ModelReviewBrowser.SetList(guids, index);
+            CloseProjectBrowsers();
             ModelReviewMenus.OpenReviewScene();
             Assert.That(ModelReviewPipelineGuard.IsReviewSceneActive(), Is.True,
                 "OpenReviewScene did not activate a marker review scene");

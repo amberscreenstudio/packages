@@ -8,7 +8,7 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.modelreview
 
-- **0.1.3** on main (untagged until Sandbox check); `modelreview/0.1.2` tagged on 8c16e404. Asset browser, tone cycle, readouts, gamepad, waterline.
+- **0.1.4** on main (untagged); `modelreview/0.1.2` tagged on 8c16e404. 0.1.4 fixes EditMode pollution/NRE after Browse; 0.1.3 added browser/tone/gamepad/waterline.
 
 ## com.amberscreen.phoneui
 
