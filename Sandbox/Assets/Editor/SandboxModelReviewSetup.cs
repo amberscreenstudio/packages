@@ -5,7 +5,10 @@ using Object = UnityEngine.Object;
 
 namespace AmberScreen.Sandbox.Editor
 {
-    /// <summary>Creates Sandbox/Assets/ModelReviewTest prop for modelreview package smoke tests.</summary>
+    /// <summary>
+    /// Creates Sandbox/Assets/ModelReviewTest props for modelreview smoke tests:
+    /// three separate prefabs so Browse shows exactly one model at a time.
+    /// </summary>
     public static class SandboxModelReviewSetup
     {
         const string Folder = "Assets/ModelReviewTest";
@@ -53,34 +56,18 @@ namespace AmberScreen.Sandbox.Editor
                 AssetDatabase.CreateAsset(legacy, legacyPath);
             }
 
-            string prefabPath = Folder + "/ReviewTestProp.prefab";
-            var root = new GameObject("ReviewTestProp");
-            var cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.name = "Cube";
-            cube.transform.SetParent(root.transform, false);
-            cube.transform.position = new Vector3(-1.2f, 0.5f, 0f);
-            cube.GetComponent<MeshRenderer>().sharedMaterial = lit;
-            Object.DestroyImmediate(cube.GetComponent<Collider>());
+            // Remove the old 3-in-1 prefab so Browse Whole Project is one-model-at-a-time.
+            const string oldCombined = Folder + "/ReviewTestProp.prefab";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(oldCombined) != null)
+                AssetDatabase.DeleteAsset(oldCombined);
 
-            var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            sphere.name = "Sphere";
-            sphere.transform.SetParent(root.transform, false);
-            sphere.transform.position = new Vector3(0f, 0.5f, 0f);
-            sphere.GetComponent<MeshRenderer>().sharedMaterial = legacy;
-            Object.DestroyImmediate(sphere.GetComponent<Collider>());
+            WritePrimitivePrefab(Folder + "/ReviewTest_Cube.prefab", PrimitiveType.Cube, lit);
+            WritePrimitivePrefab(Folder + "/ReviewTest_Sphere.prefab", PrimitiveType.Sphere, legacy);
+            WritePrimitivePrefab(Folder + "/ReviewTest_Cylinder.prefab", PrimitiveType.Cylinder, null);
 
-            var cyl = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            cyl.name = "Cylinder";
-            cyl.transform.SetParent(root.transform, false);
-            cyl.transform.position = new Vector3(1.2f, 0.5f, 0f);
-            cyl.GetComponent<MeshRenderer>().sharedMaterial = null;
-            Object.DestroyImmediate(cyl.GetComponent<Collider>());
-
-            PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
-            Object.DestroyImmediate(root);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[Sandbox] ModelReviewTest prop ready at " + prefabPath);
+            Debug.Log("[Sandbox] ModelReviewTest prefabs ready (Cube/Sphere/Cylinder) under " + Folder);
         }
 
         public static void CreateTestPropBatch()
@@ -97,11 +84,21 @@ namespace AmberScreen.Sandbox.Editor
             }
         }
 
+        static void WritePrimitivePrefab(string path, PrimitiveType type, Material mat)
+        {
+            var go = GameObject.CreatePrimitive(type);
+            go.name = Path.GetFileNameWithoutExtension(path);
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+            go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            PrefabUtility.SaveAsPrefabAsset(go, path);
+            Object.DestroyImmediate(go);
+        }
+
         static void EnsureFolder(string path)
         {
             if (AssetDatabase.IsValidFolder(path)) return;
-            string parent = System.IO.Path.GetDirectoryName(path)?.Replace('\\', '/');
-            string name = System.IO.Path.GetFileName(path);
+            string parent = Path.GetDirectoryName(path)?.Replace('\\', '/');
+            string name = Path.GetFileName(path);
             if (!AssetDatabase.IsValidFolder(parent))
                 EnsureFolder(parent);
             AssetDatabase.CreateFolder(parent, name);

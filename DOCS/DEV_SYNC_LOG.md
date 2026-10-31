@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-11-01
 
+- **modelreview 0.1.7: one ModelReview_Target at a time (enforce + Sandbox Cube/Sphere/Cylinder prefabs); Play mode Next without stacking; Review Folder validate via assetGUIDs**
+- Save: n/a
+
 - **modelreview 0.1.6: EditMode tests never show Untitled save modal (SuppressSceneSavePrompts; clear dirty before NewScene; skip SaveCurrent… under tests)**
 - Save: n/a
 

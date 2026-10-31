@@ -52,7 +52,7 @@ namespace AmberScreen.ModelReview.Tests
             var info = PackageInfo.FindForAssembly(typeof(ModelReviewRig).Assembly);
             Assert.That(info, Is.Not.Null);
             Assert.That(info.name, Is.EqualTo("com.amberscreen.modelreview"));
-            Assert.That(info.version, Is.EqualTo("0.1.6"));
+            Assert.That(info.version, Is.EqualTo("0.1.7"));
             Assert.That(info.dependencies, Has.Some.Matches<UnityEditor.PackageManager.DependencyInfo>(
                 d => d.name == "com.unity.render-pipelines.universal"));
             Assert.That(info.dependencies.Length, Is.EqualTo(1));
@@ -281,8 +281,8 @@ namespace AmberScreen.ModelReview.Tests
             Assert.That(EditorUtility.IsDirty(srcMat), Is.False);
             Assert.That(EditorUtility.IsDirty(source), Is.False);
 
-            string prefabPath = "Assets/ModelReviewTest/ReviewTestProp.prefab";
-            Assume.That(File.Exists(prefabPath), "Sandbox ReviewTestProp.prefab not present");
+            string prefabPath = "Assets/ModelReviewTest/ReviewTest_Cube.prefab";
+            Assume.That(File.Exists(prefabPath), "Sandbox ReviewTest_Cube.prefab not present");
             string[] hashPaths =
             {
                 prefabPath,

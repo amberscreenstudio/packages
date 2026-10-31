@@ -1,13 +1,13 @@
 # Amber Screen Model Review
 
-**Version:** 0.1.6 · **Unity:** 6000.6 · **Owner:** Packages
+**Version:** 0.1.7 · **Unity:** 6000.6 · **Owner:** Packages
 
 Ideal-conditions review scene for 3D deliveries: tuned URP shadows, neutral studio, orbit/interior camera, clay/wireframe views, asset browser, tone cycle, and a generic read-only material report. Never modifies the reviewed asset.
 
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.modelreview#modelreview/0.1.6
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.modelreview#modelreview/0.1.7
 ```
 
 URP 17.6 is required; the host project should be URP.

@@ -8,7 +8,7 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.modelreview
 
-- **0.1.6** on main (untagged); `modelreview/0.1.2` tagged on 8c16e404. 0.1.6: no Untitled save modal under interactive Test Runner.
+- **0.1.7** on main (untagged); `modelreview/0.1.2` tagged on 8c16e404. 0.1.7: one target at a time, Play browse, Review Folder validate.
 
 ## com.amberscreen.phoneui
 

@@ -136,15 +136,56 @@ namespace AmberScreen.ModelReview.Editor
 
         [MenuItem("Assets/Amber Screen/Review Folder in Model Review", true)]
         public static bool ValidateReviewFolder() =>
-            Selection.activeObject != null
-            && AssetDatabase.IsValidFolder(AssetDatabase.GetAssetPath(Selection.activeObject));
+            TryGetSelectedProjectFolder(out _);
 
         [MenuItem("Assets/Amber Screen/Review Folder in Model Review")]
         public static void ReviewSelectedFolder()
         {
-            if (!ValidateReviewFolder()) return;
-            string path = AssetDatabase.GetAssetPath(Selection.activeObject);
+            if (!TryGetSelectedProjectFolder(out string path)) return;
             OpenBrowserWithFolder(path);
+        }
+
+        /// <summary>
+        /// Project window selection: works for one-column, two-column left tree, and right pane
+        /// right-clicks. Prefers Selection.assetGUIDs (set on folder right-click); falls back to
+        /// activeObject / GetFiltered.
+        /// </summary>
+        internal static bool TryGetSelectedProjectFolder(out string folderPath)
+        {
+            folderPath = null;
+            foreach (var guid in Selection.assetGUIDs)
+            {
+                if (string.IsNullOrEmpty(guid)) continue;
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (AssetDatabase.IsValidFolder(path))
+                {
+                    folderPath = path;
+                    return true;
+                }
+            }
+
+            if (Selection.activeObject != null)
+            {
+                string path = AssetDatabase.GetAssetPath(Selection.activeObject);
+                if (AssetDatabase.IsValidFolder(path))
+                {
+                    folderPath = path;
+                    return true;
+                }
+            }
+
+            foreach (var obj in Selection.GetFiltered<Object>(SelectionMode.Assets))
+            {
+                if (obj == null) continue;
+                string path = AssetDatabase.GetAssetPath(obj);
+                if (AssetDatabase.IsValidFolder(path))
+                {
+                    folderPath = path;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         [MenuItem("Assets/Amber Screen/Review in Model Review", true)]

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.7] - 2026-11-01
+
+### Fixed
+
+- One model at a time: enforce a single `ModelReview_Target` after every spawn/reload (destroy extras); Sandbox `ModelReviewTest` is three separate prefabs (Cube/Sphere/Cylinder) so Browse no longer shows the old 3-in-1 prop.
+- Play mode Next/Previous/list: sync `DestroyImmediate` on swap so previews cannot stack until end-of-frame; browse list has multiple entries after the Sandbox split.
+- `Assets > Amber Screen > Review Folder in Model Review` validate uses `Selection.assetGUIDs` (and GetFiltered fallback) so Project two-column left-tree / right-pane folder right-clicks enable the item.
+
 ## [0.1.6] - 2026-11-01
 
 ### Fixed

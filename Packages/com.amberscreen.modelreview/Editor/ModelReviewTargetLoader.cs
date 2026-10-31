@@ -105,6 +105,7 @@ namespace AmberScreen.ModelReview.Editor
             }
 
             SpawnPreview(asset, rig.gameObject.scene, rig);
+            EnforceExactlyOnePreviewRoot();
             ModelReviewBrowser.PushNamesToActiveRig();
         }
 
@@ -119,6 +120,7 @@ namespace AmberScreen.ModelReview.Editor
 
             DestroyAllPreviews();
 
+            // Object.Instantiate (not PrefabUtility) — no prefab link, never writes the source.
             var instance = Object.Instantiate(asset);
             instance.name = asset.name;
             SetDontSaveRecursive(instance);
@@ -135,6 +137,7 @@ namespace AmberScreen.ModelReview.Editor
 
             Track(root);
             rig.SetTarget(instance);
+            EnforceExactlyOnePreviewRoot();
             return root;
         }
 
@@ -144,11 +147,29 @@ namespace AmberScreen.ModelReview.Editor
             rig?.ClearTarget();
 
             foreach (var root in FindAllPreviewRoots())
-            {
-                if (root != null)
-                    Object.DestroyImmediate(root);
-            }
+                DestroyPreviewRoot(root);
             s_TrackedRoots.Clear();
+        }
+
+        /// <summary>Safety net: destroy any extra ModelReview_Target roots so only one remains.</summary>
+        public static void EnforceExactlyOnePreviewRoot()
+        {
+            var roots = FindAllPreviewRoots();
+            if (roots.Count <= 1) return;
+            // Keep the last tracked / newest; destroy the rest.
+            for (int i = 0; i < roots.Count - 1; i++)
+                DestroyPreviewRoot(roots[i]);
+            s_TrackedRoots.Clear();
+            if (roots[roots.Count - 1] != null)
+                Track(roots[roots.Count - 1]);
+        }
+
+        static void DestroyPreviewRoot(GameObject root)
+        {
+            if (root == null) return;
+            // DestroyImmediate so Next/Previous can spawn the replacement in the same call
+            // (Object.Destroy would leave the old preview until end-of-frame and stack in Play mode).
+            Object.DestroyImmediate(root);
         }
 
         public static List<GameObject> FindAllPreviewRoots()

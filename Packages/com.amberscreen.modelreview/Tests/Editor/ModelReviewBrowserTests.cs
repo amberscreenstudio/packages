@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
+using AmberScreen.ModelReview;
 using AmberScreen.ModelReview.Editor;
 using Object = UnityEngine.Object;
 
@@ -168,11 +169,37 @@ namespace AmberScreen.ModelReview.Tests
         {
             string prefabGuid = CreatePrefab(_folderA + "/V.prefab", PrimitiveType.Cube);
             string prefabPath = AssetDatabase.GUIDToAssetPath(prefabGuid);
-            Selection.activeObject = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            Selection.objects = new Object[] { AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath) };
             Assert.That(ModelReviewMenus.ValidateReviewFolder(), Is.False);
 
-            Selection.activeObject = AssetDatabase.LoadAssetAtPath<Object>(_folderA);
-            Assert.That(ModelReviewMenus.ValidateReviewFolder(), Is.True);
+            var folder = AssetDatabase.LoadAssetAtPath<Object>(_folderA);
+            Selection.objects = new[] { folder };
+            Assert.That(ModelReviewMenus.ValidateReviewFolder(), Is.True,
+                "ValidateReviewFolder must be true for a Project folder selection (assetGUIDs / activeObject)");
+            Assert.That(ModelReviewMenus.TryGetSelectedProjectFolder(out string path), Is.True);
+            Assert.That(path.Replace('\\', '/'), Is.EqualTo(_folderA));
+        }
+
+        [Test]
+        public void Browser_Open_LeavesExactlyOneTarget()
+        {
+            var guids = new List<string>
+            {
+                CreatePrefab(_folderA + "/O0.prefab", PrimitiveType.Cube),
+                CreatePrefab(_folderA + "/O1.prefab", PrimitiveType.Sphere),
+                CreatePrefab(_folderA + "/O2.prefab", PrimitiveType.Capsule)
+            };
+            OpenReviewWithList(guids, 0);
+            Assert.That(ModelReviewTargetLoader.FindAllPreviewRoots().Count, Is.EqualTo(1));
+            // DontSave previews are invisible to FindObjectsByType — use FindObjectsOfTypeAll.
+            int markers = 0;
+            foreach (var m in Resources.FindObjectsOfTypeAll<ModelReviewPreviewMarker>())
+            {
+                if (m == null || EditorUtility.IsPersistent(m)) continue;
+                markers++;
+            }
+            Assert.That(markers, Is.EqualTo(1));
+            ModelReviewMenus.CloseReviewScene();
         }
 
         [Test]
