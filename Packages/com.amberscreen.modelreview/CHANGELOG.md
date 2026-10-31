@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5] - 2026-11-01
+
+### Fixed
+
+- Menus never close or alter the Project window (0.1.4 closed it on Open/Close Review). Project Browser close/reopen stays in EditMode tests only.
+- Untitled save prompt on Close Review Scene after browse/tone: clear dirtiness synchronously after preview swaps, after open/reload, on `sceneDirtied`, and again immediately before leaving a marker scene. Dirtied by Volume enable/profile swap (tone) and DontSave preview spawn/destroy (Next).
+
 ## [0.1.4] - 2026-11-01
 
 ### Fixed

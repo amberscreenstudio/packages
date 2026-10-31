@@ -20,31 +20,26 @@ namespace AmberScreen.ModelReview.Tests
     public sealed class ModelReviewTests
     {
         [SetUp]
-        public void SetUp() => ResetReviewEditorState();
+        public void SetUp()
+        {
+            ModelReviewTestEditorWindows.CloseProjectBrowsers();
+            ResetReviewEditorState();
+        }
 
         [TearDown]
-        public void TearDown() => ResetReviewEditorState();
+        public void TearDown()
+        {
+            ResetReviewEditorState();
+            ModelReviewTestEditorWindows.EnsureProjectBrowserOpen();
+        }
 
         static void ResetReviewEditorState()
         {
             ModelReviewTargetLoader.DestroyAllPreviews();
             if (ModelReviewPipelineGuard.IsReviewSceneActive())
-            {
-                CloseProjectBrowsers();
                 ModelReviewMenus.CloseReviewScene();
-            }
             ModelReviewPipelineGuard.Restore();
             ModelReviewBrowser.ClearSessionState();
-        }
-
-        static void CloseProjectBrowsers()
-        {
-            foreach (var w in Resources.FindObjectsOfTypeAll<EditorWindow>())
-            {
-                if (w == null) continue;
-                if (w.GetType().Name == "ProjectBrowser")
-                    w.Close();
-            }
         }
 
         [Test]
@@ -53,7 +48,7 @@ namespace AmberScreen.ModelReview.Tests
             var info = PackageInfo.FindForAssembly(typeof(ModelReviewRig).Assembly);
             Assert.That(info, Is.Not.Null);
             Assert.That(info.name, Is.EqualTo("com.amberscreen.modelreview"));
-            Assert.That(info.version, Is.EqualTo("0.1.4"));
+            Assert.That(info.version, Is.EqualTo("0.1.5"));
             Assert.That(info.dependencies, Has.Some.Matches<UnityEditor.PackageManager.DependencyInfo>(
                 d => d.name == "com.unity.render-pipelines.universal"));
             Assert.That(info.dependencies.Length, Is.EqualTo(1));
@@ -547,10 +542,8 @@ namespace AmberScreen.ModelReview.Tests
 
             try
             {
-                CloseProjectBrowsers();
                 if (Application.isBatchMode)
                     EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-                CloseProjectBrowsers();
                 ModelReviewMenus.OpenReviewScene();
 
                 Assert.That(opened.Any(p => p.Replace('\\', '/').IndexOf("Packages/", StringComparison.Ordinal) >= 0),

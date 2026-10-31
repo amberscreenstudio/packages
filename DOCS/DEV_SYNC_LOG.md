@@ -4,6 +4,9 @@ Newest entries first.
 
 ## 2026-11-01
 
+- **modelreview 0.1.5: menus never close Project window; sync clear Untitled dirtiness after Next/tone so Close Review Scene does not prompt save**
+- Save: n/a
+
 - **modelreview 0.1.4: EditMode isolation (ClearSessionState + SetUp/TearDown), close Project Browser before NewScene (Unity 6000 ExposablePopupMenu NRE under interactive Test Runner), null guards for Gather/BrowseRequested/tone/OnGUI**
 - Save: n/a
 

@@ -8,7 +8,7 @@ Short status per package. Newest notes win.
 
 ## com.amberscreen.modelreview
 
-- **0.1.4** on main (untagged); `modelreview/0.1.2` tagged on 8c16e404. 0.1.4 fixes EditMode pollution/NRE after Browse; 0.1.3 added browser/tone/gamepad/waterline.
+- **0.1.5** on main (untagged); `modelreview/0.1.2` tagged on 8c16e404. 0.1.5: don’t close Project from menus; no Untitled save on Close after browse/tone.
 
 ## com.amberscreen.phoneui
 

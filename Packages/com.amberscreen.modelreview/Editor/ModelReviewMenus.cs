@@ -27,6 +27,7 @@ namespace AmberScreen.ModelReview.Editor
                 ModelReviewPipelineGuard.TrySwitch();
                 ModelReviewTargetLoader.TryReload();
                 ModelReviewBrowser.PushNamesToActiveRig();
+                ClearActiveReviewDirtiness();
                 return;
             }
 
@@ -41,10 +42,6 @@ namespace AmberScreen.ModelReview.Editor
             else if (active.IsValid() && !ModelReviewPipelineGuard.IsReviewScene(active))
                 SessionState.EraseString(SessionPrevScene);
 
-            // Unity 6000 ProjectBrowser.SearchAreaBar can NRE (ExposablePopupMenu) while NewScene
-            // paints under the interactive Test Runner — close Project windows first.
-            CloseProjectBrowsers();
-
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             if (!ModelReviewSceneBuilder.TryLoadPackageAssets(out var assets, out string error))
             {
@@ -54,46 +51,40 @@ namespace AmberScreen.ModelReview.Editor
 
             ModelReviewSceneBuilder.BuildInto(scene, assets);
 
-            bool dirtyBefore = scene.isDirty;
-            if (!ModelReviewSceneBuilder.TryClearSceneDirtiness(scene, out bool foundApi))
-            {
-                if (!s_LoggedClearMissing)
-                {
-                    s_LoggedClearMissing = true;
-                    Debug.LogWarning(
-                        "[ModelReview] ClearSceneDirtiness not found; untitled scene may prompt to save.");
-                }
-            }
-            Debug.Log("[ModelReview] Untitled review scene isDirty before clear=" + dirtyBefore
-                      + " after=" + scene.isDirty
-                      + " clearApi=" + foundApi);
-
             ModelReviewPipelineGuard.TrySwitch();
             ModelReviewTargetLoader.TryReload();
             ModelReviewBrowser.PushNamesToActiveRig();
+
+            // Build/reload/tone/volume wiring can mark Untitled dirty — clear after all of it.
+            bool dirtyBefore = scene.isDirty;
+            if (!ClearActiveReviewDirtiness() && !s_LoggedClearMissing)
+            {
+                s_LoggedClearMissing = true;
+                Debug.LogWarning(
+                    "[ModelReview] ClearSceneDirtiness not found; untitled scene may prompt to save.");
+            }
+            Debug.Log("[ModelReview] Untitled review scene isDirty before clear=" + dirtyBefore
+                      + " after=" + scene.isDirty);
         }
 
         [MenuItem("Tools/Amber Screen/Model Review/Close Review Scene")]
         public static void CloseReviewScene()
         {
+            var review = SceneManager.GetActiveScene();
+            bool wasReview = ModelReviewPipelineGuard.IsReviewScene(review);
+
             ModelReviewTargetLoader.DestroyAllPreviews();
             ModelReviewPipelineGuard.Restore();
-            CloseProjectBrowsers();
+
+            // Destroying previews / restoring pipeline can re-dirty; never prompt to save a marker scene.
+            if (wasReview && review.IsValid())
+                ModelReviewSceneBuilder.TryClearSceneDirtiness(review, out _);
+
             string prev = SessionState.GetString(SessionPrevScene, "");
             if (!string.IsNullOrEmpty(prev) && File.Exists(prev))
                 EditorSceneManager.OpenScene(prev, OpenSceneMode.Single);
             else
                 EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
-        }
-
-        static void CloseProjectBrowsers()
-        {
-            foreach (var w in Resources.FindObjectsOfTypeAll<EditorWindow>())
-            {
-                if (w == null) continue;
-                if (w.GetType().Name == "ProjectBrowser")
-                    w.Close();
-            }
         }
 
         [MenuItem("Tools/Amber Screen/Model Review/Browse Whole Project")]
@@ -169,6 +160,7 @@ namespace AmberScreen.ModelReview.Editor
             {
                 ModelReviewTargetLoader.TryReload();
                 ModelReviewBrowser.PushNamesToActiveRig();
+                ClearActiveReviewDirtiness();
             }
         }
 
@@ -214,6 +206,14 @@ namespace AmberScreen.ModelReview.Editor
             Debug.Log("[ModelReview] Last report copied to clipboard.");
         }
 
+        /// <summary>Clear dirty flag on the active review scene if it has a marker.</summary>
+        internal static bool ClearActiveReviewDirtiness()
+        {
+            var scene = SceneManager.GetActiveScene();
+            if (!ModelReviewPipelineGuard.IsReviewScene(scene)) return false;
+            return ModelReviewSceneBuilder.TryClearSceneDirtiness(scene, out _);
+        }
+
         static void OpenBrowserWithFolder(string assetsFolderOrNull)
         {
             var guids = ModelReviewBrowser.GatherGuids(assetsFolderOrNull);
@@ -231,6 +231,7 @@ namespace AmberScreen.ModelReview.Editor
             {
                 ModelReviewTargetLoader.TryReload();
                 ModelReviewBrowser.PushNamesToActiveRig();
+                ClearActiveReviewDirtiness();
             }
         }
 
@@ -264,6 +265,9 @@ namespace AmberScreen.ModelReview.Editor
             return true;
         }
 
+        [InitializeOnLoadMethod]
+        static void InitDirtiedHook() => EnsureDirtiedHook();
+
         static void EnsureDirtiedHook()
         {
             if (s_DirtiedHook) return;
@@ -272,6 +276,8 @@ namespace AmberScreen.ModelReview.Editor
             {
                 if (!ModelReviewPipelineGuard.IsReviewScene(scene)) return;
                 if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+                // Clear immediately — delayCall alone races Close Review Scene and shows Untitled save.
+                ModelReviewSceneBuilder.TryClearSceneDirtiness(scene, out _);
                 EditorApplication.delayCall += () =>
                 {
                     if (!scene.IsValid() || !ModelReviewPipelineGuard.IsReviewScene(scene)) return;

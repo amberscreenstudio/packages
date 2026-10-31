@@ -191,6 +191,8 @@ namespace AmberScreen.ModelReview.Editor
             string guid = CurrentGuid ?? "";
             ModelReviewTargetLoader.SetTargetGuid(guid);
             PushNamesToActiveRig();
+            // Preview spawn / material wire marks Untitled dirty — clear so Close never prompts.
+            ModelReviewMenus.ClearActiveReviewDirtiness();
         }
 
         static void OnBrowseRequested(int request)
