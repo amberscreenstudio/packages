@@ -544,7 +544,7 @@ namespace AmberScreen.Dev
             bg.raycastTarget = w.Collapsible;
 
             var le = w.Header.AddComponent<LayoutElement>();
-            le.minHeight = headerSize + pad * 2f;
+            le.minHeight = headerSize * 1.3f + pad * 2f;
 
             var hlg = w.Header.AddComponent<HorizontalLayoutGroup>();
             int px = Mathf.RoundToInt(pad * 2f);
@@ -576,6 +576,7 @@ namespace AmberScreen.Dev
             var titleLe = w.Title.Tmp.gameObject.AddComponent<LayoutElement>();
             titleLe.flexibleWidth = 1f;
             titleLe.minWidth = 0f;
+            titleLe.minHeight = headerSize * 1.3f;
             SetSlot(w.Title, sec.Title);
 
             if (w.Collapsible)
@@ -671,6 +672,7 @@ namespace AmberScreen.Dev
                     var label = CreateText(cellRt, "HudCellLabel", size, theme.hudLabelColor, false, false, theme);
                     var labelLe = label.Tmp.gameObject.AddComponent<LayoutElement>();
                     labelLe.flexibleWidth = 0f;
+                    labelLe.minHeight = size * 1.3f;
                     SetSlot(label, cell.Label + ":");
                 }
 

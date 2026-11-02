@@ -2,6 +2,12 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.4.3] - 2026-11-03
+
+### Fixed
+
+- HUD titles and labels keep a minimum height so they no longer vanish when the rail overflows.
+
 ## [0.4.2] - 2026-10-21
 
 ### Added
