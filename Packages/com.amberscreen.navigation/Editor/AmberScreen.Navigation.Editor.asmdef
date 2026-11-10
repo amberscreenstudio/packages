@@ -1,0 +1,13 @@
+{
+  "name": "AmberScreen.Navigation.Editor",
+  "rootNamespace": "AmberScreen.Navigation.Editor",
+  "references": [
+    "AmberScreen.Navigation",
+    "AmberScreen.Navigation.Demo",
+    "UnityEngine.UI"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false
+}

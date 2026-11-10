@@ -1,0 +1,8 @@
+{
+  "name": "AmberScreen.Navigation.Demo",
+  "rootNamespace": "AmberScreen.Navigation.Demo",
+  "references": [
+    "AmberScreen.Navigation"
+  ],
+  "autoReferenced": false
+}

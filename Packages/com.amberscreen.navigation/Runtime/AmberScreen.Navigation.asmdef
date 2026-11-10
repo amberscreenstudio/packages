@@ -1,0 +1,8 @@
+{
+  "name": "AmberScreen.Navigation",
+  "rootNamespace": "AmberScreen.Navigation",
+  "references": [
+    "UnityEngine.UI"
+  ],
+  "autoReferenced": true
+}

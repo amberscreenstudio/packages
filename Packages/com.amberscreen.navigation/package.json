@@ -1,0 +1,17 @@
+{
+  "name": "com.amberscreen.navigation",
+  "version": "0.1.0",
+  "displayName": "AmberScreen Navigation",
+  "description": "Opt-in compass bearings and markers. No discovery, routing or maps.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.unity.ugui": "2.0.0"
+  },
+  "samples": [
+    {
+      "displayName": "Compass Demo",
+      "description": "Spin a chosen reference and explicitly register two markers.",
+      "path": "Samples~/CompassDemo"
+    }
+  ]
+}
