@@ -34,7 +34,7 @@ namespace AmberScreen.Navigation
             ClearCurrent();
         }
 
-        // Keep calling while alone: crossed triggers are consumed silently, never replayed on Mags's return.
+        // Keep calling while alone: crossed triggers are consumed silently, never replayed when the co-driver returns.
         // Progress is metres along an authored route, NOT straight-line distance to the next stop.
         public void Tick(float routeProgress, Vector3 position, float deltaSeconds)
         {

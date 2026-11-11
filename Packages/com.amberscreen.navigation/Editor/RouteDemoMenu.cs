@@ -28,9 +28,9 @@ namespace AmberScreen.Navigation.Editor
             demo.paceNotePresenter = paceLabel.gameObject.AddComponent<PaceNotePresenter>();
             demo.paceNotePresenter.label = paceLabel;
             Text help = CreateText(canvasObject.transform, "Instructions", -220f, 20);
-            help.text = "Select RouteDemo in the Hierarchy. In the Inspector toggle Mags Present or Hud Visible.\nThe route repeats automatically; no driving controls needed.";
+            help.text = "Select RouteDemo in the Hierarchy. In the Inspector toggle Co Driver Present or Hud Visible.\nThe route repeats automatically; no driving controls needed.";
             Selection.activeGameObject = demoObject;
-            Debug.Log("Route demo scene created (unsaved). Press Play, then toggle Mags Present in RouteDemo's Inspector.");
+            Debug.Log("Route demo scene created (unsaved). Press Play, then toggle Co Driver Present in RouteDemo's Inspector.");
         }
         private static Text CreateText(Transform parent, string name, float y, int fontSize)
         {

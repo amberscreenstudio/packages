@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1 — 2026-11-11
+- Route demo toggle renamed from Mags Present to Co Driver Present; package text no longer names a game character.
+
 ## 0.2.0 — 2026-11-11
 - Adapted LWN JobManifest ordered-stop/current-index/event pattern into navigation-only data.
 - Added explicit next-stop distance, reached/advance/change events and opt-in registry binding.

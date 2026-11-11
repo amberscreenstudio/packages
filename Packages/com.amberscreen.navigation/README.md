@@ -151,7 +151,7 @@ feed.NoteFired += note => { /* optional game-owned device/data binding */ };
 paceNotePresenter.Feed = feed; // optional component
 paceNotePresenter.label = existingHudText; // uGUI Text, font/layout owned by game
 // Each frame, INCLUDING frames without a co-driver:
-feed.CoDriverPresent = gameSaysMagsIsPresent; // default false; never inferred from player/camera
+feed.CoDriverPresent = gameSaysCoDriverIsPresent; // default false; never inferred from player/camera
 feed.Tick(metresAlongAuthoredRoute, vehiclePosition, deltaSeconds);
 ```
 
@@ -163,7 +163,7 @@ radius (a teleport/large step across the entire radius will not trigger). Multip
 notes crossed in one tick fire in authored order; the last is the displayed note.
 Call `SetNotes` for a new route or deliberate replay. Supply finite world coordinates.
 
-Without Mags, no note event fires and no text is retained. Crossed triggers are
+Without a co-driver, no note event fires and no text is retained. Crossed triggers are
 consumed silently so they do not suddenly play when he returns. Removing him
 immediately clears the current note. Keep ticking while he is absent.
 `CurrentNote` and `RemainingSeconds` expose state for game-owned bindings. The feed
@@ -192,9 +192,9 @@ Both commands create a new **unsaved** scene; they do not change the saved scene
   to see the original spinning compass.
 - **Tools > AmberScreen > Navigation > Create Route Demo Scene** — press Play.
   The next-stop label counts down through Harbour Road, Old Gate and Depot. With
-  Mags present, authored pace-note text appears for four seconds. The demo moves
+  the co-driver present, authored pace-note text appears for four seconds. The demo moves
   automatically and repeats about every 18 seconds; no driving/input setup is needed.
-  Select **RouteDemo** in the Hierarchy and use the Inspector's **Mags Present**
+  Select **RouteDemo** in the Hierarchy and use the Inspector's **Co Driver Present**
   checkbox: off immediately removes pace-note text but leaves next-stop info.
   Re-enable it to see only future notes, or wait for the next loop. **Hud Visible**
   hides both navigation labels without stopping progress. The instructions remain

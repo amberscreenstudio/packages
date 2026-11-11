@@ -9,7 +9,7 @@ namespace AmberScreen.Navigation.Demo
         public MarkerRegistry registry;
         public Text nextStopLabel;
         public PaceNotePresenter paceNotePresenter;
-        public bool magsPresent = true;
+        public bool coDriverPresent = true;
         public bool hudVisible = true;
         private NavigationRoute route;
         private PaceNoteFeed feed;
@@ -44,7 +44,7 @@ namespace AmberScreen.Navigation.Demo
             if (progress > 140f) Restart();
             var position = new Vector3(0f, 0f, progress);
             NavigationHud.Visible = hudVisible;
-            feed.CoDriverPresent = magsPresent;
+            feed.CoDriverPresent = coDriverPresent;
             feed.Tick(progress, position, Time.deltaTime);
             route.UpdatePosition(position, 1f);
             // Demo alone advances automatically; real games call Advance only from their own stop lifecycle.
