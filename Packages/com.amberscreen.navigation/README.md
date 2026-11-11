@@ -1,9 +1,10 @@
-# AmberScreen Navigation 0.2.0
+# AmberScreen Navigation 0.3.0
 
 Unity 6 (`6000.0`), render-pipeline independent, including URP.
-A heading/bearing core, opt-in uGUI compass strip, ordered next-stop data and
-co-driver text feed. No map, radar, quest arrows, glowing follow-dots, discovery,
-route finding, game-specific navigation, or persistent hosts.
+A heading/bearing core, opt-in uGUI compass strip, ordered next-stop data,
+co-driver text feed and an optional route ribbon. No minimap, radar, quest arrows,
+glowing follow-dots, discovery, route finding, game-specific navigation, or
+persistent hosts.
 
 ## Install and connect
 
@@ -181,12 +182,12 @@ The same **single** `NavigationHud.Visible` switch hides the compass and pace-no
 HUD; it does not stop route/feed events, clear registrations or hide a physical
 instrument/app. When alone, next-stop data is still available to the game's app or
 dash device, but no pace-note HUD text appears. Device art and interactions remain
-entirely game-side. No track ribbon or minimap is included.
+entirely game-side. No minimap is included in 0.2.0; the optional track ribbon arrived in 0.3.0.
 
 ## Demo scenes (no sample import required)
 
-Before running either command, stop Play mode and save any scene you want to keep.
-Both commands create a new **unsaved** scene; they do not change the saved scene.
+Before running any of these commands, stop Play mode and save any scene you want to keep.
+Each command creates a new **unsaved** scene; they do not change the saved scene.
 
 - **Tools > AmberScreen > Navigation > Create Compass Demo Scene** — press Play
   to see the original spinning compass.
@@ -201,5 +202,84 @@ Both commands create a new **unsaved** scene; they do not change the saved scene
   visible because they are demo help, not navigation HUD. The route demo explicitly
   binds a next-stop marker to its local registry; it draws no map or arrows.
 
+- **Tools > AmberScreen > Navigation > Create Route Ribbon Demo Scene** — press Play.
+  A cube travels a curved sample path. A world line sits just above a ground plane,
+  and the same path is drawn in a side panel. With **Show Remaining Only** on, both
+  ribbons trim behind the cube. Select **RibbonDemo** in the Hierarchy to toggle
+  **Hud Visible** (both package ribbons hide; the cube keeps moving) or
+  **Show Remaining Only**. The instructions remain visible because they are demo
+  help, not navigation HUD. The demo draws no player pip, arrows or follow-dots.
+
+## 0.3.0: track ribbon
+
+`RoutePath` is a world-space polyline the game supplies. It does not find a route,
+read EasyRoads, or follow the player. `SetPoints` stores a snapshot, drops non-finite
+and duplicate consecutive points, and raises `Changed`. `Length` and
+`CumulativeLengths` are 3D distances along that polyline. `SampleAtDistance` returns
+a position and segment direction, clamped to the path. `ClosestDistance` returns the
+along-path distance of the nearest point to a world position, for progress.
+
+```csharp
+var path = new RoutePath();
+path.SetPoints(worldPoints); // game-authored or adapter-built
+path.Changed += () => { /* rebuild bindings if needed */ };
+path.SampleAtDistance(metresAlong, out Vector3 position, out Vector3 direction);
+float progress = path.ClosestDistance(vehiclePosition);
+```
+
+Optional presenters draw the path only. They share the existing
+`NavigationHud.Visible` switch (events and the `RoutePath` data itself keep running).
+A game-owned device can draw the same path itself if that screen should stay up
+when the HUD is hidden.
+
+`RouteRibbonUI` is a `MaskableGraphic`. Put it under the game's existing Canvas
+(phone/app screen or a HUD panel). Set `WorldMin` / `WorldMax` as the world XZ
+rectangle that maps onto the graphic's `RectTransform`, and optional `WorldYawDeg`
+to rotate that mapping about the rectangle centre. `Width` is in local UI units.
+`ShowRemainingOnly` plus `ProgressDistance` trim the stroke to the untravelled
+part. No player pip, arrows or follow-dots are drawn. Assign `Path` in code;
+the component does not create a Canvas.
+
+```csharp
+uiRibbon.Path = path;
+uiRibbon.WorldMin = new Vector2(islandMinX, islandMinZ);
+uiRibbon.WorldMax = new Vector2(islandMaxX, islandMaxZ);
+uiRibbon.ShowRemainingOnly = true;
+uiRibbon.ProgressDistance = progress;
+```
+
+`RouteRibbonWorld` is an optional thin world `LineRenderer`. The game supplies
+`lineMaterial`; if that field is empty, a `Sprites/Default` material is used.
+`HeightOffset` raises the line above the road. It uses the same remaining-distance
+and HUD visibility rules.
+
+LWN should keep EasyRoads and job routing on the game side. The package never
+references EasyRoads. A thin adapter can read each `LWN_*` road's centreline and
+stitch a job path, then hand the points to `RoutePath`:
+
+```csharp
+// Game-side only (EasyRoads3Dv3). Do not put this in the shared package.
+var net = new ERRoadNetwork();
+var points = new List<Vector3>();
+foreach (ERRoad road in net.GetRoadObjects())
+{
+    if (road == null || !road.GetName().StartsWith("LWN_")) continue;
+    Vector3[] centre = road.GetSplinePointsCenter();
+    if (centre == null || centre.Length == 0) continue;
+    // Stitch the roads for this job here. Junctions in LWN are snapped, not
+    // joined with EasyRoads intersection prefabs, so the game owns the route.
+    points.AddRange(centre);
+}
+path.SetPoints(points);
+uiRibbon.Path = path;
+worldRibbon.Path = path;
+```
+
+If the network is not in the scene, the same track CSVs the LWN road builder
+already uses (`index,x,y,z,kind,bridge`) are a fallback. Delivery outcomes and
+Plenty Drive chrome stay in the game.
+
 New tests: `RouteAndPaceNoteTests` (logic), `RoutePresentationTests` (Unity marker
-ownership and optional uGUI presenter). Run them in the Sandbox's EditMode tab.
+ownership and optional uGUI presenter), `RoutePathTests` (polyline maths),
+`RouteRibbonTests` (mesh vertex counts and visibility). Run them in the Sandbox's
+EditMode tab.

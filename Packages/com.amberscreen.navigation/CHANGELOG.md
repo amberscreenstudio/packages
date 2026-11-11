@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 — 2026-11-12
+- Added RoutePath, a game-supplied world-space polyline snapshot with cumulative length, SampleAtDistance and ClosestDistance. No route finding.
+- Added RouteRibbonUI, a uGUI MaskableGraphic that projects the path into its RectTransform from game-supplied world-XZ bounds (optional yaw) and can trim to the remaining distance.
+- Added optional RouteRibbonWorld LineRenderer presenter with a height offset. The game supplies the material; a default sprite material is used if none is set.
+- Both presenters draw the path only (no player pip, arrows or follow-dots) and honour the existing NavigationHud.Visible switch.
+- Added a route ribbon demo (Tools > AmberScreen > Navigation > Create Route Ribbon Demo Scene) with Hud Visible and Show Remaining Only toggles.
+- Added EditMode tests for RoutePath maths and ribbon mesh vertex counts and visibility.
+- Verified in Sandbox (Unity 6000.6.6f1): EditMode tests green, ribbon demo works (world line, panel line trims behind the car, Hud Visible hides both).
+
 ## 0.2.1 — 2026-11-11
 - Route demo toggle renamed from Mags Present to Co Driver Present; package text no longer names a game character.
 
