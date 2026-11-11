@@ -1,8 +1,8 @@
 {
   "name": "com.amberscreen.navigation",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "AmberScreen Navigation",
-  "description": "Opt-in compass bearings and markers. No discovery, routing or maps.",
+  "description": "Opt-in compass, ordered next-stop data and co-driver text pace notes. No maps or route finding.",
   "unity": "6000.0",
   "dependencies": {
     "com.unity.ugui": "2.0.0"

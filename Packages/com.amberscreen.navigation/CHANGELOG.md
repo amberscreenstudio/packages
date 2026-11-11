@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 — 2026-11-11
+- Adapted LWN JobManifest ordered-stop/current-index/event pattern into navigation-only data.
+- Added explicit next-stop distance, reached/advance/change events and opt-in registry binding.
+- Added authored distance/world-radius text notes, a game-set co-driver gate and caller-driven display timer.
+- Added optional uGUI Text presenter using the existing single NavigationHud.Visible switch.
+- Added a repeating route demo with Inspector toggles for Mags presence and HUD visibility.
+- Added logic and Unity presentation/marker ownership tests. No persistent hosts or input dependency.
+- No maps, arrows, route finding, player/camera coupling or game-side job-state changes.
+- Verified in Sandbox (Unity 6000.6.6f1): compiles, EditMode tests green, route demo works (notes gate on Mags Present, labels hide with Hud Visible).
+
 ## 0.1.0 — 2026-11-10
 - Ported heading and spring-card behaviour from Sand & Ink `SandAndInk.Map.CompassInstrument`
   using the supplied working-code algorithm: stiffness 26, damping 6, bump gain 3.5,

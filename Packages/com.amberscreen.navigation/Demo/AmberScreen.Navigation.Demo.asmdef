@@ -2,7 +2,8 @@
   "name": "AmberScreen.Navigation.Demo",
   "rootNamespace": "AmberScreen.Navigation.Demo",
   "references": [
-    "AmberScreen.Navigation"
+    "AmberScreen.Navigation",
+    "UnityEngine.UI"
   ],
   "autoReferenced": false
 }
