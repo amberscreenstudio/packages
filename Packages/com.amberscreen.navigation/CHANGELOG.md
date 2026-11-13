@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.1 — 2026-11-13
+- RouteRibbonUI now calls Graphic's OnDisable/OnDestroy, so destroyed ribbons are unregistered from uGUI; fixes MissingReferenceException spam that broke other packages' EditMode tests.
+
 ## 0.3.0 — 2026-11-12
 - Added RoutePath, a game-supplied world-space polyline snapshot with cumulative length, SampleAtDistance and ClosestDistance. No route finding.
 - Added RouteRibbonUI, a uGUI MaskableGraphic that projects the path into its RectTransform from game-supplied world-XZ bounds (optional yaw) and can trim to the remaining distance.

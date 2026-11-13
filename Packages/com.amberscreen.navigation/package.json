@@ -1,6 +1,6 @@
 {
   "name": "com.amberscreen.navigation",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "displayName": "AmberScreen Navigation",
   "description": "Opt-in compass, ordered next-stop data, co-driver text pace notes and an optional route ribbon. No maps or route finding.",
   "unity": "6000.0",

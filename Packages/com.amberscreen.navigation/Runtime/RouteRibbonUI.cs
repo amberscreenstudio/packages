@@ -38,11 +38,16 @@ namespace AmberScreen.Navigation
             }
         }
 
-        private void OnDisable() => SetVerticesDirty();
+        // Must call base: Graphic.OnDisable unregisters from the canvas and the editor rebuild tracker.
+        protected override void OnDisable()
+        {
+            base.OnDisable();
+        }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
             if (path != null) path.Changed -= OnPathChanged;
+            base.OnDestroy();
         }
 
         private void LateUpdate() => SetVerticesDirty();
