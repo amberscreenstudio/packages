@@ -2,14 +2,14 @@
 
 Runtime debug console. Namespace: `AmberScreen.Dev`. No render-pipeline code — works on URP, URP 2D, and HDRP.
 
-**Version:** 0.4.2  
+**Version:** 0.4.4  
 **Unity:** 6000.6+  
 **Package / asmdef name:** `com.amberscreen.devconsole` / `AmberScreen.DevConsole`
 
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.4.2
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.4.4
 ```
 (Pin the tag once published; until then use a commit hash or local `file:` reference.)
 
@@ -49,6 +49,7 @@ DevHud.SetLine("Vehicle", "Speed", () => speedKmh.ToString("0"));
 ```
 
 - **Toggle:** F2 (`hudToggleKey`), also `DevHud.Toggle()` / `Visible`. No `#if` needed — API is a no-op when the define is stripped.
+- **Overflow:** when the rail’s content is taller than the rail, it scrolls vertically (mouse wheel and touch drag). Rows keep their minimum height instead of being squashed.
 - **Empty lines:** a getter that returns `null` or `""` is not drawn; a section with no visible lines (including its header) is omitted.
 - **Key hints:** `DevHud.SetKeyHints(mode, (action, label)…)`, `SetMode(mode)`, `ClearKeyHints(mode)`. Draws a **Keys** section last for the active mode (binding display + label).
 - **Settings:** `hudShowOnStart`, `hudToggleKey`, `hudScreenFraction` / min / max width, `hudOpacity`, `hudFontSize`, `hudUpdateHz` (default 6), `hudPortraitHeightFraction` (default 0.18). `rememberState` restores HUD visibility.

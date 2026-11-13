@@ -242,6 +242,59 @@ namespace AmberScreen.Dev.Tests
             Assert.LessOrEqual(RectMaxY(strip), RectMaxY(canvas) + 1f);
         }
 
+        [Test]
+        public void OverflowingRail_ContentTallerThanViewport_RowsKeepMinHeight()
+        {
+            DevConsoleView.SetLayoutScreenOverride(1280, 400, 160f);
+            for (int i = 0; i < 30; i++)
+                DevHud.SetLine("Overflow", "Row " + i, () => "v" + i);
+
+            DevConsoleHost.EnsureExists();
+            DevHud.Visible = true;
+            DevConsoleHost.HudView?.Tick(1f);
+
+            var rail = FindNamedRect("DevHudRail");
+            Assert.IsNotNull(rail, "DevHudRail");
+            var viewport = rail.Find("HudViewport") as RectTransform;
+            var content = viewport != null ? viewport.Find("HudContent") as RectTransform : null;
+            Assert.IsNotNull(viewport, "HudViewport");
+            Assert.IsNotNull(content, "HudContent");
+
+            ForceLayout(content);
+            ForceLayout(viewport);
+            ForceLayout(rail);
+
+            Assert.Greater(content.rect.height, viewport.rect.height + 1f,
+                "content should be taller than the viewport so the rail can scroll");
+
+            Assert.GreaterOrEqual(RectMinX(viewport), RectMinX(rail) - 1f);
+            Assert.LessOrEqual(RectMaxX(viewport), RectMaxX(rail) + 1f);
+            Assert.GreaterOrEqual(RectMinY(viewport), RectMinY(rail) - 1f);
+            Assert.LessOrEqual(RectMaxY(viewport), RectMaxY(rail) + 1f);
+            Assert.LessOrEqual(viewport.rect.height, rail.rect.height + 1f);
+
+            int rows = 0;
+            foreach (var tr in content.GetComponentsInChildren<RectTransform>(true))
+            {
+                if (tr.name != "HudRow")
+                    continue;
+                rows++;
+                float minH = 0f;
+                foreach (var le in tr.GetComponentsInChildren<LayoutElement>(true))
+                    minH = Mathf.Max(minH, le.minHeight);
+                Assert.GreaterOrEqual(tr.rect.height, minH - 1f,
+                    "HUD row squashed below min height");
+            }
+            Assert.Greater(rows, 10, "expected many HUD rows in the overflow fixture");
+
+            var scroll = rail.GetComponent<ScrollRect>();
+            Assert.IsNotNull(scroll);
+            Assert.AreSame(content, scroll.content);
+            Assert.AreSame(viewport, scroll.viewport);
+            Assert.IsTrue(scroll.vertical);
+            Assert.IsFalse(scroll.horizontal);
+        }
+
         static void ForceLayout(RectTransform rt)
         {
             LayoutRebuilder.ForceRebuildLayoutImmediate(rt);

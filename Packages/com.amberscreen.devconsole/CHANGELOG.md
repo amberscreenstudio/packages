@@ -2,6 +2,15 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.4.4] - 2026-11-13
+
+### Fixed
+
+- DevHud rail content scrolls vertically (mouse wheel and touch drag) when it is taller than the rail, instead of squashing rows. Viewport is stretched to the rail; content is top-stretched with a vertical preferred ContentSizeFitter.
+- `DevConsoleHost.EnsureExists` only calls `DontDestroyOnLoad` while playing, so EditMode tests no longer throw.
+
+Verified in Sandbox (Unity 6000.6.6f1): EditMode tests green, HUD rail scrolls when overflowing and rows keep their height. The scroll area only takes clicks while the rail overflows.
+
 ## [0.4.3] - 2026-11-03
 
 ### Fixed

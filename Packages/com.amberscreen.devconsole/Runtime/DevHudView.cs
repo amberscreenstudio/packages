@@ -65,6 +65,9 @@ namespace AmberScreen.Dev
         RectTransform m_Root;
         RectTransform m_Rail;
         Image m_RailBg;
+        RectTransform m_RailViewport;
+        RectTransform m_RailContent;
+        Image m_RailViewportHit;
         RectTransform m_PinnedStrip;
         Image m_PinnedBg;
         RectTransform m_SectionsRoot;
@@ -104,6 +107,9 @@ namespace AmberScreen.Dev
             m_Canvas = null;
             m_Root = null;
             m_Rail = null;
+            m_RailViewport = null;
+            m_RailContent = null;
+            m_RailViewportHit = null;
             m_PinnedStrip = null;
             m_SectionsRoot = null;
             m_StripWidgets.Clear();
@@ -137,6 +143,9 @@ namespace AmberScreen.Dev
                 m_EventSystemPending = false;
                 DevConsoleHost.EnsureEventSystemForHud();
             }
+
+            if (m_RailViewportHit != null && m_RailContent != null && m_RailViewport != null)
+                m_RailViewportHit.raycastTarget = m_RailContent.rect.height > m_RailViewport.rect.height + 0.5f;
 
             int sw = DevHudLayout.ScreenW;
             int sh = DevHudLayout.ScreenH;
@@ -228,19 +237,41 @@ namespace AmberScreen.Dev
             m_Rail = DevConsoleUiUtil.CreateRect("DevHudRail", m_Root);
             m_RailBg = DevConsoleUiUtil.AddImage(m_Rail, theme.hudPanelColor);
             m_RailBg.raycastTarget = false;
-            m_RailLayout = m_Rail.gameObject.AddComponent<VerticalLayoutGroup>();
-            m_RailLayout.childControlWidth = true;
-            m_RailLayout.childControlHeight = true;
-            m_RailLayout.childForceExpandWidth = true;
-            m_RailLayout.childForceExpandHeight = false;
-            m_RailLayout.childAlignment = TextAnchor.UpperLeft;
 
-            m_PinnedStrip = DevConsoleUiUtil.CreateRect("HudPinnedStrip", m_Rail);
+            // Viewport fills the rail; content is top-stretched and grows with preferred height
+            // so rows are not squashed when the rail overflows (past CreateRect sizeDelta=100 bug).
+            m_RailViewport = DevConsoleUiUtil.CreateRect("HudViewport", m_Rail);
+            DevConsoleUiUtil.Stretch(m_RailViewport);
+            m_RailViewport.gameObject.AddComponent<RectMask2D>();
+            var vpImg = m_RailViewport.gameObject.AddComponent<Image>();
+            // Near-invisible graphic so ScrollRect receives wheel / drag raycasts.
+            vpImg.color = new Color(1f, 1f, 1f, 0.01f);
+            // Only catch clicks while the rail actually overflows, so the HUD stays click-through like 0.4.3.
+            vpImg.raycastTarget = false;
+            m_RailViewportHit = vpImg;
+
+            m_RailContent = DevConsoleUiUtil.CreateRect("HudContent", m_RailViewport);
+            m_RailContent.anchorMin = new Vector2(0f, 1f);
+            m_RailContent.anchorMax = new Vector2(1f, 1f);
+            m_RailContent.pivot = new Vector2(0.5f, 1f);
+            DevConsoleUiUtil.FitTopStretchContent(m_RailContent);
+            m_RailLayout = ConfigureVertical(m_RailContent.gameObject, 0f, 0f, 0f);
+            m_RailContent.gameObject.AddComponent<ContentSizeFitter>().verticalFit =
+                ContentSizeFitter.FitMode.PreferredSize;
+
+            var scroll = m_Rail.gameObject.AddComponent<ScrollRect>();
+            scroll.content = m_RailContent;
+            scroll.viewport = m_RailViewport;
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+
+            m_PinnedStrip = DevConsoleUiUtil.CreateRect("HudPinnedStrip", m_RailContent);
             m_PinnedBg = DevConsoleUiUtil.AddImage(m_PinnedStrip, theme.hudPinnedStripColor);
             m_PinnedBg.raycastTarget = false;
             ConfigureVertical(m_PinnedStrip.gameObject, 0f, 0f, 0f);
 
-            m_SectionsRoot = DevConsoleUiUtil.CreateRect("HudSections", m_Rail);
+            m_SectionsRoot = DevConsoleUiUtil.CreateRect("HudSections", m_RailContent);
             ConfigureVertical(m_SectionsRoot.gameObject, 0f, 0f, 0f);
 
             ApplyRailStyle(theme, settings);
@@ -287,8 +318,11 @@ namespace AmberScreen.Dev
                 m_PinnedBg.color = WithAlpha(theme.hudPinnedStripColor, opacity);
 
             int pad = Mathf.RoundToInt(theme.padding);
-            m_RailLayout.padding = new RectOffset(pad, pad, pad, pad);
-            m_RailLayout.spacing = theme.spacing;
+            if (m_RailLayout != null)
+            {
+                m_RailLayout.padding = new RectOffset(pad, pad, pad, pad);
+                m_RailLayout.spacing = theme.spacing;
+            }
             if (m_PinnedStrip != null)
             {
                 var vlg = m_PinnedStrip.GetComponent<VerticalLayoutGroup>();
@@ -438,7 +472,7 @@ namespace AmberScreen.Dev
 
             if (m_KeysText == null)
             {
-                var rt = DevConsoleUiUtil.CreateRect("HudKeys", m_Rail);
+                var rt = DevConsoleUiUtil.CreateRect("HudKeys", m_RailContent != null ? m_RailContent : m_Rail);
                 var le = rt.gameObject.AddComponent<LayoutElement>();
                 le.minHeight = 16f;
                 le.flexibleWidth = 1f;

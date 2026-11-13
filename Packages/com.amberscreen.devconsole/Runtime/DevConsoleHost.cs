@@ -309,7 +309,8 @@ namespace AmberScreen.Dev
                 return;
 
             var go = new GameObject("[AmberScreen DevConsole]");
-            DontDestroyOnLoad(go);
+            if (Application.isPlaying)
+                DontDestroyOnLoad(go);
             s_Instance = go.AddComponent<DevConsoleHost>();
             s_Instance.Bootstrap();
         }
