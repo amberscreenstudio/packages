@@ -1,6 +1,6 @@
 # Shared systems registry
 
-Last updated: 2026-10-28. Kept by Packages. Every registered module is a package with exactly ONE owner (Fabio, 2026-10-19).
+Last updated: 2026-11-13. Kept by Packages. Every registered module is a package with exactly ONE owner (Fabio, 2026-10-19).
 
 
 ## Rules
@@ -43,7 +43,7 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.devconsole
 
-- **Owner:** Packages | **State:** in library, `0.4.2` untagged | **Users:** all five
+- **Owner:** Packages | **State:** in library, `0.4.4` tagged (`devconsole/0.4.4` on 53deb86) | **Users:** LWN `devconsole/0.4.1`, Sand & Ink `devconsole/0.4.3`, Snorkel & Sail `devconsole/0.4.1`, Twin Ticks `devconsole/0.4.2`
 - **Includes:** right-edge console rail (stays open without blocking), section windows (blocking), **Debug HUD** (`DevHud` — sections/rows/tables/pins/collapse; left-edge rail or portrait top strip), **Theme** (`DevConsoleTheme` + HUD colours/fonts), optional command line (`SetCommandLineEnabled`), key hints (InputAction + plain string), flowing auto-sized buttons, sub-headers, entry visibility predicates, quick buttons, pinned readouts, buttons/toggles/dropdowns/confirms/readouts, filter, log window, saved state, portrait full-screen sheet with dpi scaling, open bindings (F1, F2 HUD, Select+Start, 3-finger tap, corner hold), release-build stripping, Inter font
 - **Stays in games:** every game's own commands, sections, HUD *content*, theme assets, and command registrations
 - **Interfaces:** DevConsole static API (`ApplyTheme`, `RegisterCommand`, `RegisterSubHeader`, `SetVisible`, `SetCommandLineEnabled`, …), `DevHud` static API (`AddSection`, `SetLine`, `SetKeyHints`, `GameRect`, …), `[DevButton]`, `IDevConsoleSectionProvider`, `BlocksGame`, `IsPointerOverConsole`, `ConsumedCloseThisFrame`
@@ -127,7 +127,7 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.meters
 
-- **Owner:** Snorkel & Sail | **State:** in library, `meters/0.1.0` | **Users:** S&S, S&I
+- **Owner:** Snorkel & Sail | **State:** in library, `meters/0.1.0` | **Users:** S&S `meters/0.1.0`, S&I `meters/0.1.0`
 - **Includes:** Meter (value, max/capacity, drain and regen/fill, named thresholds, warning/empty/full events, saveable state), CharacterMeters (one set for land and water)
 - **Stays in games:** which meters exist and their numbers (stamina, breath, water, radiator), meter UI
 - **Interfaces:** Meter, meter events, save state
@@ -135,7 +135,7 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.economy
 
-- **Owner:** LWN | **State:** in library, `0.1.0` untagged | **Users:** LWN, Snorkel & Sail, Time & Tension, Sand & Ink
+- **Owner:** LWN | **State:** in library, `0.1.0` tagged (`economy/0.1.0` on cf4ded2) | **Users:** none
 - **Includes:** `Money` / `EconomyCurrencySettings`, `IWallet` / `Wallet` (Balance, Available, Add, TrySpend, holds, transaction log), `EarningsRecord` / `EarningsLineType`, `WalletSaveState`; temporary `TempSave` (`ISaveStateProvider`, `JsonSaveBackend`) until `com.amberscreen.save`
 - **Stays in games:** payout rules, job/auction calculators, currency assets, game-specific history
 - **Interfaces:** `IWallet`, `Money`, earnings record types, wallet save provider
@@ -167,7 +167,7 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.phoneui
 
-- **Owner:** Twin Ticks | **State:** in library, `0.2.3` untagged (last tag `phoneui/0.2.2` on 29b7213) | **Users:** Twin Ticks, LWN later
+- **Owner:** Twin Ticks | **State:** in library, `0.2.3` tagged (`phoneui/0.2.3` on c2af6a9) | **Users:** Twin Ticks `phoneui/0.2.3`
 - **Includes:** phone frame, status bar, home screen, messaging, notifications, app host; theme (`PhoneUITheme`); image attachments + viewer; circle-clip avatars; AA rounded-icon clip (no stencil)
 - **Stays in games:** every game's apps' content and chats; theme asset `Resources/PhoneUITheme`; fonts; avatars/icons; app ids/colours
 - **Interfaces:** `IPhoneApp`, `IChatSource`, `IContactDirectory`, `IDeviceStatusProvider`
@@ -175,7 +175,7 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.modelreview
 
-- **Owner:** Packages | **State:** in library, `0.1.7` untagged (last tag `modelreview/0.1.2` on 8c16e404) | **Users:** Sand & Ink, LWN (planned), any 3D project
+- **Owner:** Packages | **State:** in library, `0.1.7` tagged (`modelreview/0.1.7` on c6e438d) | **Users:** LWN `modelreview/0.1.2`, Sand & Ink `modelreview/0.1.2`
 - **Includes:** review studio built in code (untitled scene), asset browser (one model at a time), tone cycle, tuned URP profile, studio lights, orbit/interior/gamepad camera, waterline, Delivered/Clay/Wireframe, generic read-only material report
 - **Stays in games:** the models themselves, game-specific checks
 - **Interfaces:** menus, `ModelReviewRig`, `ModelMaterialReport.Build`
@@ -209,11 +209,19 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.llmchat
 
-- **Owner:** Twin Ticks | **State:** `0.2.1` tagged (`llmchat/0.2.1` on 29b7213) | **Users:** Twin Ticks, LWN likely
+- **Owner:** Twin Ticks | **State:** `0.2.1` tagged (`llmchat/0.2.1` on 29b7213) | **Users:** Twin Ticks `llmchat/0.2.1`
 - **Includes:** LLM character chat runner: persona assets, history window, single final Chunk, seen/typing timing assets, runner events (seen, typing, chunk, done); reply validator; example picker; model ladder; cross-speaker repeat check, live-history validation
 - **Stays in games:** conversation director, story beats, personas' content, pacing, the PhoneUI adapter onto `IChatSource`
 - **Interfaces:** `ILLMChatBackend`, runner events
 - **Depends on:** nothing in core; LLMUnity only in a separate backend asmdef (`LLMUnityChatBackend`). No phoneui reference.
+
+### com.amberscreen.navigation
+
+- **Owner:** Packages | **State:** in library, `0.3.1` tagged (`navigation/0.3.1` on a86c39e) | **Users:** none
+- **Includes:** opt-in heading/bearing compass strip, marker registry, ordered next-stop data (`NavigationRoute`, `RouteStop`), co-driver pace notes, optional route ribbon (`RoutePath`, `RouteRibbonUI`, `RouteRibbonWorld`); one global `NavigationHud.Visible` switch
+- **Stays in games:** maps and route finding, EasyRoads (or other road-network) adapters, job/route content, marker choices, fonts, HUD placement, the player/vehicle reference transform
+- **Interfaces:** `HeadingSource`, `MarkerRegistry`, `NavigationHud`, `NavigationRoute`, `RoutePath`, `PaceNoteFeed`, `RouteRibbonUI`, `RouteRibbonWorld`
+- **Depends on:** uGUI (UnityEngine.UI.Text, not TMP)
 
 ### com.amberscreen.audio
 
