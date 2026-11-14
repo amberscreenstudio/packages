@@ -2,7 +2,7 @@
 
 All notable changes to `com.amberscreen.settings` are documented here.
 
-## [0.1.1] - 2026-11-14 (pending Sandbox check)
+## [0.1.1] - 2026-11-14 (verified 2026-11-14)
 
 ### Fixed
 

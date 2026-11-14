@@ -258,7 +258,7 @@ Shared packages are built only for needs no owned asset covers. A shared setting
 
 ### com.amberscreen.settings
 
-- **Owner:** Packages | **State:** 0.1.1 pending Sandbox check (in repo, not tagged) | **Users:** all five (none yet)
+- **Owner:** Packages | **State:** 0.1.1 tagged | **Users:** all five (none yet)
 - **Includes:** graphics (quality level, resolution, display mode, vSync, frame limit), audio (master/music/effects through AudioMixer exposed parameters), controls (mouse sensitivity, invert Y, optional Input System rebinding), JSON save in persistentDataPath applied on startup, Steam Deck detection with a first-run low preset at 30 FPS, plain uGUI menu built in code (no TMP, pipeline neutral)
 - **Stays in games:** the pause menu that opens it, game-only options, a custom menu look, camera code that reads sensitivity/invert
 - **Interfaces:** `GameSettings` static API, `SettingsProfile` (Resources `AmberScreenSettingsProfile`), `SettingsMenu`, `SteamDeckDetector`, `ISettingsApplier`
