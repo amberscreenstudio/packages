@@ -1,0 +1,10 @@
+{
+  "name": "com.amberscreen.inspect",
+  "version": "0.1.0",
+  "displayName": "AmberScreen Inspect",
+  "description": "Close-up inspection viewer: bring an object in front of the camera, rotate, zoom, step through labelled spots, put it back exactly. Old Input Manager or Input System.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.unity.modules.physics": "1.0.0"
+  }
+}

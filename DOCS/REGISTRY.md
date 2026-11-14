@@ -224,10 +224,10 @@ Shared packages are built only for needs no owned asset covers. A shared setting
 
 ### com.amberscreen.navigation
 
-- **Owner:** Packages | **State:** in library, `0.3.1` tagged (`navigation/0.3.1` on a86c39e) | **Users:** none
-- **Includes:** opt-in heading/bearing compass strip, marker registry, ordered next-stop data (`NavigationRoute`, `RouteStop`), co-driver pace notes, optional route ribbon (`RoutePath`, `RouteRibbonUI`, `RouteRibbonWorld`); one global `NavigationHud.Visible` switch
+- **Owner:** Packages | **State:** in library, `0.4.0` tagged (`navigation/0.4.0`, reset to road) | **Users:** none
+- **Includes:** opt-in heading/bearing compass strip, marker registry, ordered next-stop data (`NavigationRoute`, `RouteStop`), co-driver pace notes, optional route ribbon (`RoutePath`, `RouteRibbonUI`, `RouteRibbonWorld`), reset to road from 0.4.0 (`RoadResetter`: back on the nearest road or the last on-road point, stopped, facing along the road, with lift and lane offset); one global `NavigationHud.Visible` switch
 - **Stays in games:** maps and route finding, EasyRoads (or other road-network) adapters, job/route content, marker choices, fonts, HUD placement, the player/vehicle reference transform
-- **Interfaces:** `HeadingSource`, `MarkerRegistry`, `NavigationHud`, `NavigationRoute`, `RoutePath`, `PaceNoteFeed`, `RouteRibbonUI`, `RouteRibbonWorld`
+- **Interfaces:** `HeadingSource`, `MarkerRegistry`, `NavigationHud`, `NavigationRoute`, `RoutePath`, `PaceNoteFeed`, `RouteRibbonUI`, `RouteRibbonWorld`, `IRoadSource`, `RoadPolyline`, `RoadResetter`, `RoadReset`
 - **Depends on:** uGUI (UnityEngine.UI.Text, not TMP)
 
 ### com.amberscreen.audio
@@ -255,6 +255,30 @@ Shared packages are built only for needs no owned asset covers. A shared setting
 - **Stays in games:** the encounters themselves
 - **Interfaces:** encounter rule assets, director events
 - **Depends on:** nothing
+
+### com.amberscreen.settings
+
+- **Owner:** Packages | **State:** 0.1.1 pending Sandbox check (in repo, not tagged) | **Users:** all five (none yet)
+- **Includes:** graphics (quality level, resolution, display mode, vSync, frame limit), audio (master/music/effects through AudioMixer exposed parameters), controls (mouse sensitivity, invert Y, optional Input System rebinding), JSON save in persistentDataPath applied on startup, Steam Deck detection with a first-run low preset at 30 FPS, plain uGUI menu built in code (no TMP, pipeline neutral)
+- **Stays in games:** the pause menu that opens it, game-only options, a custom menu look, camera code that reads sensitivity/invert
+- **Interfaces:** `GameSettings` static API, `SettingsProfile` (Resources `AmberScreenSettingsProfile`), `SettingsMenu`, `SteamDeckDetector`, `ISettingsApplier`
+- **Depends on:** uGUI; Input System optional
+
+### com.amberscreen.inspect
+
+- **Owner:** Packages | **State:** in library, `0.1.0` tagged (`inspect/0.1.0`) | **Users:** Watchmaker first, any game with found objects or documents
+- **Includes:** close-up inspection viewer: `Inspect(Transform)` to a hold point in front of the camera, drag/stick rotation, clamped zoom, `InspectHotspot` labelled spots with next/previous focus, exact restore of parent/pose/layers/physics; events for player controls and background dim
+- **Stays in games:** what can be inspected, pick-up prompts, spot texts, background dim/blur, game-only actions on the object
+- **Interfaces:** `InspectViewer` API and events, `InspectHotspot`, `Inspectable`
+- **Depends on:** nothing (Input System optional)
+
+### com.amberscreen.vehiclewater
+
+- **Owner:** Packages | **State:** in library, `0.1.0` tagged (`vehiclewater/0.1.0`) | **Users:** Sand & Ink, LWN (none yet)
+- **Includes:** water ingress: intake depth stalls the engine, cabin floods over time (0..1), vehicle stopped with extra damping and braking, slow drain, restart only when drained and the game allows
+- **Stays in games:** the water adapter (KWS etc.) and the vehicle adapter, sounds, effects, ignition prompt, what happens to a flooded vehicle
+- **Interfaces:** `IWaterHeightProvider` (`FlatWaterPlane` default), `IVehicleEngineControl`, `VehicleWaterIngress` events, `WaterIngressModel`
+- **Depends on:** nothing (no water or vehicle asset; adapters are README text only)
 
 ## Game-specific (no check needed)
 

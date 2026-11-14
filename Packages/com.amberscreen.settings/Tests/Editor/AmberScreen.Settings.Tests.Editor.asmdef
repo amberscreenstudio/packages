@@ -1,0 +1,20 @@
+{
+  "name": "AmberScreen.Settings.Tests.Editor",
+  "rootNamespace": "AmberScreen.Settings.Tests",
+  "references": [
+    "AmberScreen.Settings",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ]
+}

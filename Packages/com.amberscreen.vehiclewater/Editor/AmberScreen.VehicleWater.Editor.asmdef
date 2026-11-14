@@ -1,0 +1,12 @@
+{
+  "name": "AmberScreen.VehicleWater.Editor",
+  "rootNamespace": "AmberScreen.VehicleWater.Editor",
+  "references": [
+    "AmberScreen.VehicleWater",
+    "AmberScreen.VehicleWater.Demo"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false
+}

@@ -1,0 +1,9 @@
+{
+  "name": "AmberScreen.Settings.Demo",
+  "rootNamespace": "AmberScreen.Settings.Demo",
+  "references": [
+    "AmberScreen.Settings",
+    "UnityEngine.UI"
+  ],
+  "autoReferenced": false
+}

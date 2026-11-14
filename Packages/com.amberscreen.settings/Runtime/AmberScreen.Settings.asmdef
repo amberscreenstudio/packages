@@ -1,0 +1,16 @@
+{
+  "name": "AmberScreen.Settings",
+  "rootNamespace": "AmberScreen.Settings",
+  "references": [
+    "UnityEngine.UI",
+    "Unity.InputSystem"
+  ],
+  "autoReferenced": true,
+  "versionDefines": [
+    {
+      "name": "com.unity.inputsystem",
+      "expression": "1.0.0",
+      "define": "AMBERSCREEN_SETTINGS_INPUTSYSTEM"
+    }
+  ]
+}

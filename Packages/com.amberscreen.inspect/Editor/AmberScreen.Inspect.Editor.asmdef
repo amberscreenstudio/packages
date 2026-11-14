@@ -1,0 +1,12 @@
+{
+  "name": "AmberScreen.Inspect.Editor",
+  "rootNamespace": "AmberScreen.Inspect.Editor",
+  "references": [
+    "AmberScreen.Inspect",
+    "AmberScreen.Inspect.Demo"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false
+}

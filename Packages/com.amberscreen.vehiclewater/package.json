@@ -1,0 +1,10 @@
+{
+  "name": "com.amberscreen.vehiclewater",
+  "version": "0.1.0",
+  "displayName": "AmberScreen Vehicle Water",
+  "description": "Vehicle water ingress: deep water stalls the engine, floods the cabin over time and stops the vehicle; it drains slowly and restarts only when the game allows. Works with any water and any vehicle through two small interfaces.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.unity.modules.physics": "1.0.0"
+  }
+}

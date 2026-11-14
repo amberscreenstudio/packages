@@ -1,0 +1,8 @@
+{
+  "name": "AmberScreen.Inspect.Demo",
+  "rootNamespace": "AmberScreen.Inspect.Demo",
+  "references": [
+    "AmberScreen.Inspect"
+  ],
+  "autoReferenced": false
+}

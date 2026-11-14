@@ -1,0 +1,13 @@
+{
+  "name": "AmberScreen.Settings.Editor",
+  "rootNamespace": "AmberScreen.Settings.Editor",
+  "references": [
+    "AmberScreen.Settings",
+    "AmberScreen.Settings.Demo",
+    "UnityEngine.UI"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false
+}

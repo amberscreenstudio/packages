@@ -1,8 +1,8 @@
-# AmberScreen Navigation 0.3.0
+# AmberScreen Navigation 0.4.0
 
 Unity 6 (`6000.0`), render-pipeline independent, including URP.
 A heading/bearing core, opt-in uGUI compass strip, ordered next-stop data,
-co-driver text feed and an optional route ribbon. No minimap, radar, quest arrows,
+co-driver text feed, an optional route ribbon and reset-to-road for vehicles. No minimap, radar, quest arrows,
 glowing follow-dots, discovery, route finding, game-specific navigation, or
 persistent hosts.
 
@@ -210,6 +210,15 @@ Each command creates a new **unsaved** scene; they do not change the saved scene
   **Show Remaining Only**. The instructions remain visible because they are demo
   help, not navigation HUD. The demo draws no player pip, arrows or follow-dots.
 
+- **Tools > AmberScreen > Navigation > Create Road Reset Demo Scene** — press Play.
+  Three coloured roads lie on a ground plane (yellow and green are two-way, blue
+  is one-way) with a box standing in for a vehicle. Use the on-screen buttons:
+  **Push Off Road** knocks the box sideways off the road, **Flip Over** rolls it,
+  **Reset To Road** puts it back on the road, stopped and upright, facing along the
+  road. A white ball marks the last on-road point; while the box is within 30 m of
+  it, the reset goes there. The buttons are drawn with IMGUI, so no EventSystem or
+  input package is needed.
+
 ## 0.3.0: track ribbon
 
 `RoutePath` is a world-space polyline the game supplies. It does not find a route,
@@ -283,3 +292,69 @@ New tests: `RouteAndPaceNoteTests` (logic), `RoutePresentationTests` (Unity mark
 ownership and optional uGUI presenter), `RoutePathTests` (polyline maths),
 `RouteRibbonTests` (mesh vertex counts and visibility). Run them in the Sandbox's
 EditMode tab.
+
+## 0.4.0: reset to road
+
+`RoadResetter` puts a vehicle back on a road: stopped (velocity and angular velocity
+zeroed), upright, facing the way the road runs, `LiftHeight` metres above the road
+point and `LaneOffset` metres to the right of the centre line (negative = left).
+It checks every `RecordInterval` seconds whether the vehicle is within
+`OnRoadDistance` of a road and, if so, records that road point. On reset, if the
+vehicle is still within `LastOnRoadRadius` of the recorded point, it goes back
+there (where it left the road); otherwise it goes to the nearest road.
+
+Roads come from the game through `IRoadSource`, a list of `RoadPolyline`. Each one
+is a `RoutePath` plus `TwoWay`. One-way roads must list their points in the driving
+direction and always face that way. Two-way roads face whichever way along the road
+is closer to the vehicle's current facing. `RoadSourceList` is a ready-made source.
+The package has no EasyRoads, vehicle or input dependency: the game calls
+`ResetToRoad()` from its own key or button, and uses `Placed` to clear its own
+vehicle's throttle and steering or call the vehicle asset's own reset.
+
+```csharp
+var resetter = vehicle.AddComponent<RoadResetter>(); // or add it in the Inspector
+resetter.Source = roads;           // any IRoadSource
+resetter.LiftHeight = 0.6f;
+resetter.LaneOffset = 1.75f;       // right-hand lane centre on a 7 m road
+resetter.Placed += (pos, rot) => { /* clear inputs, call the vehicle's own reset */ };
+// From the game's own input:
+resetter.ResetToRoad();
+```
+
+`RoadReset` holds the same maths without a component (`TryFindNearest`,
+`TryChooseHit`, `Heading`, `TryComputePose`) for games that move the vehicle
+themselves.
+
+A game that builds its roads with EasyRoads keeps the adapter on the game side.
+Example only (not compiled in this package):
+
+```csharp
+// Game-side only (EasyRoads3Dv3). Do not put this in the shared package.
+using System.Collections.Generic;
+using AmberScreen.Navigation;
+using EasyRoads3Dv3;
+using UnityEngine;
+
+public sealed class EasyRoadsRoadSource : IRoadSource
+{
+    private readonly List<RoadPolyline> roads = new List<RoadPolyline>();
+    public IReadOnlyList<RoadPolyline> Roads => roads;
+
+    public EasyRoadsRoadSource(string namePrefix)
+    {
+        var net = new ERRoadNetwork();
+        foreach (ERRoad road in net.GetRoadObjects())
+        {
+            if (road == null || !road.GetName().StartsWith(namePrefix)) continue;
+            Vector3[] centre = road.GetSplinePointsCenter();
+            if (centre == null || centre.Length < 2) continue;
+            roads.Add(new RoadPolyline(centre, twoWay: true));
+        }
+    }
+}
+
+// On the vehicle: resetter.Source = new EasyRoadsRoadSource("MyRoads_");
+```
+
+Build the source once after the road network exists (it copies the points), not
+every frame. New tests: `RoadResetTests`.

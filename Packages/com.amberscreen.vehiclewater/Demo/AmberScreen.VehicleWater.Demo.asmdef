@@ -1,0 +1,8 @@
+{
+  "name": "AmberScreen.VehicleWater.Demo",
+  "rootNamespace": "AmberScreen.VehicleWater.Demo",
+  "references": [
+    "AmberScreen.VehicleWater"
+  ],
+  "autoReferenced": false
+}

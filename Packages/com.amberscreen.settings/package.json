@@ -1,0 +1,10 @@
+{
+  "name": "com.amberscreen.settings",
+  "version": "0.1.1",
+  "displayName": "AmberScreen Settings",
+  "description": "Graphics, audio and controls settings with JSON save, startup apply, Steam Deck first-run preset and an optional plain uGUI menu. Render-pipeline neutral.",
+  "unity": "6000.0",
+  "dependencies": {
+    "com.unity.ugui": "2.0.0"
+  }
+}

@@ -15,6 +15,14 @@
       "source": "local",
       "dependencies": {}
     },
+    "com.amberscreen.inspect": {
+      "version": "file:../../Packages/com.amberscreen.inspect",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.unity.modules.physics": "1.0.0"
+      }
+    },
     "com.amberscreen.llmchat": {
       "version": "file:../../Packages/com.amberscreen.llmchat",
       "depth": 0,
@@ -35,6 +43,14 @@
         "com.unity.render-pipelines.universal": "17.6.0"
       }
     },
+    "com.amberscreen.navigation": {
+      "version": "file:../../Packages/com.amberscreen.navigation",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.unity.ugui": "2.0.0"
+      }
+    },
     "com.amberscreen.phoneui": {
       "version": "file:../../Packages/com.amberscreen.phoneui",
       "depth": 0,
@@ -42,6 +58,22 @@
       "dependencies": {
         "com.unity.inputsystem": "1.20.0",
         "com.unity.ugui": "2.0.0"
+      }
+    },
+    "com.amberscreen.settings": {
+      "version": "file:../../Packages/com.amberscreen.settings",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.unity.ugui": "2.0.0"
+      }
+    },
+    "com.amberscreen.vehiclewater": {
+      "version": "file:../../Packages/com.amberscreen.vehiclewater",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.unity.modules.physics": "1.0.0"
       }
     },
     "com.unity.burst": {

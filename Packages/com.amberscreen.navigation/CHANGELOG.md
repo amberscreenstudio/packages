@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0 — 2026-11-14 (verified 2026-11-14)
+- Added reset-to-road: RoadResetter puts a vehicle back on the nearest road, stopped, facing the way the road runs, lifted by LiftHeight and moved by an optional LaneOffset to the lane centre.
+- It records the last on-road point (within OnRoadDistance) and resets there when the vehicle is still within LastOnRoadRadius of it; otherwise it uses the nearest road.
+- Roads come from the game through IRoadSource (a list of RoadPolyline, each a RoutePath plus a TwoWay flag). One-way roads face the point order; two-way roads face whichever way is closer to the vehicle's current facing. RoadSourceList is a simple ready-made source.
+- Pure maths in RoadReset (TryFindNearest, TryChooseHit, Heading, TryComputePose); a Placed event lets the game clear its own vehicle inputs. The stop-and-place order (zero velocities, move, sync body, zero again) is adapted from proven game vehicle code.
+- No EasyRoads, vehicle or input package dependency. The README shows a game-side EasyRoads adapter as a snippet only.
+- Added a road reset demo (Tools > AmberScreen > Navigation > Create Road Reset Demo Scene) with on-screen Push Off Road, Flip Over and Reset To Road buttons.
+- Added EditMode tests: nearest point on a polyline, heading along the segment, last on-road point over nearest within the radius, one-way versus two-way heading, lift and lane offset, and the component zeroing velocities.
+- Verified in Sandbox (Unity 6000.6.6f1): EditMode tests green, road reset demo works.
+
 ## 0.3.1 — 2026-11-13
 - RouteRibbonUI now calls Graphic's OnDisable/OnDestroy, so destroyed ribbons are unregistered from uGUI; fixes MissingReferenceException spam that broke other packages' EditMode tests.
 

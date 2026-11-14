@@ -1,0 +1,15 @@
+{
+  "name": "AmberScreen.Inspect",
+  "rootNamespace": "AmberScreen.Inspect",
+  "references": [
+    "Unity.InputSystem"
+  ],
+  "autoReferenced": true,
+  "versionDefines": [
+    {
+      "name": "com.unity.inputsystem",
+      "expression": "1.0.0",
+      "define": "AMBERSCREEN_INSPECT_INPUTSYSTEM"
+    }
+  ]
+}
