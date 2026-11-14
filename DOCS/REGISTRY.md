@@ -41,6 +41,8 @@ Games pin a tag, never `main`. Packages moves settled modules into this repo, ta
 
 Each entry lists: **Includes** (what is in the package), **Stays in games** (what is deliberately NOT in it), **Interfaces** (the contract users code against), **Depends on**.
 
+Shared packages are built only for needs no owned asset covers. A shared settings preset for an owned asset can be added later if two games configure it the same way.
+
 ### com.amberscreen.devconsole
 
 - **Owner:** Packages | **State:** in library, `0.4.4` tagged (`devconsole/0.4.4` on 53deb86) | **Users:** LWN `devconsole/0.4.1`, Sand & Ink `devconsole/0.4.3`, Snorkel & Sail `devconsole/0.4.1`, Twin Ticks `devconsole/0.4.2`
@@ -103,7 +105,8 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.water
 
-- **Owner:** Snorkel & Sail | **State:** planned | **Users:** S&S, S&I later
+- **Owner:** Snorkel & Sail | **State:** dropped: use owned asset | **Users:** S&S, S&I later
+- **Use instead:** KWS Water System (S&S already uses it); Oceanis Pro as an alternative
 - **Includes:** `IWaterSurface` only (tiny core asmdef): height, normal, flow at a point
 - **Stays in games:** KWS (or other water) adapter, water visuals
 - **Interfaces:** `IWaterSurface`
@@ -111,7 +114,8 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.buoyancy
 
-- **Owner:** Snorkel & Sail | **State:** planned (built straight into Shared) | **Users:** S&S
+- **Owner:** Snorkel & Sail | **State:** dropped: use owned asset | **Users:** S&S
+- **Use instead:** Dynamic Water Physics 2 (NWH)
 - **Includes:** boat/object buoyancy points, drag, righting
 - **Stays in games:** boat handling and sailing
 - **Interfaces:** buoyancy settings asset
@@ -143,7 +147,8 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.interaction
 
-- **Owner:** Snorkel & Sail | **State:** planned (after buoyancy) | **Users:** S&S, LWN, Watchmaker
+- **Owner:** Snorkel & Sail | **State:** dropped: use owned asset | **Users:** S&S, LWN, Watchmaker
+- **Use instead:** Dialogue System's Selector / ProximitySelector / Usable components; NodeCanvas for logic
 - **Includes:** `IInteractable` + interactor: FP ray and 3P proximity, per-object range, nearest target wins (optional priority), dynamic prompt label per state, `CanInteract` (unavailable but visible), focus gained/lost events, press, hold with progress, press and hold on one target, take control (event only), works while carrying, underwater and on moving decks, origin-recentre safe, settable interactor enabled state, global block predicate (dev console)
 - **Stays in games:** prompt UI, what each interactable does
 - **Interfaces:** `IInteractable`, interactor events
@@ -159,7 +164,8 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.charactercontroller
 
-- **Owner:** LWN | **State:** planned (LWN phase 5) | **Users:** LWN, S&S
+- **Owner:** LWN | **State:** dropped: use owned asset | **Users:** LWN, S&S
+- **Use instead:** Kinematic Character Controller (Philippe St-Amand); Unity First Person + Third Person Character Controllers
 - **Includes:** the only on-foot walker (KCC), moving-deck support, origin-recentre safe, enable/disable handover API (to swim, vehicles), park and release at the helm
 - **Stays in games:** camera feel presets, game input mapping
 - **Interfaces:** handover API, movement events
@@ -192,7 +198,8 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.dialogue
 
-- **Owner:** Twin Ticks | **State:** planned (built straight into Shared) | **Users:** Twin Ticks, Watchmaker, LWN, S&I
+- **Owner:** Twin Ticks | **State:** dropped: use owned asset | **Users:** Twin Ticks, Watchmaker, LWN, S&I
+- **Use instead:** Pixel Crushers Dialogue System for Unity (Love/Hate for relationships)
 - **Includes:** thin Pixel Crushers Dialogue System wrapper: start conversations, localisation, save bridge
 - **Stays in games:** all conversations and story content
 - **Interfaces:** start/end conversation API, save bridge
@@ -225,7 +232,8 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.audio
 
-- **Owner:** Watchmaker | **State:** planned (when sound comes) | **Users:** Watchmaker, LWN
+- **Owner:** Watchmaker | **State:** dropped: use owned asset | **Users:** Watchmaker, LWN
+- **Use instead:** SoundManagerPro 3, Ambient Sounds (Procedural Worlds), Universal Sound FX for content
 - **Includes:** audio setup on Universal Sound FX: mixer groups, volume settings, one-shot and loop helpers
 - **Stays in games:** all sound choices and music
 - **Interfaces:** audio settings asset, play helpers
@@ -241,7 +249,8 @@ Each entry lists: **Includes** (what is in the package), **Stays in games** (wha
 
 ### com.amberscreen.encounters
 
-- **Owner:** Sand & Ink | **State:** planned (M3-M4, built straight into Shared) | **Users:** open
+- **Owner:** Sand & Ink | **State:** dropped: use owned asset | **Users:** open
+- **Use instead:** game-side logic; Core GameKit (spawning/pooling) and NodeCanvas available
 - **Includes:** rule-based weighted encounter director
 - **Stays in games:** the encounters themselves
 - **Interfaces:** encounter rule assets, director events
