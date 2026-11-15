@@ -1,0 +1,11 @@
+{
+  "name": "AmberScreen.Save.Editor",
+  "rootNamespace": "AmberScreen.Save.Editor",
+  "references": [
+    "AmberScreen.Save"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false
+}
