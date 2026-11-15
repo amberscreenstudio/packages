@@ -103,7 +103,7 @@ namespace AmberScreen.Dev
         public void Dispose()
         {
             if (m_Canvas != null)
-                UnityEngine.Object.Destroy(m_Canvas.gameObject);
+                DevConsoleUiUtil.DestroyObject(m_Canvas.gameObject);
             m_Canvas = null;
             m_Root = null;
             m_Rail = null;
@@ -228,7 +228,7 @@ namespace AmberScreen.Dev
             go.transform.SetParent(m_Host, false);
             m_Canvas = go.AddComponent<Canvas>();
             m_Canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            m_Canvas.sortingOrder = settings.sortingOrder - 1;
+            m_Canvas.sortingOrder = DevConsoleHost.SortingOrder - 1;
             m_Scaler = go.AddComponent<CanvasScaler>();
             go.AddComponent<GraphicRaycaster>(); // section headers are clickable
             m_Root = go.GetComponent<RectTransform>();
@@ -336,7 +336,7 @@ namespace AmberScreen.Dev
             if (m_Scaler == null || m_Canvas == null)
                 return;
             var settings = DevConsoleHost.Settings;
-            m_Canvas.sortingOrder = settings.sortingOrder - 1;
+            m_Canvas.sortingOrder = DevConsoleHost.SortingOrder - 1;
             m_Scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
             m_Scaler.scaleFactor = DevHudLayout.SharedUiScaleFactor(settings);
             ApplyLayoutScreenCanvasSize();

@@ -386,7 +386,7 @@ namespace AmberScreen.Dev
         void RebuildQuickGrid()
         {
             for (int i = m_QuickRoot.childCount - 1; i >= 0; i--)
-                Object.Destroy(m_QuickRoot.GetChild(i).gameObject);
+                DevConsoleUiUtil.DestroyObject(m_QuickRoot.GetChild(i).gameObject);
             m_QuickButtons.Clear();
 
             var quicks = DevConsoleRegistry.Quicks;
@@ -436,7 +436,7 @@ namespace AmberScreen.Dev
         void RebuildPins()
         {
             for (int i = m_PinRoot.childCount - 1; i >= 0; i--)
-                Object.Destroy(m_PinRoot.GetChild(i).gameObject);
+                DevConsoleUiUtil.DestroyObject(m_PinRoot.GetChild(i).gameObject);
             m_PinLabels.Clear();
             m_PinEntries.Clear();
             m_PinAccum.Clear();
@@ -471,7 +471,7 @@ namespace AmberScreen.Dev
         void RebuildSectionButtons()
         {
             for (int i = m_SectionListContent.childCount - 1; i >= 0; i--)
-                Object.Destroy(m_SectionListContent.GetChild(i).gameObject);
+                DevConsoleUiUtil.DestroyObject(m_SectionListContent.GetChild(i).gameObject);
             m_SectionButtons.Clear();
 
             var settings = DevConsoleHost.Settings;
@@ -565,7 +565,7 @@ namespace AmberScreen.Dev
         void RebuildSectionWindowBody(string sectionName)
         {
             for (int i = m_WindowContent.childCount - 1; i >= 0; i--)
-                Object.Destroy(m_WindowContent.GetChild(i).gameObject);
+                DevConsoleUiUtil.DestroyObject(m_WindowContent.GetChild(i).gameObject);
             m_Buttons.Clear();
             m_Toggles.Clear();
             m_Dropdowns.Clear();
@@ -761,7 +761,7 @@ namespace AmberScreen.Dev
         void RebuildLogWindowBody()
         {
             for (int i = m_WindowContent.childCount - 1; i >= 0; i--)
-                Object.Destroy(m_WindowContent.GetChild(i).gameObject);
+                DevConsoleUiUtil.DestroyObject(m_WindowContent.GetChild(i).gameObject);
             var notes = DevConsoleRegistry.Notes;
             var grid = m_WindowContent.GetComponent<GridLayoutGroup>();
             grid.constraintCount = 1;
@@ -1006,7 +1006,7 @@ namespace AmberScreen.Dev
                 return;
 
             for (int i = m_RailStripIcons.childCount - 1; i >= 0; i--)
-                Object.Destroy(m_RailStripIcons.GetChild(i).gameObject);
+                DevConsoleUiUtil.DestroyObject(m_RailStripIcons.GetChild(i).gameObject);
             m_StripSectionButtons.Clear();
 
             var settings = DevConsoleHost.Settings;
@@ -1241,6 +1241,8 @@ namespace AmberScreen.Dev
                 string value = "-";
                 try { value = m_PinEntries[i].ReadoutValue?.Invoke() ?? "-"; }
                 catch { value = "err"; }
+                if (m_PinEntries[i].ReadoutMultiline && value.IndexOf('\n') >= 0)
+                    value = value.Replace("\r\n", "\n").Replace('\n', ' ').Trim(); // pins stay one line
                 m_PinLabels[i].text = m_PinEntries[i].Label + ": " + value;
             }
         }

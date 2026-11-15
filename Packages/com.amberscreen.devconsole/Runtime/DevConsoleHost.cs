@@ -41,6 +41,9 @@ namespace AmberScreen.Dev
         static bool s_LoggedTmpMissing;
         static bool s_HudHadLines;
         static DevConsoleTheme s_ThemeOverride;
+        static Key? s_OpenKeyOverride;
+        static Key? s_HudKeyOverride;
+        static int? s_SortingOrderOverride;
 
         DevConsoleView m_View;
         DevHudView m_HudView;
@@ -80,10 +83,34 @@ namespace AmberScreen.Dev
             s_LoggedTmpMissing = false;
             s_HudHadLines = false;
             s_ThemeOverride = null;
+            s_OpenKeyOverride = null;
+            s_HudKeyOverride = null;
+            s_SortingOrderOverride = null;
             s_CommandLineOverride = null;
             TmpReady = DefaultTmpReady;
             DevConsoleCommands.Reset();
             DevHudKeyHints.Reset();
+        }
+
+        /// <summary>Key that opens/closes the console: <see cref="DevConsole.SetOpenKey"/> or the settings asset.</summary>
+        internal static Key OpenKey => s_OpenKeyOverride ?? Settings.openKey;
+
+        /// <summary>Key that shows/hides the HUD overlay: <see cref="DevConsole.SetHudToggleKey"/> or the settings asset.</summary>
+        internal static Key HudToggleKey => s_HudKeyOverride ?? Settings.hudToggleKey;
+
+        /// <summary>Console canvas order (HUD is one below, DEV button one above).</summary>
+        internal static int SortingOrder => s_SortingOrderOverride ?? Settings.sortingOrder;
+
+        internal static void SetOpenKeyOverride(Key? key) => s_OpenKeyOverride = key;
+        internal static void SetHudKeyOverride(Key? key) => s_HudKeyOverride = key;
+
+        internal static void SetSortingOrderOverride(int? order)
+        {
+            s_SortingOrderOverride = order;
+            if (s_Instance == null)
+                return;
+            s_Instance.m_View?.OnSettingsReloaded();
+            s_Instance.m_HudView?.OnSettingsOrVisibilityChanged();
         }
 
         internal static DevHudView HudView => s_Instance != null ? s_Instance.m_HudView : null;
@@ -399,7 +426,7 @@ namespace AmberScreen.Dev
             {
                 var child = transform.GetChild(i);
                 if (child != null && child.GetComponent<Canvas>() != null)
-                    Destroy(child.gameObject);
+                    DevConsoleUiUtil.DestroyObject(child.gameObject);
             }
         }
 
@@ -471,15 +498,17 @@ namespace AmberScreen.Dev
 
             var settings = Settings;
             var keyboard = Keyboard.current;
-            if (keyboard != null && keyboard[settings.openKey].wasPressedThisFrame)
+            var openKey = OpenKey;
+            var hudKey = HudToggleKey;
+            if (keyboard != null && openKey != Key.None && keyboard[openKey].wasPressedThisFrame)
             {
                 DevConsole.Toggle();
                 return;
             }
 
             if (keyboard != null &&
-                settings.hudToggleKey != settings.openKey &&
-                keyboard[settings.hudToggleKey].wasPressedThisFrame)
+                hudKey != Key.None && hudKey != openKey &&
+                keyboard[hudKey].wasPressedThisFrame)
             {
                 DevHud.Toggle();
             }
@@ -808,7 +837,7 @@ namespace AmberScreen.Dev
         {
             if (m_OwnedEventSystem == null)
                 return;
-            Destroy(m_OwnedEventSystem);
+            DevConsoleUiUtil.DestroyObject(m_OwnedEventSystem);
             m_OwnedEventSystem = null;
         }
     }

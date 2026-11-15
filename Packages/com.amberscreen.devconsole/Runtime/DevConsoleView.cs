@@ -21,6 +21,8 @@ namespace AmberScreen.Dev
         readonly List<DevConsoleConfirmWidget> m_Confirms = new List<DevConsoleConfirmWidget>();
         readonly List<DevConsoleReadoutWidget> m_Readouts = new List<DevConsoleReadoutWidget>();
         readonly List<DevConsoleDropdownWidget> m_Dropdowns = new List<DevConsoleDropdownWidget>();
+        internal IReadOnlyList<DevConsoleDropdownWidget> DropdownWidgets => m_Dropdowns;
+        internal IReadOnlyList<DevConsoleReadoutWidget> ReadoutWidgets => m_Readouts;
         readonly List<DevConsoleButtonWidget> m_Buttons = new List<DevConsoleButtonWidget>();
         readonly List<DevConsoleToggleWidget> m_Toggles = new List<DevConsoleToggleWidget>();
         readonly List<SelectableSlot> m_Selectables = new List<SelectableSlot>();
@@ -80,9 +82,9 @@ namespace AmberScreen.Dev
         public void Dispose()
         {
             if (m_Canvas != null)
-                Object.Destroy(m_Canvas.gameObject);
+                DevConsoleUiUtil.DestroyObject(m_Canvas.gameObject);
             if (m_DevCanvas != null)
-                Object.Destroy(m_DevCanvas.gameObject);
+                DevConsoleUiUtil.DestroyObject(m_DevCanvas.gameObject);
         }
 
         public void SetVisible(bool visible)
@@ -202,7 +204,7 @@ namespace AmberScreen.Dev
             CaptureSelection(ref keepSection, ref keepLabel);
 
             for (int i = m_Content.childCount - 1; i >= 0; i--)
-                Object.Destroy(m_Content.GetChild(i).gameObject);
+                DevConsoleUiUtil.DestroyObject(m_Content.GetChild(i).gameObject);
 
             m_Confirms.Clear();
             m_Readouts.Clear();
@@ -557,7 +559,7 @@ namespace AmberScreen.Dev
             canvasGo.transform.SetParent(m_Host, false);
             m_Canvas = canvasGo.AddComponent<Canvas>();
             m_Canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            m_Canvas.sortingOrder = settings.sortingOrder;
+            m_Canvas.sortingOrder = DevConsoleHost.SortingOrder;
 
             m_Scaler = canvasGo.AddComponent<CanvasScaler>();
             SyncCanvasScaler();
@@ -589,7 +591,7 @@ namespace AmberScreen.Dev
             go.transform.SetParent(m_Host, false);
             m_DevCanvas = go.AddComponent<Canvas>();
             m_DevCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            m_DevCanvas.sortingOrder = settings.sortingOrder + 1;
+            m_DevCanvas.sortingOrder = DevConsoleHost.SortingOrder + 1;
             m_DevScaler = go.AddComponent<CanvasScaler>();
             SyncDevScaler();
             go.AddComponent<GraphicRaycaster>();
@@ -613,7 +615,7 @@ namespace AmberScreen.Dev
                 return;
 
             var settings = DevConsoleHost.Settings;
-            m_Canvas.sortingOrder = settings.sortingOrder;
+            m_Canvas.sortingOrder = DevConsoleHost.SortingOrder;
             bool portrait = DevConsoleUiUtil.IsPortraitScaledLayout(settings);
 
             m_Scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
@@ -651,7 +653,7 @@ namespace AmberScreen.Dev
 
             var settings = DevConsoleHost.Settings;
             if (m_DevCanvas != null)
-                m_DevCanvas.sortingOrder = settings.sortingOrder + 1;
+                m_DevCanvas.sortingOrder = DevConsoleHost.SortingOrder + 1;
 
             m_DevScaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
             if (DevConsoleUiUtil.IsPortraitScaledLayout(settings))
@@ -1302,6 +1304,7 @@ namespace AmberScreen.Dev
             grid.startAxis = GridLayoutGroup.Axis.Horizontal;
             var gridLe = gridRt.gameObject.AddComponent<LayoutElement>();
             gridLe.flexibleWidth = 1f;
+            List<DevConsoleEntry> multiline = null;
 
             for (int i = 0; i < section.Entries.Count; i++)
             {
@@ -1364,11 +1367,23 @@ namespace AmberScreen.Dev
                     }
                     case DevConsoleEntryKind.Readout:
                     {
+                        if (entry.ReadoutMultiline)
+                        {
+                            // Grid cells are one row tall; multi-line readouts go full width under the grid.
+                            (multiline ??= new List<DevConsoleEntry>()).Add(entry);
+                            break;
+                        }
                         var w = new DevConsoleReadoutWidget(gridRt, entry, settings, m_Canvas);
                         m_Readouts.Add(w);
                         break;
                     }
                 }
+            }
+
+            if (multiline != null)
+            {
+                for (int i = 0; i < multiline.Count; i++)
+                    m_Readouts.Add(new DevConsoleReadoutWidget(m_Content, multiline[i], settings, m_Canvas));
             }
         }
 

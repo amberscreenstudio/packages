@@ -3,7 +3,8 @@
   "rootNamespace": "AmberScreen.Dev.Editor",
   "references": [
     "AmberScreen.DevConsole",
-    "Unity.InputSystem"
+    "Unity.InputSystem",
+    "AmberScreen.DevConsole.Demo"
   ],
   "includePlatforms": [
     "Editor"

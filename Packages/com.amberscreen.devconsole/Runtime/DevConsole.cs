@@ -24,6 +24,7 @@ namespace AmberScreen.Dev
         static CursorLockMode s_SavedLock;
         static bool s_SavedCursorVisible;
         static bool s_ConsumedCloseThisFrame;
+        static Func<bool> s_OpenBlocked;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
@@ -40,6 +41,7 @@ namespace AmberScreen.Dev
             s_SavedLock = CursorLockMode.None;
             s_SavedCursorVisible = true;
             s_ConsumedCloseThisFrame = false;
+            s_OpenBlocked = null;
             DevConsoleRegistry.Reset();
             DevConsoleSettings.ResetRuntimeDefault();
             DevConsoleUiUtil.ResetFontCache();
@@ -227,6 +229,103 @@ namespace AmberScreen.Dev
 #endif
         }
 
+        /// <summary>
+        /// Return true while the console must not open (game paused, loading, a cutscene...).
+        /// Checked by the open key, gestures, <see cref="Open"/>, <see cref="Toggle"/> and <see cref="OpenSection"/>.
+        /// Closing is never blocked, and an already open console stays open. Null (default) = never blocked.
+        /// </summary>
+        public static Func<bool> OpenBlocked
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            get => s_OpenBlocked;
+            set => s_OpenBlocked = value;
+#else
+            get => null;
+            set { }
+#endif
+        }
+
+        /// <summary>True when <see cref="OpenBlocked"/> says no right now.</summary>
+        public static bool IsOpenBlocked
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            get
+            {
+                if (s_OpenBlocked == null)
+                    return false;
+                try { return s_OpenBlocked(); }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    return false;
+                }
+            }
+#else
+            get => false;
+#endif
+        }
+
+        /// <summary>Key that opens/closes the console, for this session (overrides the settings asset; Key.None = no key).</summary>
+        public static void SetOpenKey(UnityEngine.InputSystem.Key key)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevConsoleHost.SetOpenKeyOverride(key);
+#endif
+        }
+
+        /// <summary>Key that shows/hides the HUD overlay, for this session (overrides the settings asset; Key.None = no key).</summary>
+        public static void SetHudToggleKey(UnityEngine.InputSystem.Key key)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevConsoleHost.SetHudKeyOverride(key);
+#endif
+        }
+
+        /// <summary>Canvas sorting order for this session (HUD draws one below, DEV button one above).</summary>
+        public static void SetSortingOrder(int order)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevConsoleHost.SetSortingOrderOverride(order);
+#endif
+        }
+
+        /// <summary>Drops the SetOpenKey / SetHudToggleKey / SetSortingOrder overrides (back to the settings asset).</summary>
+        public static void ClearOverrides()
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            DevConsoleHost.SetOpenKeyOverride(null);
+            DevConsoleHost.SetHudKeyOverride(null);
+            DevConsoleHost.SetSortingOrderOverride(null);
+#endif
+        }
+
+        public static UnityEngine.InputSystem.Key OpenKey
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            get => DevConsoleHost.OpenKey;
+#else
+            get => UnityEngine.InputSystem.Key.None;
+#endif
+        }
+
+        public static UnityEngine.InputSystem.Key HudToggleKey
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            get => DevConsoleHost.HudToggleKey;
+#else
+            get => UnityEngine.InputSystem.Key.None;
+#endif
+        }
+
+        public static int SortingOrder
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            get => DevConsoleHost.SortingOrder;
+#else
+            get => 0;
+#endif
+        }
+
         public static void PinReadout(string section, string label)
         {
 #if AMBERSCREEN_DEVCONSOLE
@@ -239,6 +338,8 @@ namespace AmberScreen.Dev
         {
 #if AMBERSCREEN_DEVCONSOLE
             if (!CanActivate() || string.IsNullOrEmpty(section))
+                return;
+            if (!s_IsOpen && IsOpenBlocked)
                 return;
             EnsureDiscovered();
             DevConsoleHost.EnsureExists();
@@ -291,6 +392,55 @@ namespace AmberScreen.Dev
 #endif
         }
 
+        /// <summary>
+        /// A dropdown that remembers the pick (no Go button). <paramref name="onChanged"/> runs when the
+        /// player picks another item. Read the pick any time with <see cref="GetChoice"/>.
+        /// </summary>
+        public static void RegisterChoice(
+            string section,
+            string label,
+            Func<string[]> options,
+            Action<int> onChanged = null,
+            int defaultIndex = 0)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            bool isNew = DevConsoleRegistry.Find(section, label) == null;
+            var entry = DevConsoleRegistry.Upsert(section, label, DevConsoleEntryKind.Dropdown, true, null);
+            entry.DropdownOptions = options;
+            entry.DropdownChanged = onChanged;
+            entry.DropdownIsChoice = true;
+            if (isNew)
+                entry.DropdownSelected = Math.Max(0, defaultIndex);
+            DevConsoleHost.NotifyRegistryChanged();
+#endif
+        }
+
+        /// <summary>Last picked index of a dropdown or choice (-1 when there is no such entry).</summary>
+        public static int GetChoice(string section, string label)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            var entry = DevConsoleRegistry.Find(section, label);
+            return entry != null && entry.Kind == DevConsoleEntryKind.Dropdown ? entry.DropdownSelected : -1;
+#else
+            return -1;
+#endif
+        }
+
+        /// <summary>Sets the pick of a dropdown or choice (does not call its callback). False if not found.</summary>
+        public static bool SetChoice(string section, string label, int index)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            var entry = DevConsoleRegistry.Find(section, label);
+            if (entry == null || entry.Kind != DevConsoleEntryKind.Dropdown)
+                return false;
+            entry.DropdownSelected = Math.Max(0, index);
+            DevConsoleHost.NotifyRegistryChanged();
+            return true;
+#else
+            return false;
+#endif
+        }
+
         public static void RegisterConfirm(string section, string label, Action action)
         {
 #if AMBERSCREEN_DEVCONSOLE
@@ -310,6 +460,27 @@ namespace AmberScreen.Dev
             var entry = DevConsoleRegistry.Upsert(section, label, DevConsoleEntryKind.Readout, true, null);
             entry.ReadoutValue = value;
             entry.ReadoutRefreshSeconds = refreshSeconds > 0f ? refreshSeconds : 0.5f;
+            DevConsoleHost.NotifyRegistryChanged();
+#endif
+        }
+
+        /// <summary>
+        /// A readout that can span several lines (value may contain '\n'). The row grows with the text,
+        /// up to <paramref name="maxLines"/> lines; extra lines are cut with "...". Pinned, it shows on one line.
+        /// </summary>
+        public static void RegisterMultilineReadout(
+            string section,
+            string label,
+            Func<string> value,
+            float refreshSeconds = 0.5f,
+            int maxLines = 12)
+        {
+#if AMBERSCREEN_DEVCONSOLE
+            var entry = DevConsoleRegistry.Upsert(section, label, DevConsoleEntryKind.Readout, true, null);
+            entry.ReadoutValue = value;
+            entry.ReadoutRefreshSeconds = refreshSeconds > 0f ? refreshSeconds : 0.5f;
+            entry.ReadoutMultiline = true;
+            entry.ReadoutMaxLines = Math.Max(1, maxLines);
             DevConsoleHost.NotifyRegistryChanged();
 #endif
         }
@@ -372,6 +543,8 @@ namespace AmberScreen.Dev
         {
 #if AMBERSCREEN_DEVCONSOLE
             if (!CanActivate())
+                return;
+            if (!s_IsOpen && IsOpenBlocked)
                 return;
             EnsureDiscovered();
             DevConsoleHost.EnsureExists();

@@ -103,15 +103,19 @@ namespace AmberScreen.Dev
                 .GetComponent<TextMeshProUGUI>();
             m_Dropdown.navigation = new Navigation { mode = Navigation.Mode.Automatic };
 
-            var goRt = DevConsoleUiUtil.CreateRect("Go", controls);
-            var goLe = goRt.gameObject.AddComponent<LayoutElement>();
-            goLe.preferredWidth = Mathf.Max(72f, h * 1.5f);
-            goLe.minHeight = h;
-            m_Go = DevConsoleUiUtil.AddButton(goRt, DevConsoleUiUtil.ButtonBg);
-            DevConsoleUiUtil.AddLabel(goRt, "Label", "Go", font, TextAlignmentOptions.Midline);
-            m_Go.onClick.AddListener(OnGo);
+            if (!entry.DropdownIsChoice)
+            {
+                var goRt = DevConsoleUiUtil.CreateRect("Go", controls);
+                var goLe = goRt.gameObject.AddComponent<LayoutElement>();
+                goLe.preferredWidth = Mathf.Max(72f, h * 1.5f);
+                goLe.minHeight = h;
+                m_Go = DevConsoleUiUtil.AddButton(goRt, DevConsoleUiUtil.ButtonBg);
+                DevConsoleUiUtil.AddLabel(goRt, "Label", "Go", font, TextAlignmentOptions.Midline);
+                m_Go.onClick.AddListener(OnGo);
+            }
 
             RefreshOptions();
+            m_Dropdown.onValueChanged.AddListener(OnPicked);
         }
 
         static RectTransform CreateDropdownTemplate(Transform parent, float font, float itemH)
@@ -191,6 +195,31 @@ namespace AmberScreen.Dev
             }
         }
 
+        /// <summary>Index currently shown (tests).</summary>
+        internal int Value => m_Dropdown != null ? m_Dropdown.value : -1;
+
+        /// <summary>Same as the player picking <paramref name="index"/> (tests).</summary>
+        internal void Pick(int index) => m_Dropdown.value = index;
+
+        void OnPicked(int index)
+        {
+            if (m_Entry.DropdownSelected == index)
+                return;
+            m_Entry.DropdownSelected = index;
+            if (m_Entry.DropdownChanged == null)
+                return;
+            try { m_Entry.DropdownChanged(index); }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                DevConsole.Note(e.Message);
+            }
+            finally
+            {
+                DevConsoleHost.KeepInteractiveWhileOpen();
+            }
+        }
+
         public void RefreshOptions()
         {
             try { m_Options = m_Entry.DropdownOptions?.Invoke() ?? Array.Empty<string>(); }
@@ -201,6 +230,10 @@ namespace AmberScreen.Dev
             for (int i = 0; i < m_Options.Length; i++)
                 list.Add(new TMP_Dropdown.OptionData(m_Options[i] ?? string.Empty));
             m_Dropdown.AddOptions(list);
+            // Show the last pick again (rebuilds used to reset it to the first item).
+            int keep = m_Options.Length == 0 ? 0 : Mathf.Clamp(m_Entry.DropdownSelected, 0, m_Options.Length - 1);
+            m_Dropdown.SetValueWithoutNotify(keep);
+            m_Dropdown.RefreshShownValue();
         }
 
         public bool TryCloseDropdown()

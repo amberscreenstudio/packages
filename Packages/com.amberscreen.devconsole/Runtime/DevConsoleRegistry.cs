@@ -30,6 +30,13 @@ namespace AmberScreen.Dev
         public Action<int> DropdownGo;
         public Func<string> ReadoutValue;
         public float ReadoutRefreshSeconds = 0.5f;
+        public bool ReadoutMultiline;
+        public int ReadoutMaxLines = 12;
+        /// <summary>Last picked dropdown index; survives rebuilds and re-registration.</summary>
+        public int DropdownSelected;
+        /// <summary>Choice dropdowns: called when the pick changes; no Go button.</summary>
+        public Action<int> DropdownChanged;
+        public bool DropdownIsChoice;
         public int RegistrationOrder;
 
         public string EntryId => Section + "/" + Label;
@@ -301,6 +308,11 @@ namespace AmberScreen.Dev
             e.DropdownGo = null;
             e.ReadoutValue = null;
             e.ReadoutRefreshSeconds = 0.5f;
+            e.ReadoutMultiline = false;
+            e.ReadoutMaxLines = 12;
+            e.DropdownChanged = null;
+            e.DropdownIsChoice = false;
+            // DropdownSelected is kept on purpose: re-registering keeps the last pick.
         }
 
         public static bool SetButtonCaption(string section, string label, string caption)

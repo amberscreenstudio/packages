@@ -9,6 +9,17 @@ namespace AmberScreen.Dev
 {
     static class DevConsoleUiUtil
     {
+        /// <summary>Destroy in Play mode, DestroyImmediate in edit mode (EditMode tests, editor tools).</summary>
+        internal static void DestroyObject(UnityEngine.Object obj)
+        {
+            if (obj == null)
+                return;
+            if (Application.isPlaying)
+                UnityEngine.Object.Destroy(obj);
+            else
+                UnityEngine.Object.DestroyImmediate(obj);
+        }
+
         const string InterRegularResource = "AmberScreenDevConsole/Inter-Regular";
         const string InterSemiBoldResource = "AmberScreenDevConsole/Inter-SemiBold";
 

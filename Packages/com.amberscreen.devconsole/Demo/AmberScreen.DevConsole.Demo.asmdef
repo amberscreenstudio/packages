@@ -1,0 +1,9 @@
+{
+  "name": "AmberScreen.DevConsole.Demo",
+  "rootNamespace": "AmberScreen.Dev.Demo",
+  "references": [
+    "AmberScreen.DevConsole",
+    "Unity.InputSystem"
+  ],
+  "autoReferenced": false
+}

@@ -2,14 +2,14 @@
 
 Runtime debug console. Namespace: `AmberScreen.Dev`. No render-pipeline code — works on URP, URP 2D, and HDRP.
 
-**Version:** 0.4.4  
+**Version:** 0.5.0  
 **Unity:** 6000.6+  
 **Package / asmdef name:** `com.amberscreen.devconsole` / `AmberScreen.DevConsole`
 
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.4.4
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.devconsole#devconsole/0.5.0
 ```
 (Pin the tag once published; until then use a commit hash or local `file:` reference.)
 
@@ -152,6 +152,31 @@ DevConsole.BlocksGameChanged += blocksGame => { };
 
 `OpenChanged` fires only when open/closed changes (not on DockRight collapse).  
 `BlocksGameChanged` fires whenever `BlocksGame` changes (open, close, collapse, expand).
+
+### 0.5.0 additions
+
+```csharp
+// Don't let the console open while the game is paused or loading. Closing always works.
+DevConsole.OpenBlocked = () => Time.timeScale == 0f || SceneFlow.IsFading;
+
+// A readout over several lines; the row grows, up to maxLines (extra lines end in "...").
+DevConsole.RegisterMultilineReadout("World", "Objects", () => string.Join("\n", names), 0.5f, 12);
+
+// A dropdown that remembers the pick (no Go button). The pick also survives rebuilds and re-registering.
+DevConsole.RegisterChoice("Faults", "Next fault", () => faultNames, i => nextFault = i);
+int pick = DevConsole.GetChoice("Faults", "Next fault");
+// Plain RegisterDropdown also keeps its pick now, so "Go" twice does the same item.
+
+// Per-game keys and draw order for this session (the settings asset is left alone).
+DevConsole.SetOpenKey(Key.F1);        // Key.None = no key
+DevConsole.SetHudToggleKey(Key.F3);   // HUD overlay key
+DevConsole.SetSortingOrder(1050);     // console canvas; HUD is one below, DEV button one above
+DevConsole.ClearOverrides();
+```
+
+Defaults are unchanged: F1 / F2, sorting order 1000 from the settings asset, never blocked. The look is themed with `DevConsoleTheme` (see Theme above); `DevConsole.ApplyTheme(theme)` switches it at runtime.
+
+Demo: Tools > AmberScreen > Dev Console > Open Parity Demo Scene.
 
 ## Portrait / phone scaling
 

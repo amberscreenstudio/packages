@@ -2,6 +2,26 @@
 
 All notable changes to `com.amberscreen.devconsole` are documented here.
 
+## [0.5.0] - 2026-11-15
+
+### Added
+
+- `DevConsole.OpenBlocked` (`Func<bool>`) and `IsOpenBlocked`: the game can stop the console opening (paused, loading). Applies to the open key, gestures, `Open`, `Toggle`, `OpenSection` and the remembered-open restore. Closing is never blocked. A throwing callback is logged and treated as not blocked.
+- `DevConsole.RegisterMultilineReadout(section, label, value, refresh, maxLines)`: the row grows with the line count (wrapping, cut with "..." past `maxLines`). In grid layouts it sits full width under the grid. Pinned, it shows on one line.
+- `DevConsole.RegisterChoice(section, label, options, onChanged, defaultIndex)`: a dropdown with no Go button that remembers the pick; `GetChoice` / `SetChoice`.
+- `DevConsole.SetOpenKey`, `SetHudToggleKey`, `SetSortingOrder`, `ClearOverrides`, and read-only `OpenKey`, `HudToggleKey`, `SortingOrder`: session overrides on top of the settings asset. `Key.None` turns a key off.
+- Demo scene menu: Tools > AmberScreen > Dev Console > Open Parity Demo Scene.
+
+### Changed
+
+- Dropdowns keep their pick across rebuilds and re-registration (they used to snap back to the first item).
+
+### Fixed
+
+- Rebuilding the rail, section window, quick buttons, pins or strip icons outside Play mode uses `DestroyImmediate` (it used `Destroy`, which logs an error in edit mode and failed about 40 EditMode tests in batch runs).
+
+Defaults are unchanged (F1 / F2, sorting order from the settings asset, never blocked).
+
 ## [0.4.4] - 2026-11-13
 
 ### Fixed
