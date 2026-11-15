@@ -5,8 +5,8 @@ using UnityEngine.InputSystem;
 
 namespace AmberScreen.Settings
 {
-    /// <summary>Back/close press for whichever input handling the project uses.</summary>
-    static class SettingsMenuInput
+    /// <summary>Back/close press (Esc or gamepad B) for whichever input handling the project uses.</summary>
+    public static class SettingsMenuInput
     {
         public static bool BackPressedThisFrame()
         {

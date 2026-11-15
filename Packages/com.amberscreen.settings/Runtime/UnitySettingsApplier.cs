@@ -3,11 +3,13 @@ using UnityEngine;
 namespace AmberScreen.Settings
 {
     /// <summary>Default applier: QualitySettings, Screen, Application.targetFrameRate and an optional AudioMixer.</summary>
-    public class UnitySettingsApplier : ISettingsApplier
+    public class UnitySettingsApplier : ISettingsApplier, ISettingsQualityNames
     {
         bool m_WarnedMissingParameter;
 
         public virtual int QualityLevelCount => QualitySettings.names.Length;
+
+        public virtual string[] QualityNames => QualitySettings.names;
 
         public virtual void CaptureCurrent(GameSettingsData into)
         {

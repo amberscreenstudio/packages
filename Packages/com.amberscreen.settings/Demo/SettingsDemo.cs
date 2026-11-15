@@ -19,6 +19,11 @@ namespace AmberScreen.Settings.Demo
         float m_PrevListenerVolume;
         float m_Fps;
         GUIStyle m_Style;
+        GUIStyle m_Sample;
+        int m_PauseToggles;
+        bool m_Subtitles;
+        int m_ColourMode;
+        float m_HudSize = 1f;
 
         void OnEnable()
         {
@@ -31,12 +36,21 @@ namespace AmberScreen.Settings.Demo
                 GameSettings.DirectoryOverride = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Temp", "AmberScreenSettingsDemo"));
             SteamDeckDetector.Override = fakeSteamDeck ? true : (bool?)null;
             GameSettings.Initialize();
+
+            // Game-defined options: they appear under their own headings and are saved with the rest.
+            GameSettings.AddCustomToggle("demo.subtitles", "Subtitles (demo)", true, v => m_Subtitles = v);
+            GameSettings.AddCustomStepper("demo.colours", "Colour mode (demo)", new[] { "Normal", "High contrast", "Colour-blind" }, 0,
+                v => m_ColourMode = v, "Accessibility");
+            GameSettings.AddCustomSlider("demo.hud", "HUD size (demo)", 0.5f, 1.5f, 1f, v => m_HudSize = v,
+                v => Mathf.RoundToInt(v * 100f) + "%");
+
             if (menu == null) menu = SettingsMenu.Create(transform);
         }
 
         void OnDisable()
         {
             if (menu != null && menu.IsOpen) menu.Close();
+            GameSettings.ClearCustomOptions();
             SteamDeckDetector.Override = null;
             GameSettings.DirectoryOverride = null;
             if (QualitySettings.GetQualityLevel() != m_PrevQuality) QualitySettings.SetQualityLevel(m_PrevQuality, true);
@@ -49,6 +63,10 @@ namespace AmberScreen.Settings.Demo
         {
             float dt = Time.unscaledDeltaTime;
             if (dt > 0f) m_Fps = Mathf.Lerp(m_Fps, 1f / dt, 0.05f);
+
+            // What a pause menu should do: ignore Esc while the settings menu is open or just closed on it.
+            if (SettingsMenuInput.BackPressedThisFrame() && !SettingsMenu.AnyOpen && !SettingsMenu.ConsumedCloseThisFrame)
+                m_PauseToggles++;
         }
 
         void OnGUI()
@@ -56,7 +74,7 @@ namespace AmberScreen.Settings.Demo
             if (m_Style == null)
                 m_Style = new GUIStyle(GUI.skin.label) { fontSize = 15, richText = true };
 
-            GUILayout.BeginArea(new Rect(12, 12, 330, 420), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(12, 12, 360, 600), GUI.skin.box);
             GUILayout.Label("<b>Settings demo</b>", m_Style);
             if (GUILayout.Button(menu != null && menu.IsOpen ? "Close settings" : "Open settings", GUILayout.Height(30)))
                 menu.Toggle();
@@ -84,6 +102,14 @@ namespace AmberScreen.Settings.Demo
                     $"Master {d.masterVolume:P0}  Music {d.musicVolume:P0}  Effects {d.sfxVolume:P0}\n" +
                     $"Mouse sensitivity {d.mouseSensitivity:0.00}   Invert Y {(d.invertY ? "On" : "Off")}\n" +
                     $"Saved to: {GameSettings.FilePath}", m_Style);
+
+                if (m_Sample == null) m_Sample = new GUIStyle(GUI.skin.label) { wordWrap = true };
+                m_Sample.fontSize = GameSettings.ScaledFontSize(16);
+                GUILayout.Label($"Text size {GameSettings.TextScale:P0}: this line follows it.", m_Sample);
+                GUILayout.Label(
+                    $"Subtitles: {(m_Subtitles ? "On" : "Off")}   Colour mode: {m_ColourMode}   HUD size: {m_HudSize:P0}\n" +
+                    $"Esc presses a pause menu would react to: {m_PauseToggles}\n" +
+                    "(Esc that closes the settings menu does not count.)", m_Style);
             }
             GUILayout.EndArea();
         }

@@ -34,9 +34,17 @@ namespace AmberScreen.Settings
         [Tooltip("Choices shown in the frame-limit option. -1 = unlimited.")]
         public int[] frameRateOptions = { 30, 60, 120, -1 };
 
+        [Header("Menu")]
+        [Tooltip("Show the Text size (75-160%) option in the built-in menu.")]
+        public bool showTextSize = true;
+
         [Header("Steam Deck first run")]
         public bool steamDeckPresetOnFirstRun = true;
-        [Tooltip("Quality level index used on a Steam Deck's first run (clamped to the levels that exist).")]
+        [Tooltip("Quality level picked by name on a Steam Deck's first run (for example \"Performant\"). " +
+                 "Leave empty, or use a name that doesn't exist, to use the index below.")]
+        public string steamDeckQualityName = "Performant";
+        [Tooltip("Quality level index used on a Steam Deck's first run when the name above isn't found " +
+                 "(clamped to the levels that exist).")]
         public int steamDeckQualityLevel;
         public int steamDeckTargetFrameRate = 30;
 

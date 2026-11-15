@@ -17,6 +17,14 @@ namespace AmberScreen.Settings
         public static event Action<GameSettingsData> Changed;
         /// <summary>(mouse sensitivity, invert Y). Read these in your camera/look code.</summary>
         public static event Action<float, bool> ControlsChanged;
+        /// <summary>(key, value) when a game-defined option changes.</summary>
+        public static event Action<string, float> CustomChanged;
+        /// <summary>Raised when a game-defined option is added or removed (the built-in menu rebuilds).</summary>
+        public static event Action CustomOptionsChanged;
+
+        static readonly System.Collections.Generic.List<SettingsCustomOption> s_Options =
+            new System.Collections.Generic.List<SettingsCustomOption>();
+        static int s_OptionsVersion;
 
         /// <summary>Folder the file is saved in. Null = Application.persistentDataPath.</summary>
         public static string DirectoryOverride { get; set; }
@@ -29,6 +37,19 @@ namespace AmberScreen.Settings
 
         public static float MouseSensitivity => s_Session != null ? s_Session.Data.mouseSensitivity : 1f;
         public static bool InvertY => s_Session != null && s_Session.Data.invertY;
+        /// <summary>Text size, 0.75 .. 1.6 (1 = normal). Multiply your font sizes by it, or use <see cref="ScaledFontSize"/>.</summary>
+        public static float TextScale => s_Session != null ? s_Session.Data.textScale : 1f;
+
+        /// <summary>A font size scaled by <see cref="TextScale"/>, rounded and kept between 8 and 64.</summary>
+        public static int ScaledFontSize(int baseSize) => ScaledFontSize(baseSize, TextScale);
+
+        public static int ScaledFontSize(int baseSize, float scale) =>
+            Mathf.Clamp(Mathf.RoundToInt(baseSize * GameSettingsData.ClampTextScale(scale)), 8, 64);
+
+        /// <summary>Game-defined options, in the order they were added.</summary>
+        public static System.Collections.Generic.IReadOnlyList<SettingsCustomOption> CustomOptions => s_Options;
+        /// <summary>Goes up by one each time an option is added or removed.</summary>
+        public static int CustomOptionsVersion => s_OptionsVersion;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
@@ -36,6 +57,10 @@ namespace AmberScreen.Settings
             s_Session = null;
             Changed = null;
             ControlsChanged = null;
+            CustomChanged = null;
+            CustomOptionsChanged = null;
+            s_Options.Clear();
+            s_OptionsVersion++;
             DirectoryOverride = null;
             SettingsAudioLateApply.ResetPending();
         }
@@ -65,8 +90,10 @@ namespace AmberScreen.Settings
             s_Session = new SettingsSession(profile, Path.Combine(dir, file), applier);
             s_Session.Changed += OnChanged;
             s_Session.ControlsChanged += OnControlsChanged;
+            s_Session.CustomChanged += OnCustomChanged;
             s_Session.LoadOrCreate();
             s_Session.ApplyAll();
+            NotifyAllCustom();
 
             // AudioMixer.SetFloat is ignored before the first frame, so apply audio again once running.
             if (Application.isPlaying) SettingsAudioLateApply.Schedule();
@@ -84,10 +111,34 @@ namespace AmberScreen.Settings
             if (s_Session == null) return;
             s_Session.Changed -= OnChanged;
             s_Session.ControlsChanged -= OnControlsChanged;
+            s_Session.CustomChanged -= OnCustomChanged;
         }
 
         static void OnChanged(GameSettingsData data) => Changed?.Invoke(data);
         static void OnControlsChanged(float sensitivity, bool invert) => ControlsChanged?.Invoke(sensitivity, invert);
+
+        static void OnCustomChanged(string key, float value)
+        {
+            var option = FindOption(key);
+            if (option?.OnChanged != null)
+            {
+                try { option.OnChanged(value); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+            CustomChanged?.Invoke(key, value);
+        }
+
+        static void NotifyAllCustom()
+        {
+            if (s_Session == null) return;
+            for (int i = 0; i < s_Options.Count; i++)
+            {
+                var o = s_Options[i];
+                if (o?.OnChanged == null) continue;
+                try { o.OnChanged(GetCustom(o.Key)); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+        }
 
         // ---------- options for menus ----------
 
@@ -126,7 +177,124 @@ namespace AmberScreen.Settings
         public static void SetMouseSensitivity(float value) => Require().SetMouseSensitivity(value);
         public static void SetInvertY(bool invert) => Require().SetInvertY(invert);
         public static void SetBindingOverrides(string json) => Require().SetBindingOverrides(json);
-        public static void ResetToDefaults() => Require().ResetToDefaults();
+        public static void ResetToDefaults()
+        {
+            Require().ResetToDefaults();
+            NotifyAllCustom();
+        }
+
+        public static void SetTextScale(float scale) => Require().SetTextScale(scale);
+
+        /// <summary>Runs <paramref name="import"/> once per save file, for example to bring over old PlayerPrefs. See <see cref="LegacyPrefs"/>.</summary>
+        public static bool ImportLegacyOnce(Func<GameSettingsData, bool> import)
+        {
+            bool changed = Require().ImportLegacyOnce(import);
+            if (changed) NotifyAllCustom();
+            return changed;
+        }
+
+        // ---------- game-defined options ----------
+
+        /// <summary>Adds (or replaces) a slider row. <paramref name="onChanged"/> runs now with the saved value and on every change.</summary>
+        public static SettingsCustomOption AddCustomSlider(string key, string label, float min, float max, float defaultValue,
+            Action<float> onChanged = null, Func<float, string> format = null, string section = "Game") =>
+            AddOption(new SettingsCustomOption
+            {
+                Key = key, Label = label, Section = section, Kind = SettingsCustomKind.Slider,
+                Min = min, Max = max, DefaultValue = defaultValue, Format = format, OnChanged = onChanged
+            });
+
+        /// <summary>Adds (or replaces) an On/Off row.</summary>
+        public static SettingsCustomOption AddCustomToggle(string key, string label, bool defaultValue,
+            Action<bool> onChanged = null, string section = "Game") =>
+            AddOption(new SettingsCustomOption
+            {
+                Key = key, Label = label, Section = section, Kind = SettingsCustomKind.Toggle,
+                Min = 0f, Max = 1f, DefaultValue = defaultValue ? 1f : 0f,
+                OnChanged = onChanged != null ? v => onChanged(v >= 0.5f) : (Action<float>)null
+            });
+
+        /// <summary>Adds (or replaces) a &lt; choice &gt; row. The saved value is the choice index.</summary>
+        public static SettingsCustomOption AddCustomStepper(string key, string label, string[] choices, int defaultIndex,
+            Action<int> onChanged = null, string section = "Game") =>
+            AddOption(new SettingsCustomOption
+            {
+                Key = key, Label = label, Section = section, Kind = SettingsCustomKind.Stepper,
+                Choices = choices ?? Array.Empty<string>(), Min = 0f,
+                Max = Mathf.Max(0, (choices?.Length ?? 1) - 1), DefaultValue = defaultIndex,
+                OnChanged = onChanged != null ? v => onChanged(Mathf.RoundToInt(v)) : (Action<float>)null
+            });
+
+        public static bool RemoveCustomOption(string key)
+        {
+            int removed = s_Options.RemoveAll(o => o.Key == key);
+            if (removed == 0) return false;
+            s_OptionsVersion++;
+            CustomOptionsChanged?.Invoke();
+            return true;
+        }
+
+        public static void ClearCustomOptions()
+        {
+            if (s_Options.Count == 0) return;
+            s_Options.Clear();
+            s_OptionsVersion++;
+            CustomOptionsChanged?.Invoke();
+        }
+
+        public static SettingsCustomOption FindOption(string key)
+        {
+            if (string.IsNullOrEmpty(key)) return null;
+            for (int i = 0; i < s_Options.Count; i++)
+                if (s_Options[i].Key == key) return s_Options[i];
+            return null;
+        }
+
+        /// <summary>Saved value, or the option's default, or <paramref name="fallback"/> for an unknown key.</summary>
+        public static float GetCustom(string key, float fallback = 0f)
+        {
+            var option = FindOption(key);
+            float def = option != null ? option.DefaultValue : fallback;
+            if (s_Session == null) return def;
+            float v = s_Session.GetCustom(key, def);
+            return option != null ? option.Clamp(v) : v;
+        }
+
+        public static bool GetCustomBool(string key, bool fallback = false) => GetCustom(key, fallback ? 1f : 0f) >= 0.5f;
+        public static int GetCustomInt(string key, int fallback = 0) => Mathf.RoundToInt(GetCustom(key, fallback));
+
+        /// <summary>Sets a game-defined value (clamped to its option), applies it and raises the events. Call Save to keep it.</summary>
+        public static void SetCustom(string key, float value)
+        {
+            var option = FindOption(key);
+            Require().SetCustom(key, option != null ? option.Clamp(value) : value);
+        }
+
+        public static void SetCustom(string key, bool value) => SetCustom(key, value ? 1f : 0f);
+        public static void SetCustom(string key, int value) => SetCustom(key, (float)value);
+
+        static SettingsCustomOption AddOption(SettingsCustomOption option)
+        {
+            if (string.IsNullOrEmpty(option.Key))
+            {
+                Debug.LogWarning("[Settings] A custom option needs a key.");
+                return null;
+            }
+            if (string.IsNullOrEmpty(option.Label)) option.Label = option.Key;
+            if (string.IsNullOrEmpty(option.Section)) option.Section = "Game";
+            option.DefaultValue = option.Clamp(option.DefaultValue);
+            int existing = s_Options.FindIndex(o => o.Key == option.Key);
+            if (existing >= 0) s_Options[existing] = option;
+            else s_Options.Add(option);
+            s_OptionsVersion++;
+            CustomOptionsChanged?.Invoke();
+            if (s_Session != null && option.OnChanged != null)
+            {
+                try { option.OnChanged(GetCustom(option.Key)); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+            return option;
+        }
 
         /// <summary>Deletes the save and runs first-run setup again (detects the Steam Deck again).</summary>
         public static void ResetAsFirstRun()

@@ -17,9 +17,14 @@ namespace AmberScreen.Settings
     /// </summary>
     public sealed class SettingsMenu : MonoBehaviour
     {
-        [Tooltip("Leave empty to use Unity's built-in LegacyRuntime font.")]
+        [Tooltip("Leave empty to use the theme's font, or Unity's built-in LegacyRuntime font.")]
         public Font font;
-        public int sortingOrder = 500;
+        [Tooltip("Colours and font. Empty = Resources/AmberScreenSettingsMenuTheme if there is one, else the built-in dark look.")]
+        public SettingsMenuTheme theme;
+        [Tooltip("Canvas sort order. 1010 draws above a pause menu at 1000 and below a dev console at 1050.")]
+        public int sortingOrder = DefaultSortingOrder;
+        [Tooltip("Scale the menu's own text with the Text size setting (75-160%).")]
+        public bool scaleWithTextSize = true;
         public bool startOpen;
         public bool closeWithEscape = true;
         public bool saveOnClose = true;
@@ -31,10 +36,44 @@ namespace AmberScreen.Settings
         public event Action Opened;
         public event Action Closed;
 
-        static readonly Color k_Panel = new Color(0.10f, 0.10f, 0.12f, 0.97f);
-        static readonly Color k_Dim = new Color(0f, 0f, 0f, 0.55f);
-        static readonly Color k_Text = new Color(0.92f, 0.92f, 0.92f, 1f);
-        static readonly Color k_Accent = new Color(0.95f, 0.68f, 0.25f, 1f);
+        public const int DefaultSortingOrder = 1010;
+
+        static int s_OpenCount;
+        bool m_CountedOpen;
+        static int s_ClosedFrame = -1;
+
+        /// <summary>True while any settings menu is open. A pause menu should leave Esc alone while this is true.</summary>
+        public static bool AnyOpen => s_OpenCount > 0;
+
+        /// <summary>
+        /// True for the rest of the frame in which a menu closed itself on Esc / gamepad B, so the same press
+        /// doesn't also step a pause menu back.
+        /// </summary>
+        public static bool ConsumedCloseThisFrame => s_ClosedFrame == Time.frameCount;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            s_OpenCount = 0;
+            s_ClosedFrame = -1;
+        }
+
+        SettingsMenuTheme m_Theme;
+        Font m_Font;
+        int m_BuiltOptionsVersion = -1;
+        float m_AppliedTextScale = -1f;
+
+        struct ScaledText { public Text text; public int size; }
+        struct ScaledHeight { public LayoutElement element; public float height; }
+        struct ScaledWidth { public LayoutElement element; public float width; }
+        struct ScaledSize { public RectTransform rect; public Vector2 size; }
+        readonly List<ScaledText> m_ScaledTexts = new List<ScaledText>();
+        readonly List<ScaledHeight> m_ScaledHeights = new List<ScaledHeight>();
+        readonly List<ScaledWidth> m_ScaledWidths = new List<ScaledWidth>();
+        readonly List<ScaledSize> m_ScaledSizes = new List<ScaledSize>();
+
+        /// <summary>The theme in use (after falling back to Resources or the built-in look).</summary>
+        public SettingsMenuTheme ActiveTheme => m_Theme != null ? m_Theme : ResolveTheme();
 
         static readonly FullScreenMode[] k_Modes =
             { FullScreenMode.ExclusiveFullScreen, FullScreenMode.FullScreenWindow, FullScreenMode.Windowed };
@@ -74,21 +113,34 @@ namespace AmberScreen.Settings
 
         void OnDestroy()
         {
+            UncountOpen();
             if (m_OwnedEventSystem != null) Destroy(m_OwnedEventSystem);
         }
 
         void Update()
         {
             // Esc / gamepad B always close (checked every frame while open).
-            if (IsOpen && closeWithEscape && SettingsMenuInput.BackPressedThisFrame()) Close();
+            if (IsOpen && closeWithEscape && SettingsMenuInput.BackPressedThisFrame())
+            {
+                s_ClosedFrame = Time.frameCount;
+                Close();
+            }
         }
 
         public void Open()
         {
             if (!GameSettings.IsInitialized) GameSettings.Initialize();
+            if (m_Built && m_BuiltOptionsVersion != GameSettings.CustomOptionsVersion) Rebuild();
             Build();
             EnsureEventSystem();
+            m_Canvas.sortingOrder = sortingOrder;
+            if (!m_CountedOpen)
+            {
+                m_CountedOpen = true;
+                s_OpenCount++;
+            }
             m_Canvas.gameObject.SetActive(true);
+            ApplyTextScale(true);
             Canvas.ForceUpdateCanvases();
             FitToCanvas();
             if (m_Scroll != null) m_Scroll.verticalNormalizedPosition = 1f;
@@ -108,6 +160,7 @@ namespace AmberScreen.Settings
 
         public void Close()
         {
+            UncountOpen();
             if (!IsOpen) return;
             m_Canvas.gameObject.SetActive(false);
             if (saveOnClose && GameSettings.IsInitialized) GameSettings.Save();
@@ -118,6 +171,13 @@ namespace AmberScreen.Settings
             }
             Closed?.Invoke();
             onClosed.Invoke();
+        }
+
+        void UncountOpen()
+        {
+            if (!m_CountedOpen) return;
+            m_CountedOpen = false;
+            if (s_OpenCount > 0) s_OpenCount--;
         }
 
         public void Toggle()
@@ -134,7 +194,81 @@ namespace AmberScreen.Settings
 
         void OnSettingsChanged(GameSettingsData _)
         {
-            if (IsOpen) Refresh();
+            if (!IsOpen) return;
+            Refresh();
+            ApplyTextScale(false);
+        }
+
+        /// <summary>Switches to another theme (null = Resources or built-in) and rebuilds the menu.</summary>
+        public void ApplyTheme(SettingsMenuTheme newTheme)
+        {
+            theme = newTheme;
+            Rebuild();
+        }
+
+        /// <summary>Throws the UI away and builds it again (theme or custom options changed). Stays open if it was.</summary>
+        public void Rebuild()
+        {
+            bool wasOpen = IsOpen;
+            if (m_Canvas != null)
+            {
+                var old = m_Canvas.gameObject;
+                old.SetActive(false);
+                if (Application.isPlaying) Destroy(old);
+                else DestroyImmediate(old);
+            }
+            m_Canvas = null;
+            m_CanvasRect = null;
+            m_Panel = null;
+            m_Scroll = null;
+            m_CloseButton = null;
+            m_FirstSelectable = null;
+            m_Refreshers.Clear();
+            m_ScaledTexts.Clear();
+            m_ScaledHeights.Clear();
+            m_ScaledWidths.Clear();
+            m_ScaledSizes.Clear();
+            m_AppliedTextScale = -1f;
+            m_Built = false;
+            Build();
+            m_Canvas.gameObject.SetActive(wasOpen);
+            if (wasOpen)
+            {
+                Canvas.ForceUpdateCanvases();
+                FitToCanvas();
+                Refresh();
+                ApplyTextScale(true);
+                if (EventSystem.current != null && m_FirstSelectable != null)
+                    EventSystem.current.SetSelectedGameObject(m_FirstSelectable);
+            }
+        }
+
+        SettingsMenuTheme ResolveTheme()
+        {
+            if (theme != null) return theme;
+            var fromResources = Resources.Load<SettingsMenuTheme>(SettingsMenuTheme.ResourcesName);
+            return fromResources != null ? fromResources : SettingsMenuTheme.BuiltinDefault;
+        }
+
+        /// <summary>Text size the menu is drawn at (1 when <see cref="scaleWithTextSize"/> is off).</summary>
+        public float CurrentTextScale => scaleWithTextSize ? GameSettings.TextScale : 1f;
+
+        /// <summary>Re-applies font sizes and row sizes for the current Text size. Done on open and on every change.</summary>
+        public void ApplyTextScale(bool force)
+        {
+            float scale = CurrentTextScale;
+            if (!force && Mathf.Approximately(scale, m_AppliedTextScale)) return;
+            m_AppliedTextScale = scale;
+            float grow = Mathf.Max(1f, scale); // rows and buttons grow with big text, never shrink below the reference
+            foreach (var t in m_ScaledTexts)
+                if (t.text != null) t.text.fontSize = GameSettings.ScaledFontSize(t.size, scale);
+            foreach (var h in m_ScaledHeights)
+                if (h.element != null) h.element.preferredHeight = h.height * grow;
+            foreach (var w in m_ScaledWidths)
+                if (w.element != null) w.element.preferredWidth = w.width * grow;
+            foreach (var r in m_ScaledSizes)
+                if (r.rect != null) r.rect.sizeDelta = new Vector2(r.size.x * grow, r.size.y);
+            if (m_Panel != null) LayoutRebuilder.MarkLayoutForRebuild(m_Panel);
         }
 
         // ---------------- build ----------------
@@ -202,7 +336,11 @@ namespace AmberScreen.Settings
         {
             if (m_Built) return;
             m_Built = true;
-            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            m_BuiltOptionsVersion = GameSettings.CustomOptionsVersion;
+            m_Theme = ResolveTheme();
+            m_Font = font != null ? font
+                : m_Theme.font != null ? m_Theme.font
+                : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
             var canvasGo = new GameObject("SettingsCanvas", typeof(RectTransform));
             canvasGo.transform.SetParent(transform, false);
@@ -219,13 +357,13 @@ namespace AmberScreen.Settings
 
             var dim = NewUi("Dim", canvasGo.transform);
             Stretch(dim);
-            dim.gameObject.AddComponent<Image>().color = k_Dim;
+            dim.gameObject.AddComponent<Image>().color = m_Theme.dim;
 
             // Panel: fixed reference size at the centre, clamped to the canvas in FitToCanvas.
             m_Panel = NewUi("Panel", canvasGo.transform);
             m_Panel.anchorMin = m_Panel.anchorMax = m_Panel.pivot = new Vector2(0.5f, 0.5f);
             m_Panel.sizeDelta = ReferencePanelSize;
-            m_Panel.gameObject.AddComponent<Image>().color = k_Panel;
+            m_Panel.gameObject.AddComponent<Image>().color = m_Theme.panel;
             m_Panel.gameObject.AddComponent<RectMask2D>();
 
             // Header (always visible): title + Close.
@@ -235,7 +373,7 @@ namespace AmberScreen.Settings
             header.pivot = new Vector2(0.5f, 1f);
             header.sizeDelta = new Vector2(0f, HeaderHeight);
             header.anchoredPosition = Vector2.zero;
-            header.gameObject.AddComponent<Image>().color = new Color(0.16f, 0.16f, 0.19f, 1f);
+            header.gameObject.AddComponent<Image>().color = m_Theme.header;
 
             var title = NewUi("Title", header);
             title.anchorMin = Vector2.zero;
@@ -243,12 +381,14 @@ namespace AmberScreen.Settings
             title.offsetMin = new Vector2(28f, 0f);
             title.offsetMax = new Vector2(-220f, 0f);
             var titleText = title.gameObject.AddComponent<Text>();
-            SetText(titleText, "Settings", k_TitleSize, k_Text, TextAnchor.MiddleLeft);
+            SetText(titleText, string.IsNullOrEmpty(m_Theme.title) ? "Settings" : m_Theme.title, k_TitleSize,
+                m_Theme.text, TextAnchor.MiddleLeft);
 
             m_CloseButton = AddButton(header, "Close (Esc)", Close, 0f, 0f, false);
             var closeRect = (RectTransform)m_CloseButton.transform;
             closeRect.anchorMin = closeRect.anchorMax = closeRect.pivot = new Vector2(1f, 0.5f);
             closeRect.sizeDelta = new Vector2(190f, 56f);
+            m_ScaledSizes.Add(new ScaledSize { rect = closeRect, size = closeRect.sizeDelta });
             closeRect.anchoredPosition = new Vector2(-16f, 0f);
 
             // Footer (always visible): reset.
@@ -262,6 +402,7 @@ namespace AmberScreen.Settings
             var resetRect = (RectTransform)reset.transform;
             resetRect.anchorMin = resetRect.anchorMax = resetRect.pivot = new Vector2(0.5f, 0.5f);
             resetRect.sizeDelta = new Vector2(300f, 52f);
+            m_ScaledSizes.Add(new ScaledSize { rect = resetRect, size = resetRect.sizeDelta });
             resetRect.anchoredPosition = Vector2.zero;
 
             // Body: scrolls when the panel is shorter than the options.
@@ -307,7 +448,7 @@ namespace AmberScreen.Settings
             var scrollbar = bar.GetComponent<Scrollbar>();
             scrollbar.direction = Scrollbar.Direction.BottomToTop;
             foreach (var img in bar.GetComponentsInChildren<Image>(true))
-                img.color = img.gameObject == bar ? new Color(0.16f, 0.16f, 0.19f, 1f) : new Color(0.45f, 0.45f, 0.5f, 1f);
+                img.color = img.gameObject == bar ? m_Theme.scrollbarBackground : m_Theme.scrollbarHandle;
             var barNav = scrollbar.navigation;
             barNav.mode = Navigation.Mode.None;
             scrollbar.navigation = barNav;
@@ -364,6 +505,12 @@ namespace AmberScreen.Settings
                     GameSettings.SetTargetFrameRate(options[Wrap(i + dir, options.Length)]);
                 });
 
+            if (GameSettings.Profile == null || GameSettings.Profile.showTextSize)
+                AddSlider(panel, "Text size", GameSettingsData.MinTextScale, GameSettingsData.MaxTextScale,
+                    () => GameSettings.TextScale,
+                    v => GameSettings.SetTextScale(v),
+                    v => Mathf.RoundToInt(v * 100f) + "%");
+
             AddHeader(panel, "Audio");
             AddVolume(panel, "Master volume", VolumeChannel.Master);
             AddVolume(panel, "Music volume", VolumeChannel.Music);
@@ -380,6 +527,50 @@ namespace AmberScreen.Settings
             AddStepper(panel, "Invert Y",
                 () => GameSettings.Current.invertY ? "On" : "Off",
                 _ => GameSettings.SetInvertY(!GameSettings.Current.invertY));
+
+            BuildCustomOptions(panel);
+        }
+
+        /// <summary>Game-defined rows, grouped under their section headings in the order they were added.</summary>
+        void BuildCustomOptions(RectTransform panel)
+        {
+            var options = GameSettings.CustomOptions;
+            var sections = new List<string>();
+            foreach (var o in options)
+                if (o != null && !sections.Contains(o.Section)) sections.Add(o.Section);
+            foreach (var section in sections)
+            {
+                AddHeader(panel, section);
+                foreach (var o in options)
+                {
+                    if (o == null || o.Section != section) continue;
+                    var option = o;
+                    switch (option.Kind)
+                    {
+                        case SettingsCustomKind.Slider:
+                            AddSlider(panel, option.Label, option.Min, option.Max,
+                                () => GameSettings.GetCustom(option.Key),
+                                v => GameSettings.SetCustom(option.Key, v),
+                                v => option.ValueText(v));
+                            break;
+                        case SettingsCustomKind.Toggle:
+                            AddStepper(panel, option.Label,
+                                () => option.ValueText(GameSettings.GetCustom(option.Key)),
+                                _ => GameSettings.SetCustom(option.Key, !GameSettings.GetCustomBool(option.Key)));
+                            break;
+                        default:
+                            AddStepper(panel, option.Label,
+                                () => option.ValueText(GameSettings.GetCustom(option.Key)),
+                                dir =>
+                                {
+                                    int count = option.Choices != null ? option.Choices.Length : 0;
+                                    if (count == 0) return;
+                                    GameSettings.SetCustom(option.Key, Wrap(GameSettings.GetCustomInt(option.Key) + dir, count));
+                                });
+                            break;
+                    }
+                }
+            }
         }
 
         /// <summary>Scrolls so a gamepad/keyboard-selected option inside the list stays in view.</summary>
@@ -431,7 +622,7 @@ namespace AmberScreen.Settings
         static int Wrap(int i, int count) => count <= 0 ? 0 : ((i % count) + count) % count;
 
         void AddHeader(RectTransform parent, string text) =>
-            AddLabel(parent, text, k_HeaderSize, k_Accent, 46f, TextAnchor.LowerLeft);
+            AddLabel(parent, text, k_HeaderSize, m_Theme.accent, 46f, TextAnchor.LowerLeft);
 
         Text AddLabel(Transform parent, string text, int size, Color color, float height, TextAnchor anchor)
         {
@@ -440,12 +631,13 @@ namespace AmberScreen.Settings
             SetText(t, text, size, color, anchor);
             var le = rt.gameObject.AddComponent<LayoutElement>();
             le.preferredHeight = height;
+            m_ScaledHeights.Add(new ScaledHeight { element = le, height = height });
             return t;
         }
 
         void SetText(Text t, string text, int size, Color color, TextAnchor anchor)
         {
-            t.font = font;
+            t.font = m_Font;
             t.fontSize = size;
             t.color = color;
             t.alignment = anchor;
@@ -453,6 +645,7 @@ namespace AmberScreen.Settings
             t.raycastTarget = false;
             t.horizontalOverflow = HorizontalWrapMode.Overflow;
             t.verticalOverflow = VerticalWrapMode.Truncate;
+            m_ScaledTexts.Add(new ScaledText { text = t, size = size });
         }
 
         RectTransform Row(Transform parent, string name, float height = k_RowHeight)
@@ -463,15 +656,19 @@ namespace AmberScreen.Settings
             h.childControlWidth = h.childControlHeight = true;
             h.childForceExpandWidth = false;
             h.childForceExpandHeight = true;
-            row.gameObject.AddComponent<LayoutElement>().preferredHeight = height;
+            var rowLe = row.gameObject.AddComponent<LayoutElement>();
+            rowLe.preferredHeight = height;
+            m_ScaledHeights.Add(new ScaledHeight { element = rowLe, height = height });
             return row;
         }
 
         RectTransform RowWithLabel(Transform parent, string label)
         {
             var row = Row(parent, label);
-            var t = AddLabel(row, label, k_RowSize, k_Text, k_RowHeight, TextAnchor.MiddleLeft);
-            t.GetComponent<LayoutElement>().preferredWidth = 330f;
+            var t = AddLabel(row, label, k_RowSize, m_Theme.text, k_RowHeight, TextAnchor.MiddleLeft);
+            var labelLe = t.GetComponent<LayoutElement>();
+            labelLe.preferredWidth = 330f;
+            m_ScaledWidths.Add(new ScaledWidth { element = labelLe, width = 330f });
             return row;
         }
 
@@ -479,7 +676,7 @@ namespace AmberScreen.Settings
         {
             var row = RowWithLabel(parent, label);
             var left = AddButton(row, "<", () => { step(-1); Refresh(); }, 0f, 56f);
-            var value = AddLabel(row, "", k_RowSize, k_Text, k_RowHeight, TextAnchor.MiddleCenter);
+            var value = AddLabel(row, "", k_RowSize, m_Theme.text, k_RowHeight, TextAnchor.MiddleCenter);
             value.GetComponent<LayoutElement>().flexibleWidth = 1f;
             AddButton(row, ">", () => { step(1); Refresh(); }, 0f, 56f);
             if (m_FirstSelectable == null) m_FirstSelectable = left.gameObject;
@@ -507,13 +704,15 @@ namespace AmberScreen.Settings
             StyleSelectable(slider);
             foreach (var img in go.GetComponentsInChildren<Image>(true))
             {
-                if (img.gameObject.name == "Background") img.color = new Color(0.22f, 0.22f, 0.25f, 1f);
-                else if (img.gameObject.name == "Fill") img.color = k_Accent;
-                else img.color = Color.white;
+                if (img.gameObject.name == "Background") img.color = m_Theme.sliderBackground;
+                else if (img.gameObject.name == "Fill") img.color = m_Theme.accent;
+                else img.color = m_Theme.sliderHandle;
             }
 
-            var value = AddLabel(row, "", k_RowSize, k_Text, k_RowHeight, TextAnchor.MiddleRight);
-            value.GetComponent<LayoutElement>().preferredWidth = 90f;
+            var value = AddLabel(row, "", k_RowSize, m_Theme.text, k_RowHeight, TextAnchor.MiddleRight);
+            var valueLe = value.GetComponent<LayoutElement>();
+            valueLe.preferredWidth = 90f;
+            m_ScaledWidths.Add(new ScaledWidth { element = valueLe, width = 90f });
             slider.onValueChanged.AddListener(v =>
             {
                 write(v);
@@ -540,23 +739,27 @@ namespace AmberScreen.Settings
             {
                 var le = rt.gameObject.AddComponent<LayoutElement>();
                 le.flexibleWidth = flexibleWidth;
-                if (width > 0f) le.preferredWidth = width;
+                if (width > 0f)
+                {
+                    le.preferredWidth = width;
+                    m_ScaledWidths.Add(new ScaledWidth { element = le, width = width });
+                }
             }
 
             var label = NewUi("Text", rt);
             Stretch(label);
-            SetText(label.gameObject.AddComponent<Text>(), text, k_RowSize, k_Text, TextAnchor.MiddleCenter);
+            SetText(label.gameObject.AddComponent<Text>(), text, k_RowSize, m_Theme.buttonText, TextAnchor.MiddleCenter);
             return button;
         }
 
-        static void StyleSelectable(Selectable s)
+        void StyleSelectable(Selectable s)
         {
             var c = s.colors;
-            c.normalColor = new Color(0.24f, 0.24f, 0.27f, 1f);
-            c.highlightedColor = new Color(0.36f, 0.36f, 0.40f, 1f);
-            c.selectedColor = new Color(0.48f, 0.40f, 0.26f, 1f);
-            c.pressedColor = k_Accent;
-            c.disabledColor = new Color(0.2f, 0.2f, 0.2f, 0.5f);
+            c.normalColor = m_Theme.buttonNormal;
+            c.highlightedColor = m_Theme.buttonHighlighted;
+            c.selectedColor = m_Theme.buttonSelected;
+            c.pressedColor = m_Theme.accent;
+            c.disabledColor = m_Theme.buttonDisabled;
             c.colorMultiplier = 1f;
             c.fadeDuration = 0.06f;
             s.colors = c;

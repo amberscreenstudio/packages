@@ -23,6 +23,8 @@ namespace AmberScreen.Settings
         public event Action<GameSettingsData> Changed;
         /// <summary>Raised when mouse sensitivity or invert Y change: (sensitivity, invertY).</summary>
         public event Action<float, bool> ControlsChanged;
+        /// <summary>Raised when a game-defined value changes: (key, value).</summary>
+        public event Action<string, float> CustomChanged;
 
         public SettingsSession(SettingsProfile profile, string filePath, ISettingsApplier applier = null,
             Func<bool> isSteamDeck = null)
@@ -74,7 +76,8 @@ namespace AmberScreen.Settings
 
         void ApplySteamDeckPresetTo(GameSettingsData data)
         {
-            data.qualityLevel = ClampQuality(Profile != null ? Profile.steamDeckQualityLevel : 0);
+            int byName = FindQualityByName(Profile != null ? Profile.steamDeckQualityName : null);
+            data.qualityLevel = byName >= 0 ? byName : ClampQuality(Profile != null ? Profile.steamDeckQualityLevel : 0);
             data.targetFrameRate = Profile != null ? Profile.steamDeckTargetFrameRate : 30;
             data.vSync = false; // vSync would override the 30 FPS target.
             data.resolutionWidth = 0;
@@ -211,6 +214,57 @@ namespace AmberScreen.Settings
             RaiseChanged(true);
         }
 
+        /// <summary>Text size, clamped to 0.75 .. 1.6. Not an engine setting: menus and HUDs read it.</summary>
+        public void SetTextScale(float scale)
+        {
+            Data.textScale = GameSettingsData.ClampTextScale(scale);
+            RaiseChanged(false);
+        }
+
+        public float GetCustom(string key, float fallback) =>
+            Data.TryGetCustom(key, out float v) ? v : fallback;
+
+        public bool HasCustom(string key) => Data.TryGetCustom(key, out _);
+
+        /// <summary>Stores a game-defined value (saved with the rest on <see cref="Save"/>).</summary>
+        public void SetCustom(string key, float value)
+        {
+            if (string.IsNullOrEmpty(key)) return;
+            Data.SetCustom(key, value);
+            CustomChanged?.Invoke(key, value);
+            RaiseChanged(false);
+        }
+
+        /// <summary>Index of a quality level by name (case-insensitive), or -1.</summary>
+        public int FindQualityByName(string name)
+        {
+            if (string.IsNullOrEmpty(name) || !(m_Applier is ISettingsQualityNames named)) return -1;
+            var names = named.QualityNames;
+            if (names == null) return -1;
+            for (int i = 0; i < names.Length; i++)
+                if (string.Equals(names[i], name, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            return -1;
+        }
+
+        /// <summary>
+        /// Runs <paramref name="import"/> once per save file (for example to read old PlayerPrefs values into
+        /// <see cref="Data"/>). Return true from it when something changed: everything is applied and saved.
+        /// Returns true when the import ran and changed something.
+        /// </summary>
+        public bool ImportLegacyOnce(Func<GameSettingsData, bool> import)
+        {
+            if (import == null || Data.legacyImported) return false;
+            bool changed = false;
+            try { changed = import(Data); }
+            catch (Exception e) { Debug.LogWarning($"[Settings] Legacy import failed: {e.Message}"); }
+            Data.legacyImported = true;
+            Data.textScale = GameSettingsData.ClampTextScale(Data.textScale);
+            if (changed) ApplyAll();
+            Save();
+            return changed;
+        }
+
         public void SetBindingOverrides(string json)
         {
             Data.bindingOverrides = json ?? "";
@@ -220,7 +274,9 @@ namespace AmberScreen.Settings
         /// <summary>Back to first-run defaults (including the Steam Deck preset on a Deck), applied but not saved.</summary>
         public void ResetToDefaults()
         {
+            bool imported = Data != null && Data.legacyImported;
             Data = CreateDefaults();
+            Data.legacyImported = imported; // never re-import old values after a reset
             ApplyAll();
         }
 

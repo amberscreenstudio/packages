@@ -12,4 +12,10 @@ namespace AmberScreen.Settings
         void ApplyGraphics(GameSettingsData data);
         void ApplyAudio(GameSettingsData data, SettingsProfile profile);
     }
+
+    /// <summary>Optional: an applier that can name its quality levels (used to pick the Steam Deck level by name).</summary>
+    public interface ISettingsQualityNames
+    {
+        string[] QualityNames { get; }
+    }
 }

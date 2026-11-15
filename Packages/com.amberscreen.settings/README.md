@@ -2,14 +2,14 @@
 
 A settings menu every game can ship: graphics, audio and controls, saved as JSON and applied on startup, with a Steam Deck first-run preset. Assembly `AmberScreen.Settings`, namespace `AmberScreen.Settings`. Render-pipeline neutral (no URP or HDRP references), no TextMeshPro.
 
-**Version:** 0.1.1
+**Version:** 0.2.0
 **Unity:** 6000.0+
 **Owner:** Packages.
 
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.settings#settings/0.1.1
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.settings#settings/0.2.0
 ```
 
 ## Quick start
@@ -29,6 +29,45 @@ Without a profile in Resources nothing happens at startup until you call `GameSe
 | Controls | mouse sensitivity, invert Y | plain values plus the `GameSettings.ControlsChanged` event; your camera code reads them |
 | Rebinding | optional | `SettingsRebinding` (only compiled when `com.unity.inputsystem` is installed) |
 
+## Text size
+
+`GameSettings.TextScale` is 0.75 to 1.6 (75-160%, 1 = normal), saved with everything else. The built-in menu shows it as "Text size" (turn off with `SettingsProfile.showTextSize`) and scales its own text. For your own UI use `GameSettings.ScaledFontSize(baseSize)` and listen to `GameSettings.Changed`.
+
+## Game-defined options
+
+Add rows for your own options at boot; they appear in the built-in menu under their heading (default "Game"), are saved in the same file and call your code straight away with the saved value, on every change and on Reset:
+
+```csharp
+GameSettings.AddCustomToggle("game.holdToZoom", "Hold to zoom", true, on => zoomHold = on, "Accessibility");
+GameSettings.AddCustomStepper("game.colours", "Colours", new[] { "Normal", "Colour-blind" }, 0, i => palette = i, "Accessibility");
+GameSettings.AddCustomSlider("game.hud", "HUD size", 0.5f, 1.5f, 1f, v => hudScale = v, v => Mathf.RoundToInt(v * 100) + "%");
+```
+
+Read them anywhere with `GetCustom` / `GetCustomBool` / `GetCustomInt`, change them with `SetCustom`. Keys must be unique.
+
+## Look and draw order
+
+- Theme: Create > AmberScreen > Settings Menu Theme. Assign it to the menu's `theme` field, call `menu.ApplyTheme(theme)`, or name it `AmberScreenSettingsMenuTheme` inside a Resources folder to use it everywhere. It sets the font, title and every colour.
+- `sortingOrder` defaults to 1010: above a pause menu at 1000, below a dev console at 1050.
+
+## Esc and pause menus
+
+When the settings menu is opened from a pause menu, the pause menu should ignore Esc while `SettingsMenu.AnyOpen` or `SettingsMenu.ConsumedCloseThisFrame` is true. Then one Esc closes settings and the next one steps the pause menu.
+
+## Bringing over old settings once
+
+```csharp
+GameSettings.ImportLegacyOnce(d =>
+{
+    bool any = false;
+    if (LegacyPrefs.TryFloat("game.vol", out var v)) { d.masterVolume = v; any = true; }
+    if (LegacyPrefs.TryFloat("game.text", out var t)) { d.textScale = t; any = true; }
+    return any;   // true = apply and save
+});
+```
+
+It runs once per settings file and never again, even after Reset.
+
 ## Steam Deck
 
 `SteamDeckDetector.IsSteamDeck(os, gpu, width, height, steamDeckEnv)` is one static heuristic:
@@ -37,7 +76,7 @@ Without a profile in Resources nothing happens at startup until you call `GameSe
 - the Deck's own GPU name (`AMD Custom GPU 0405` LCD, `0932` OLED; also counts under Proton/Windows builds), or
 - SteamOS/Linux plus a 1280x800 native screen.
 
-On the first run on a Deck (no save file yet) the profile's `steamDeckQualityLevel` (clamped to the levels that exist), `steamDeckTargetFrameRate` (30) and vSync off are chosen. Set `SteamDeckDetector.Override = true` to fake a Deck for testing.
+On the first run on a Deck (no save file yet) the quality level named `steamDeckQualityName` (default "Performant"; if no level has that name, `steamDeckQualityLevel`, clamped to the levels that exist), `steamDeckTargetFrameRate` (30) and vSync off are chosen. Set `SteamDeckDetector.Override = true` to fake a Deck for testing.
 
 ## Public API (`GameSettings`)
 
@@ -50,13 +89,16 @@ On the first run on a Deck (no save file yet) the profile's `steamDeckQualityLev
 | `MouseSensitivity`, `InvertY`, `SetMouseSensitivity`, `SetInvertY` | Controls |
 | `Save()`, `ResetToDefaults()`, `ResetAsFirstRun()` | Keep, undo, start over |
 | `QualityNames`, `GetResolutionOptions()`, `FrameRateOptions` | Lists for your own menu |
-| Events: `Changed(data)`, `ControlsChanged(sensitivity, invertY)` | React to changes |
+| `TextScale`, `SetTextScale`, `ScaledFontSize` | Text size 75-160% |
+| `AddCustomSlider` / `AddCustomToggle` / `AddCustomStepper`, `GetCustom*`, `SetCustom` | Game-defined options |
+| `ImportLegacyOnce(import)` | One-time import of old values |
+| Events: `Changed(data)`, `ControlsChanged(sensitivity, invertY)`, `CustomChanged(key, value)` | React to changes |
 
 Changes apply immediately; call `Save()` to keep them (the built-in menu saves on close).
 
 ## Stays in games
 
-The pause menu that opens this, any extra game-only options, the look of a custom menu, and the camera code that uses sensitivity and invert Y.
+The pause menu that opens this (see `com.amberscreen.gameshell`), what each game-defined option does, and the camera code that uses sensitivity and invert Y.
 
 ## Demo
 
