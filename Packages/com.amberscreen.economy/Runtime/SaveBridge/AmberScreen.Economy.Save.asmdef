@@ -1,0 +1,25 @@
+{
+  "name": "AmberScreen.Economy.Save",
+  "rootNamespace": "AmberScreen.Economy.Save",
+  "references": [
+    "AmberScreen.Economy",
+    "AmberScreen.Save"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "AMBERSCREEN_ECONOMY_SAVE"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.amberscreen.save",
+      "expression": "0.1.0",
+      "define": "AMBERSCREEN_ECONOMY_SAVE"
+    }
+  ],
+  "noEngineReferences": false
+}

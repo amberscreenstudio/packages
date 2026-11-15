@@ -1,8 +1,8 @@
 {
   "name": "com.amberscreen.economy",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "Amber Screen Economy",
-  "description": "Game-free wallet, money formatting, and earnings types. Temporary save scaffolding until com.amberscreen.save.",
+  "description": "Game-free wallet, money formatting, and earnings types. Optional save hook for com.amberscreen.save (compiled only when it is installed).",
   "unity": "6000.6",
   "documentationUrl": "https://github.com/amberscreenstudio/packages/blob/main/Packages/com.amberscreen.economy/README.md",
   "changelogUrl": "https://github.com/amberscreenstudio/packages/blob/main/Packages/com.amberscreen.economy/CHANGELOG.md",

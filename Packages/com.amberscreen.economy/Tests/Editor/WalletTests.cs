@@ -90,6 +90,56 @@ namespace AmberScreen.Economy.Tests
             Object.DestroyImmediate(settings);
         }
 
+        static EconomyCurrencySettings ApplyDollars()
+        {
+            var settings = ScriptableObject.CreateInstance<EconomyCurrencySettings>();
+            var so = new UnityEditor.SerializedObject(settings);
+            so.FindProperty("symbol").stringValue = "$";
+            so.FindProperty("amountFormat").stringValue = "0.00";
+            so.ApplyModifiedPropertiesWithoutUndo();
+            Money.Apply(settings);
+            return settings;
+        }
+
+        [Test]
+        public void Money_Negative_PutsTheSignBeforeTheSymbol()
+        {
+            var settings = ApplyDollars();
+            Assert.AreEqual("-$1.00", Money.FormatMinor(-100));
+            Assert.AreEqual("-$0.05", Money.FormatMinor(-5));
+            Assert.AreEqual("-$1.00", Money.Format(-1f));
+            Assert.AreEqual("$0.00", Money.FormatMinor(0));
+            Assert.AreEqual("$0.00", Money.Format(-0.001f), "no minus on a zero amount");
+            Object.DestroyImmediate(settings);
+        }
+
+        [Test]
+        public void Money_FormatMinor_IsExactForLargeAmounts()
+        {
+            var settings = ApplyDollars();
+            // 123,456,789.01 can't be held exactly by a float.
+            Assert.AreEqual("$123456789.01", Money.FormatMinor(12_345_678_901));
+            Assert.AreEqual("$12.34", Money.FormatMinor(1_234));
+            Assert.AreEqual("-$12.34", Money.FormatMinor(-1_234));
+            Object.DestroyImmediate(settings);
+        }
+
+        [Test]
+        public void WalletSaveState_DataRoundTrip()
+        {
+            var wallet = new Wallet();
+            wallet.Add(-250, "fine");
+            var data = new WalletSaveState(wallet).CaptureData();
+            Assert.AreEqual(-250, data.balance);
+
+            var loaded = new Wallet();
+            new WalletSaveState(loaded).RestoreData(data);
+            Assert.AreEqual(-250, loaded.Balance);
+
+            new WalletSaveState(loaded).RestoreData(null);
+            Assert.AreEqual(0, loaded.Balance);
+        }
+
         [Test]
         public void WalletSaveState_RoundTrip_ViaJsonBackend()
         {

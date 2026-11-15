@@ -1,0 +1,33 @@
+{
+  "name": "AmberScreen.Economy.Save.Tests.Editor",
+  "rootNamespace": "AmberScreen.Economy.Save.Tests",
+  "references": [
+    "AmberScreen.Economy",
+    "AmberScreen.Economy.Save",
+    "AmberScreen.Save",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS",
+    "AMBERSCREEN_ECONOMY_SAVE"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.amberscreen.save",
+      "expression": "0.1.0",
+      "define": "AMBERSCREEN_ECONOMY_SAVE"
+    }
+  ],
+  "noEngineReferences": false
+}

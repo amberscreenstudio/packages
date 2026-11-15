@@ -34,15 +34,41 @@ namespace AmberScreen.Economy
         /// <summary>Minor (cents) → major units for display math.</summary>
         public static float FromMinor(long minor) => minor / 100f;
 
-        /// <summary>Formats an amount with the configured currency symbol (invariant digits).</summary>
+        /// <summary>
+        /// Formats an amount with the configured currency symbol (invariant digits).
+        /// Negative amounts put the sign before the symbol: "-$1.00".
+        /// </summary>
         public static string Format(float amount)
         {
             EnsureLoaded();
-            return symbol + amount.ToString(amountFormat, CultureInfo.InvariantCulture);
+            string digits = Math.Abs(amount).ToString(amountFormat, CultureInfo.InvariantCulture);
+            return (amount < 0f && !IsZero(digits) ? "-" : "") + symbol + digits;
         }
 
-        /// <summary>Formats minor units via <see cref="Format"/>.</summary>
-        public static string FormatMinor(long amountMinor) => Format(FromMinor(amountMinor));
+        /// <summary>
+        /// Formats minor units (cents) exactly, without going through float. "-$1.00" for -100.
+        /// </summary>
+        public static string FormatMinor(long amountMinor)
+        {
+            EnsureLoaded();
+            bool negative = amountMinor < 0;
+            // decimal keeps cents exact; long.MinValue cannot be negated, so go through decimal first.
+            decimal major = Math.Abs((decimal)amountMinor) / 100m;
+            string digits = major.ToString(amountFormat, CultureInfo.InvariantCulture);
+            return (negative && !IsZero(digits) ? "-" : "") + symbol + digits;
+        }
+
+        /// <summary>True when formatted digits are all zeros (so "-$0.00" is never shown).</summary>
+        private static bool IsZero(string digits)
+        {
+            if (string.IsNullOrEmpty(digits)) return true;
+            for (int i = 0; i < digits.Length; i++)
+            {
+                char c = digits[i];
+                if (c >= '1' && c <= '9') return false;
+            }
+            return true;
+        }
 
         private static void EnsureLoaded()
         {
