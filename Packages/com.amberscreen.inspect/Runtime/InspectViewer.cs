@@ -17,6 +17,7 @@ namespace AmberScreen.Inspect
         [Serializable] public sealed class TransformEvent : UnityEvent<Transform> { }
         [Serializable] public sealed class BoolEvent : UnityEvent<bool> { }
         [Serializable] public sealed class StringEvent : UnityEvent<string> { }
+        [Serializable] public sealed class FloatEvent : UnityEvent<float> { }
 
         public enum Phase
         {
@@ -33,6 +34,15 @@ namespace AmberScreen.Inspect
         public float holdDistance = 0.7f;
         public float minDistance = 0.3f;
         public float maxDistance = 1.5f;
+        [Tooltip("Size the hold, min and max distances from the object's rendered size (largest half-extent " +
+                 "times the multipliers below). An Inspectable.holdDistance still wins for hold.")]
+        public bool fitToBounds;
+        [Tooltip("Hold distance = object half-size x this (when fitToBounds is on).")]
+        public float fitHoldMultiplier = 3f;
+        [Tooltip("Closest zoom = object half-size x this (when fitToBounds is on).")]
+        public float fitMinMultiplier = 1f;
+        [Tooltip("Furthest zoom = object half-size x this (when fitToBounds is on).")]
+        public float fitMaxMultiplier = 8f;
         [Tooltip("Metres per mouse-wheel notch.")]
         public float scrollZoomStep = 0.08f;
         [Tooltip("Metres per second at full trigger.")]
@@ -64,12 +74,36 @@ namespace AmberScreen.Inspect
         public BoolEvent onBackgroundFocus = new BoolEvent();
         [Tooltip("Label of the focused spot, or empty when no spot is focused.")]
         public StringEvent onHotspotLabel = new StringEvent();
+        [Tooltip("New hold distance (metres) when inspecting starts, on zoom and on spot focus. " +
+                 "Use it to keep a depth-of-field band on the object.")]
+        public FloatEvent onDistanceChanged = new FloatEvent();
 
         /// <summary>Same as <see cref="onPlayerControlsEnabled"/>, for code.</summary>
         public Action<bool> PlayerControlsCallback;
         public event Action<Transform> InspectStarted;
         public event Action<Transform> InspectEnded;
         public event Action<InspectHotspot> HotspotFocused;
+        /// <summary>Same as <see cref="onDistanceChanged"/>, for code: the new hold distance in metres.</summary>
+        public event Action<float> DistanceChanged;
+
+        static int s_InspectingCount;
+        static int s_ClosedFrame = -1;
+
+        /// <summary>True while any viewer is inspecting. A pause menu can leave Esc to inspect while this is true.</summary>
+        public static bool AnyInspecting => s_InspectingCount > 0;
+
+        /// <summary>
+        /// True for the rest of the frame in which a viewer ended inspecting from its own Esc / right-click / B,
+        /// so the same press doesn't also open or step a pause menu.
+        /// </summary>
+        public static bool ConsumedCloseThisFrame => s_ClosedFrame == Time.frameCount;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            s_InspectingCount = 0;
+            s_ClosedFrame = -1;
+        }
 
         sealed class SavedState
         {
@@ -152,9 +186,16 @@ namespace AmberScreen.Inspect
                 foreach (var pair in m_Saved.colliders) pair.Key.enabled = false;
 
             var inspectable = target.GetComponent<Inspectable>();
-            m_Min = Mathf.Min(minDistance, maxDistance);
-            m_Max = Mathf.Max(minDistance, maxDistance);
-            float hold = inspectable != null && inspectable.holdDistance > 0f ? inspectable.holdDistance : holdDistance;
+            float minD = minDistance, maxD = maxDistance, holdD = holdDistance;
+            if (fitToBounds)
+            {
+                float extent = InspectMath.RenderedExtent(target);
+                InspectMath.FitDistances(extent, fitHoldMultiplier, fitMinMultiplier, fitMaxMultiplier,
+                    out holdD, out minD, out maxD);
+            }
+            m_Min = Mathf.Min(minD, maxD);
+            m_Max = Mathf.Max(minD, maxD);
+            float hold = inspectable != null && inspectable.holdDistance > 0f ? inspectable.holdDistance : holdD;
             m_Distance = InspectMath.ClampDistance(hold, m_Min, m_Max);
 
             m_Hotspots.Clear();
@@ -167,6 +208,7 @@ namespace AmberScreen.Inspect
             m_StartedFrame = Time.frameCount;
             m_T = 0f;
             m_Phase = Phase.Entering;
+            s_InspectingCount++;
             if (transitionSeconds <= 0f) FinishEnter();
 
             PlayerControlsCallback?.Invoke(false);
@@ -174,6 +216,7 @@ namespace AmberScreen.Inspect
             onBackgroundFocus.Invoke(true);
             InspectStarted?.Invoke(target);
             onInspectStarted.Invoke(target);
+            RaiseDistanceChanged();
             return true;
         }
 
@@ -207,13 +250,30 @@ namespace AmberScreen.Inspect
         public void Zoom(float metres)
         {
             if (!IsInspecting) return;
-            m_Distance = InspectMath.ClampDistance(m_Distance + metres, m_Min, m_Max);
+            SetDistanceInternal(InspectMath.ClampDistance(m_Distance + metres, m_Min, m_Max));
         }
 
         public void SetDistance(float metres)
         {
             if (!IsInspecting) return;
-            m_Distance = InspectMath.ClampDistance(metres, m_Min, m_Max);
+            SetDistanceInternal(InspectMath.ClampDistance(metres, m_Min, m_Max));
+        }
+
+        /// <summary>Closest and furthest zoom for the object being inspected (after fitToBounds).</summary>
+        public float CurrentMinDistance => m_Min;
+        public float CurrentMaxDistance => m_Max;
+
+        void SetDistanceInternal(float d)
+        {
+            if (Mathf.Approximately(d, m_Distance)) return;
+            m_Distance = d;
+            RaiseDistanceChanged();
+        }
+
+        void RaiseDistanceChanged()
+        {
+            DistanceChanged?.Invoke(m_Distance);
+            onDistanceChanged.Invoke(m_Distance);
         }
 
         public void NextHotspot() => FocusHotspot(InspectMath.Step(m_HotspotIndex, 1, m_Hotspots.Count));
@@ -312,6 +372,7 @@ namespace AmberScreen.Inspect
         {
             if (InspectInput.ExitPressed)
             {
+                s_ClosedFrame = Time.frameCount;
                 EndInspect();
                 return;
             }
@@ -379,6 +440,7 @@ namespace AmberScreen.Inspect
         {
             var target = m_Target;
             var saved = m_Saved;
+            if (m_Phase != Phase.Idle && s_InspectingCount > 0) s_InspectingCount--;
             m_Phase = Phase.Idle;
             m_Target = null;
             m_Saved = null;

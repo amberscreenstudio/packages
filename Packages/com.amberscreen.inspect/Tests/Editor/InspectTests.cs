@@ -45,6 +45,7 @@ namespace AmberScreen.Inspect.Tests
         [TearDown]
         public void TearDown()
         {
+            if (m_Viewer != null && m_Viewer.IsInspecting) m_Viewer.EndInspect(true);
             Object.DestroyImmediate(m_Parent);
             Object.DestroyImmediate(m_Target);
             Object.DestroyImmediate(m_Camera);
@@ -151,5 +152,71 @@ namespace AmberScreen.Inspect.Tests
         [TestCase(0, 1, 0, -1)]
         public void StepWraps(int index, int dir, int count, int expected) =>
             Assert.That(InspectMath.Step(index, dir, count), Is.EqualTo(expected));
+
+        [Test]
+        public void FitToBoundsSizesDistancesFromTheObject()
+        {
+            InspectMath.FitDistances(0.01f, 3f, 1f, 8f, out float hold, out float min, out float max);
+            Assert.That(hold, Is.EqualTo(0.03f).Within(1e-6f));
+            Assert.That(min, Is.EqualTo(0.01f).Within(1e-6f));
+            Assert.That(max, Is.EqualTo(0.08f).Within(1e-6f));
+
+            float extent = InspectMath.RenderedExtent(m_Target.transform);
+            Assert.That(extent, Is.GreaterThan(0.1f));
+            m_Viewer.fitToBounds = true;
+            Assert.That(m_Viewer.Inspect(m_Target.transform), Is.True);
+            Assert.That(m_Viewer.Distance, Is.EqualTo(extent * 3f).Within(1e-4f));
+            Assert.That(m_Viewer.CurrentMinDistance, Is.EqualTo(extent).Within(1e-4f));
+            Assert.That(m_Viewer.CurrentMaxDistance, Is.EqualTo(extent * 8f).Within(1e-4f));
+            m_Viewer.EndInspect(true);
+        }
+
+        [Test]
+        public void FitToBoundsOffKeepsTheFixedDistances()
+        {
+            m_Viewer.holdDistance = 0.9f;
+            Assert.That(m_Viewer.Inspect(m_Target.transform), Is.True);
+            Assert.That(m_Viewer.Distance, Is.EqualTo(0.9f).Within(1e-5f));
+            m_Viewer.EndInspect(true);
+        }
+
+        [Test]
+        public void DistanceChangedFiresOnStartZoomAndSetDistance()
+        {
+            var seen = new System.Collections.Generic.List<float>();
+            int unity = 0;
+            m_Viewer.DistanceChanged += d => seen.Add(d);
+            m_Viewer.onDistanceChanged.AddListener(_ => unity++);
+
+            m_Viewer.Inspect(m_Target.transform);
+            Assert.That(seen.Count, Is.EqualTo(1), "start");
+            Assert.That(seen[0], Is.EqualTo(m_Viewer.Distance));
+
+            m_Viewer.Zoom(0.1f);
+            Assert.That(seen.Count, Is.EqualTo(2), "zoom");
+            Assert.That(seen[1], Is.EqualTo(m_Viewer.Distance));
+
+            m_Viewer.SetDistance(m_Viewer.Distance);
+            Assert.That(seen.Count, Is.EqualTo(2), "no event when nothing changed");
+
+            m_Viewer.SetDistance(100f);
+            Assert.That(seen.Count, Is.EqualTo(3));
+            Assert.That(seen[2], Is.EqualTo(m_Viewer.CurrentMaxDistance), "clamped to max");
+            Assert.That(unity, Is.EqualTo(3));
+            m_Viewer.EndInspect(true);
+        }
+
+        [Test]
+        public void AnyInspectingTracksTheViewer()
+        {
+            Assert.That(InspectViewer.AnyInspecting, Is.False);
+            m_Viewer.Inspect(m_Target.transform);
+            Assert.That(InspectViewer.AnyInspecting, Is.True);
+            m_Viewer.Inspect(m_Target.transform); // re-inspect ends the old one first
+            Assert.That(InspectViewer.AnyInspecting, Is.True);
+            m_Viewer.EndInspect(true);
+            Assert.That(InspectViewer.AnyInspecting, Is.False);
+            Assert.That(InspectViewer.ConsumedCloseThisFrame, Is.False, "only set by the viewer's own Esc");
+        }
     }
 }

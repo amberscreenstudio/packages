@@ -2,14 +2,14 @@
 
 Close-up inspection viewer: pick up an object, look at it in front of the camera, turn it, zoom, step through marked spots, then put it back exactly where it was. Assembly `AmberScreen.Inspect`, namespace `AmberScreen.Inspect`. No UI, no render-pipeline parts.
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Unity:** 6000.0+
 **Owner:** Packages.
 
 ## Install
 
 ```
-https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.inspect#inspect/0.1.0
+https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen.inspect#inspect/0.2.0
 ```
 
 ## Quick start
@@ -22,6 +22,12 @@ https://github.com/amberscreenstudio/packages.git?path=/Packages/com.amberscreen
    - presses Tab / Shift+Tab or RB / LB to step through marked spots,
    - presses Esc, right-click or B to put it back (or you call `EndInspect()`).
 4. Optional: add `InspectHotspot` children at interesting spots (label, order, focus distance). Optional `Inspectable` marker gives a per-object hold distance and display name.
+
+Sizing by object: tick `fitToBounds` and the hold, closest and furthest distances become the object's largest half-size times `fitHoldMultiplier` (3), `fitMinMultiplier` (1) and `fitMaxMultiplier` (8). Good for parts of very different sizes. An `Inspectable.holdDistance` above 0 still sets the hold distance.
+
+Depth of field: listen to `DistanceChanged` (or `onDistanceChanged`) and set your focus distance to the value. It fires on start, zoom and spot focus.
+
+Esc and pause menus: in your pause menu, ignore Esc while `InspectViewer.AnyInspecting` or `InspectViewer.ConsumedCloseThisFrame` is true, so one Esc puts the object back without also opening the pause menu.
 
 Keep the camera's near clip plane well below `minDistance` minus the object's size (for example 0.03), or close-up objects get cut.
 

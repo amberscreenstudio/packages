@@ -10,6 +10,9 @@ namespace AmberScreen.Inspect.Demo
         string m_Label = "";
         bool m_PlayerControls = true;
         bool m_Background;
+        float m_LastDistanceEvent = -1f;
+        int m_DistanceEvents;
+        int m_EscUsed;
         GUIStyle m_Small, m_Big;
 
         void OnEnable()
@@ -18,6 +21,7 @@ namespace AmberScreen.Inspect.Demo
             viewer.onHotspotLabel.AddListener(OnLabel);
             viewer.onPlayerControlsEnabled.AddListener(OnControls);
             viewer.onBackgroundFocus.AddListener(OnBackground);
+            viewer.DistanceChanged += OnDistance;
         }
 
         void OnDisable()
@@ -26,6 +30,13 @@ namespace AmberScreen.Inspect.Demo
             viewer.onHotspotLabel.RemoveListener(OnLabel);
             viewer.onPlayerControlsEnabled.RemoveListener(OnControls);
             viewer.onBackgroundFocus.RemoveListener(OnBackground);
+            viewer.DistanceChanged -= OnDistance;
+        }
+
+        void OnDistance(float d)
+        {
+            m_LastDistanceEvent = d;
+            m_DistanceEvents++;
         }
 
         void OnLabel(string label) => m_Label = label;
@@ -45,6 +56,12 @@ namespace AmberScreen.Inspect.Demo
             }
         }
 
+        void LateUpdate()
+        {
+            // The flag lasts the whole frame, so a pause menu running later than inspect can still see it.
+            if (InspectViewer.ConsumedCloseThisFrame) m_EscUsed++;
+        }
+
         void OnGUI()
         {
             if (m_Small == null)
@@ -54,7 +71,7 @@ namespace AmberScreen.Inspect.Demo
                 m_Big.normal.textColor = new Color(1f, 0.75f, 0.3f);
             }
 
-            GUILayout.BeginArea(new Rect(12, 12, 420, 210), GUI.skin.box);
+            GUILayout.BeginArea(new Rect(12, 12, 460, 300), GUI.skin.box);
             GUILayout.Label("<b>Inspect demo</b>", m_Small);
             if (viewer == null || !viewer.IsInspecting)
             {
@@ -67,6 +84,13 @@ namespace AmberScreen.Inspect.Demo
                                 "Gamepad: right stick turn, triggers zoom, LB/RB spots, B put back", m_Small);
                 GUILayout.Label($"Spots on this object: {viewer.Hotspots.Count}   Distance: {viewer.Distance:0.00} m", m_Small);
             }
+            if (viewer != null && !viewer.IsInspecting &&
+                GUILayout.Button("Fit distances to object size: " + (viewer.fitToBounds ? "ON" : "OFF"), GUILayout.Height(26)))
+                viewer.fitToBounds = !viewer.fitToBounds;
+            GUILayout.Label(m_DistanceEvents == 0
+                ? "Distance event: none yet"
+                : $"Distance event: {m_LastDistanceEvent:0.00} m (fired {m_DistanceEvents} times)", m_Small);
+            GUILayout.Label($"Esc presses used by inspect: {m_EscUsed} (a pause menu would ignore these)", m_Small);
             GUILayout.Label($"Player controls: {(m_PlayerControls ? "ON" : "OFF (inspecting)")}   Background focus event: {(m_Background ? "on" : "off")}", m_Small);
             GUILayout.EndArea();
 
