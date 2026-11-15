@@ -1,6 +1,6 @@
 # Shared systems registry
 
-Last updated: 2026-11-13. Kept by Packages. Every registered module is a package with exactly ONE owner (Fabio, 2026-10-19).
+Last updated: 2026-11-15. Kept by Packages. Every registered module is a package with exactly ONE owner (Fabio, 2026-10-19).
 
 
 ## Rules
@@ -45,10 +45,10 @@ Shared packages are built only for needs no owned asset covers. A shared setting
 
 ### com.amberscreen.devconsole
 
-- **Owner:** Packages | **State:** in library, `0.4.4` tagged (`devconsole/0.4.4` on 53deb86) | **Users:** LWN `devconsole/0.4.1`, Sand & Ink `devconsole/0.4.3`, Snorkel & Sail `devconsole/0.4.1`, Twin Ticks `devconsole/0.4.2`
-- **Includes:** right-edge console rail (stays open without blocking), section windows (blocking), **Debug HUD** (`DevHud` — sections/rows/tables/pins/collapse; left-edge rail or portrait top strip), **Theme** (`DevConsoleTheme` + HUD colours/fonts), optional command line (`SetCommandLineEnabled`), key hints (InputAction + plain string), flowing auto-sized buttons, sub-headers, entry visibility predicates, quick buttons, pinned readouts, buttons/toggles/dropdowns/confirms/readouts, filter, log window, saved state, portrait full-screen sheet with dpi scaling, open bindings (F1, F2 HUD, Select+Start, 3-finger tap, corner hold), release-build stripping, Inter font
+- **Owner:** Packages | **State:** in library, `0.4.4` tagged (`devconsole/0.4.4` on 53deb86); `0.5.0` built, awaiting test (Time & Tension parity) | **Users:** LWN `devconsole/0.4.1`, Sand & Ink `devconsole/0.4.3`, Snorkel & Sail `devconsole/0.4.1`, Twin Ticks `devconsole/0.4.2`
+- **Includes:** right-edge console rail (stays open without blocking), section windows (blocking), **Debug HUD** (`DevHud` — sections/rows/tables/pins/collapse; left-edge rail or portrait top strip), **Theme** (`DevConsoleTheme` + HUD colours/fonts), optional command line (`SetCommandLineEnabled`), key hints (InputAction + plain string), flowing auto-sized buttons, sub-headers, entry visibility predicates, quick buttons, pinned readouts, buttons/toggles/dropdowns (pick kept across rebuilds)/confirms/readouts, multi-line readouts, remembered-choice dropdowns (`RegisterChoice`), open blocking (`OpenBlocked`), per-session open key / HUD key / sort order overrides, filter, log window, saved state, portrait full-screen sheet with dpi scaling, open bindings (F1, F2 HUD, Select+Start, 3-finger tap, corner hold), release-build stripping, Inter font
 - **Stays in games:** every game's own commands, sections, HUD *content*, theme assets, and command registrations
-- **Interfaces:** DevConsole static API (`ApplyTheme`, `RegisterCommand`, `RegisterSubHeader`, `SetVisible`, `SetCommandLineEnabled`, …), `DevHud` static API (`AddSection`, `SetLine`, `SetKeyHints`, `GameRect`, …), `[DevButton]`, `IDevConsoleSectionProvider`, `BlocksGame`, `IsPointerOverConsole`, `ConsumedCloseThisFrame`
+- **Interfaces:** DevConsole static API (`ApplyTheme`, `RegisterCommand`, `RegisterSubHeader`, `SetVisible`, `SetCommandLineEnabled`, …), `DevHud` static API (`AddSection`, `SetLine`, `SetKeyHints`, `GameRect`, …), `[DevButton]`, `IDevConsoleSectionProvider`, `BlocksGame`, `IsPointerOverConsole`, `ConsumedCloseThisFrame`, `OpenBlocked`, `RegisterMultilineReadout`, `RegisterChoice` / `GetChoice`, `SetOpenKey` / `SetHudToggleKey` / `SetSortingOrder`
 - **Depends on:** TMP, uGUI, Input System
 - **Queued:** confine console to a RectTransform (Twin Ticks)
 
@@ -63,11 +63,11 @@ Shared packages are built only for needs no owned asset covers. A shared setting
 
 ### com.amberscreen.save
 
-- **Owner:** Watchmaker | **State:** in progress (readiness pass first) | **Users:** all five
-- **Includes:** save slots, temp-file swap writes, version stamp, `ISaveStateProvider` registry, per-field "known" flags, warn-but-load on version mismatch
+- **Owner:** Watchmaker | **State:** `0.1.0` built, awaiting test (lifted from Watchmaker `Assets/Shared/Save`; the game deletes its copy when it installs the package) | **Users:** all five
+- **Includes:** save slots, temp-file swap writes with `.bak` fallback, version stamp, `ISaveStateProvider` registry (unknown keys kept on re-save), per-field "known" flags, warn-but-load on a MAJOR version mismatch (`0.MAJOR.MINOR`, fixed to read MAJOR), legacy migration hook, `SaveSettings` loaded from Resources (`AmberScreenSaveSettings`) in builds
 - **Stays in games:** what each game saves (its providers and data classes)
-- **Interfaces:** `ISaveStateProvider`
-- **Depends on:** `com.amberscreen.versioning`
+- **Interfaces:** `ISaveStateProvider`, `SaveRegistry`, `SaveStore`, `SaveSettings`, `LoadResult`
+- **Depends on:** nothing for now (its own MAJOR compare, `SaveStore.IsMajorMismatch`, until `com.amberscreen.versioning` is extracted)
 - **Note:** S&I's quick.json save is retired once it adopts; S&I requirements go in before Watchmaker's prompt
 
 ### com.amberscreen.timeofday
@@ -139,11 +139,11 @@ Shared packages are built only for needs no owned asset covers. A shared setting
 
 ### com.amberscreen.economy
 
-- **Owner:** LWN | **State:** in library, `0.1.0` tagged (`economy/0.1.0` on cf4ded2) | **Users:** none
-- **Includes:** `Money` / `EconomyCurrencySettings`, `IWallet` / `Wallet` (Balance, Available, Add, TrySpend, holds, transaction log), `EarningsRecord` / `EarningsLineType`, `WalletSaveState`; temporary `TempSave` (`ISaveStateProvider`, `JsonSaveBackend`) until `com.amberscreen.save`
+- **Owner:** LWN | **State:** in library, `0.1.0` tagged (`economy/0.1.0` on cf4ded2); `0.2.0` built, awaiting test | **Users:** none
+- **Includes:** `Money` / `EconomyCurrencySettings`, `IWallet` / `Wallet` (Balance, Available, Add, TrySpend, holds, transaction log), `EarningsRecord` / `EarningsLineType`, `WalletSaveState`; temporary `TempSave` (`ISaveStateProvider`, `JsonSaveBackend`); 0.2.0: optional `WalletSaveProvider` for `com.amberscreen.save` (compiles only when save is installed), negative money shown as "-$1.00"
 - **Stays in games:** payout rules, job/auction calculators, currency assets, game-specific history
 - **Interfaces:** `IWallet`, `Money`, earnings record types, wallet save provider
-- **Depends on:** nothing (temp save is local to the package)
+- **Depends on:** nothing (temp save is local to the package; the save bridge switches on when `com.amberscreen.save` 0.1.0+ is installed)
 
 ### com.amberscreen.interaction
 
@@ -241,11 +241,12 @@ Shared packages are built only for needs no owned asset covers. A shared setting
 
 ### com.amberscreen.gameshell
 
-- **Owner:** Watchmaker | **State:** built (readiness pass after save) | **Users:** all five
-- **Includes:** pause menu, scene changes with fades (SceneFlow), central key list, UI theme
-- **Stays in games:** menu content and art
-- **Interfaces:** SceneFlow API, theme asset, key list
-- **Depends on:** TMP, uGUI, Input System
+- **Owner:** Watchmaker | **State:** `0.1.0` built, awaiting test (lifted from Watchmaker SceneFlow / PauseMenu / boot) | **Users:** all five
+- **Includes:** `GameShell.Boot`, scene changes with fades and autosave (`SceneFlow`), pause menu (`PauseFrame`: pauses time and audio, cursor restore, clickable at timeScale 0, save/load slot pages, fit-to-screen panel, live text size, game buttons), version label with load warning, `BlocksGameplay` / blockers / escape guards, UI theme asset, Find Missing References editor tool
+- **Stays in games:** menu content and art, the game's keys, what is saved, wiring to settings / inspect / dev console
+- **Interfaces:** `GameShell` (boot, hooks, blocked check), `SceneFlow` API, `PauseFrame`, `GameShellTheme`, `GameShellSettings` (Resources `AmberScreenGameShellSettings`)
+- **Depends on:** `com.amberscreen.save`, uGUI, Input System (no TMP)
+- **Note:** the version label overlaps `com.amberscreen.versioning`; it moves there when versioning is extracted. The central key list stays in games for now (only the pause key is a setting).
 
 ### com.amberscreen.encounters
 
@@ -258,16 +259,16 @@ Shared packages are built only for needs no owned asset covers. A shared setting
 
 ### com.amberscreen.settings
 
-- **Owner:** Packages | **State:** 0.1.1 tagged | **Users:** all five (none yet)
-- **Includes:** graphics (quality level, resolution, display mode, vSync, frame limit), audio (master/music/effects through AudioMixer exposed parameters), controls (mouse sensitivity, invert Y, optional Input System rebinding), JSON save in persistentDataPath applied on startup, Steam Deck detection with a first-run low preset at 30 FPS, plain uGUI menu built in code (no TMP, pipeline neutral)
-- **Stays in games:** the pause menu that opens it, game-only options, a custom menu look, camera code that reads sensitivity/invert
-- **Interfaces:** `GameSettings` static API, `SettingsProfile` (Resources `AmberScreenSettingsProfile`), `SettingsMenu`, `SteamDeckDetector`, `ISettingsApplier`
+- **Owner:** Packages | **State:** 0.1.1 tagged; `0.2.0` built, awaiting test | **Users:** all five (none yet)
+- **Includes:** graphics (quality level, resolution, display mode, vSync, frame limit), audio (master/music/effects through AudioMixer exposed parameters), controls (mouse sensitivity, invert Y, optional Input System rebinding), JSON save in persistentDataPath applied on startup, Steam Deck detection with a first-run low preset at 30 FPS (picked by quality name, default "Performant"), plain uGUI menu built in code (no TMP, pipeline neutral); 0.2.0: game-defined options saved with the rest, text size 75-160%, theme asset (colours, font, title), sort order 1010, Esc-consumed signal, one-time import of old prefs
+- **Stays in games:** the pause menu that opens it, what each game-defined option does, camera code that reads sensitivity/invert
+- **Interfaces:** `GameSettings` static API (incl. `AddCustom*`, `TextScale`, `ImportLegacyOnce`), `SettingsProfile` (Resources `AmberScreenSettingsProfile`), `SettingsMenu` (`AnyOpen`, `ConsumedCloseThisFrame`), `SettingsMenuTheme`, `SteamDeckDetector`, `ISettingsApplier`
 - **Depends on:** uGUI; Input System optional
 
 ### com.amberscreen.inspect
 
-- **Owner:** Packages | **State:** in library, `0.1.0` tagged (`inspect/0.1.0`) | **Users:** Watchmaker first, any game with found objects or documents
-- **Includes:** close-up inspection viewer: `Inspect(Transform)` to a hold point in front of the camera, drag/stick rotation, clamped zoom, `InspectHotspot` labelled spots with next/previous focus, exact restore of parent/pose/layers/physics; events for player controls and background dim
+- **Owner:** Packages | **State:** in library, `0.1.0` tagged (`inspect/0.1.0`); `0.2.0` built, awaiting test | **Users:** Watchmaker first, any game with found objects or documents
+- **Includes:** close-up inspection viewer: `Inspect(Transform)` to a hold point in front of the camera, drag/stick rotation, clamped zoom, `InspectHotspot` labelled spots with next/previous focus, exact restore of parent/pose/layers/physics; events for player controls and background dim; 0.2.0: hold/zoom distances from the object's size (`fitToBounds`), zoom-changed event, Esc-consumed signal (`AnyInspecting`, `ConsumedCloseThisFrame`)
 - **Stays in games:** what can be inspected, pick-up prompts, spot texts, background dim/blur, game-only actions on the object
 - **Interfaces:** `InspectViewer` API and events, `InspectHotspot`, `Inspectable`
 - **Depends on:** nothing (Input System optional)

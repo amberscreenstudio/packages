@@ -15,6 +15,16 @@
       "source": "local",
       "dependencies": {}
     },
+    "com.amberscreen.gameshell": {
+      "version": "file:../../Packages/com.amberscreen.gameshell",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.amberscreen.save": "0.1.0",
+        "com.unity.inputsystem": "1.20.0",
+        "com.unity.ugui": "2.0.0"
+      }
+    },
     "com.amberscreen.inspect": {
       "version": "file:../../Packages/com.amberscreen.inspect",
       "depth": 0,
@@ -59,6 +69,12 @@
         "com.unity.inputsystem": "1.20.0",
         "com.unity.ugui": "2.0.0"
       }
+    },
+    "com.amberscreen.save": {
+      "version": "file:../../Packages/com.amberscreen.save",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
     },
     "com.amberscreen.settings": {
       "version": "file:../../Packages/com.amberscreen.settings",
