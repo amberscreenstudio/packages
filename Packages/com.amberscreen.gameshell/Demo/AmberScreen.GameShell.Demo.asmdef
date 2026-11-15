@@ -1,0 +1,10 @@
+{
+  "name": "AmberScreen.GameShell.Demo",
+  "rootNamespace": "AmberScreen.GameShell.Demo",
+  "references": [
+    "AmberScreen.GameShell",
+    "AmberScreen.Save",
+    "Unity.InputSystem"
+  ],
+  "autoReferenced": false
+}

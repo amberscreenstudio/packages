@@ -1,0 +1,24 @@
+{
+  "name": "com.amberscreen.gameshell",
+  "version": "0.1.0",
+  "displayName": "Amber Screen Game Shell",
+  "description": "The frame around a game: boot, scene changes with fades and autosave, a pause menu with save/load slots that works at timeScale 0, a version label with load warnings, and one 'is the game blocked' check. uGUI built in code, no render-pipeline code.",
+  "unity": "6000.6",
+  "documentationUrl": "https://github.com/amberscreenstudio/packages/blob/main/Packages/com.amberscreen.gameshell/README.md",
+  "changelogUrl": "https://github.com/amberscreenstudio/packages/blob/main/Packages/com.amberscreen.gameshell/CHANGELOG.md",
+  "keywords": [
+    "pause",
+    "scene",
+    "fade",
+    "save",
+    "amberscreen"
+  ],
+  "author": {
+    "name": "Amber Screen Studio"
+  },
+  "dependencies": {
+    "com.amberscreen.save": "0.1.0",
+    "com.unity.inputsystem": "1.20.0",
+    "com.unity.ugui": "2.0.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "AmberScreen.GameShell.Editor",
+  "rootNamespace": "AmberScreen.GameShell.Editor",
+  "references": [
+    "AmberScreen.GameShell",
+    "AmberScreen.GameShell.Demo",
+    "AmberScreen.Save"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "autoReferenced": false
+}
