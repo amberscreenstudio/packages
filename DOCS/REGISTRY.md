@@ -259,7 +259,7 @@ Shared packages are built only for needs no owned asset covers. A shared setting
 
 ### com.amberscreen.settings
 
-- **Owner:** Packages | **State:** 0.1.1 tagged; `0.2.0` built, awaiting test | **Users:** all five (none yet)
+- **Owner:** Packages | **State:** 0.1.1 tagged; `0.2.0` built, awaiting test | **Users:** Time & Tension `settings/0.1.1`; intended for all five
 - **Includes:** graphics (quality level, resolution, display mode, vSync, frame limit), audio (master/music/effects through AudioMixer exposed parameters), controls (mouse sensitivity, invert Y, optional Input System rebinding), JSON save in persistentDataPath applied on startup, Steam Deck detection with a first-run low preset at 30 FPS (picked by quality name, default "Performant"), plain uGUI menu built in code (no TMP, pipeline neutral); 0.2.0: game-defined options saved with the rest, text size 75-160%, theme asset (colours, font, title), sort order 1010, Esc-consumed signal, one-time import of old prefs
 - **Stays in games:** the pause menu that opens it, what each game-defined option does, camera code that reads sensitivity/invert
 - **Interfaces:** `GameSettings` static API (incl. `AddCustom*`, `TextScale`, `ImportLegacyOnce`), `SettingsProfile` (Resources `AmberScreenSettingsProfile`), `SettingsMenu` (`AnyOpen`, `ConsumedCloseThisFrame`), `SettingsMenuTheme`, `SteamDeckDetector`, `ISettingsApplier`
@@ -267,7 +267,7 @@ Shared packages are built only for needs no owned asset covers. A shared setting
 
 ### com.amberscreen.inspect
 
-- **Owner:** Packages | **State:** in library, `0.1.0` tagged (`inspect/0.1.0`); `0.2.0` built, awaiting test | **Users:** Watchmaker first, any game with found objects or documents
+- **Owner:** Packages | **State:** in library, `0.1.0` tagged (`inspect/0.1.0`); `0.2.0` built, awaiting test | **Users:** Time & Tension `inspect/0.1.0`; any game with found objects or documents
 - **Includes:** close-up inspection viewer: `Inspect(Transform)` to a hold point in front of the camera, drag/stick rotation, clamped zoom, `InspectHotspot` labelled spots with next/previous focus, exact restore of parent/pose/layers/physics; events for player controls and background dim; 0.2.0: hold/zoom distances from the object's size (`fitToBounds`), zoom-changed event, Esc-consumed signal (`AnyInspecting`, `ConsumedCloseThisFrame`)
 - **Stays in games:** what can be inspected, pick-up prompts, spot texts, background dim/blur, game-only actions on the object
 - **Interfaces:** `InspectViewer` API and events, `InspectHotspot`, `Inspectable`
